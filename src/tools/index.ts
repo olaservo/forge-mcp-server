@@ -194,7 +194,8 @@ export function registerTools(server: McpServer, bridge: Bridge): void {
         "`selectCard` with a card `id` from forge_game_state plays, activates, taps or targets that card, as the prompt allows. " +
         "`selectPlayer` targets a player by `id`. `useMana` pays with a floating mana color (color: 1=W 2=U 4=B 8=R 16=G 32=C). " +
         "`alphaStrike` attacks with everything, `undo` takes back the last action, `concede` ends the game. " +
-        "Once `gameOver` is true: `quit` leaves the match and returns everyone to the lobby, `continue` plays the next game of the match, `newMatch` restarts it.",
+        "Once `gameOver` is true: `quit` leaves the match and returns everyone to the lobby, `continue` plays the next game of the match, `newMatch` restarts it. " +
+        "Returns the game summary after the host has reacted (or after 1.5 s if it has not); send one action at a time.",
       inputSchema: z.object({
         action: z.enum(["ok", "cancel", "selectCard", "selectPlayer", "useMana", "alphaStrike", "undo", "concede", "quit", "continue", "newMatch"]),
         id: z.number().int().optional().describe("Card or player id for selectCard / selectPlayer"),
