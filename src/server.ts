@@ -7,6 +7,9 @@ import { registerTools } from "./tools/index.js";
 
 export const SERVER_INFO = { name: "forge-mcp-server", version: "0.1.0" } as const;
 
+/** Resource that changes on every bridge revision; transports push `notifications/resources/updated` for it. */
+export const STATUS_URI = "forge://status";
+
 let skillsPromise: Promise<SkillCatalog> | undefined;
 
 /** Loads `skills/` next to `dist/` (or `src/`) once; every server instance shares the catalog. */
@@ -23,18 +26,25 @@ export interface CreateServerOptions {
 export function createServer(opts: CreateServerOptions = {}): McpServer {
   const bridge = opts.bridge ?? new Bridge();
   const server = new McpServer(SERVER_INFO, {
+    // subscribe: lets subscriptions/listen honour resourceSubscriptions for forge://status
+    capabilities: { resources: { subscribe: true, listChanged: true } },
     instructions:
       "Forge (Card-Forge) seat for an agent. Tools drive one headless Forge client that joins a host's online lobby, " +
       "drafts and plays. Start with forge_status, then forge_connect. Load the forge-player skill (skill://forge/forge-player/SKILL.md) " +
-      "before playing and forge-drafter before drafting. Use forge_wait between turns instead of polling.",
+      "before playing and forge-drafter before drafting. Use forge_wait between turns instead of polling, " +
+      "or subscribe to forge://status through subscriptions/listen to be told when the seat changes.",
   });
 
   registerTools(server, bridge);
 
   server.registerResource(
     "status",
-    "forge://status",
-    { title: "Forge seat status", description: "Same payload as forge_status", mimeType: "application/json" },
+    STATUS_URI,
+    {
+      title: "Forge seat status",
+      description: "Same payload as forge_status. Updated on every bridge revision; subscribe to it to replace forge_wait polling.",
+      mimeType: "application/json",
+    },
     async (uri) => ({
       contents: [{ uri: uri.href, mimeType: "application/json", text: JSON.stringify(await bridge.get("/status"), null, 2) }],
     }),

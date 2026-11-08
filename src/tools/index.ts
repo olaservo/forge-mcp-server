@@ -1,6 +1,7 @@
 import type { CallToolResult, McpServer } from "@modelcontextprotocol/server";
 import { z } from "zod";
 import { Bridge, BridgeError } from "../bridge.js";
+import * as out from "../schemas.js";
 
 const json = (value: unknown): CallToolResult => ({
   content: [{ type: "text", text: JSON.stringify(value, null, 2) }],
@@ -33,6 +34,7 @@ export function registerTools(server: McpServer, bridge: Bridge): void {
         "draft progress (whether a pick is pending), game summary (prompt, buttons, pending decision) and recent chat. " +
         "Call this first, and after forge_wait.",
       inputSchema: z.object({}),
+      outputSchema: out.StatusWithBridge,
       annotations: readOnly,
     },
     async () =>
@@ -55,6 +57,7 @@ export function registerTools(server: McpServer, bridge: Bridge): void {
         port: z.number().int().default(36743),
         name: z.string().default("Agent").describe("Display name shown to the other players"),
       }),
+      outputSchema: out.Status,
       annotations: acting,
     },
     async ({ host, port, name }) =>
@@ -70,6 +73,7 @@ export function registerTools(server: McpServer, bridge: Bridge): void {
       title: "Leave the Forge host",
       description: "Drop the connection to the host. The seat is lost; the host may replace it with an AI.",
       inputSchema: z.object({}),
+      outputSchema: out.Status,
       annotations: acting,
     },
     async () => run(() => bridge.post("/disconnect")),
@@ -82,6 +86,7 @@ export function registerTools(server: McpServer, bridge: Bridge): void {
       description:
         "Toggle the Ready flag on our lobby slot. In a Limited lobby, set a deck first with forge_lobby_deck (the drafted pool is the default).",
       inputSchema: z.object({ ready: z.boolean().default(true) }),
+      outputSchema: out.Lobby,
       annotations: acting,
     },
     async ({ ready }) => run(() => bridge.post("/lobby/ready", { ready })),
@@ -98,6 +103,7 @@ export function registerTools(server: McpServer, bridge: Bridge): void {
         name: z.string().optional(),
         dck: z.string().optional(),
       }),
+      outputSchema: out.DeckResult,
       annotations: acting,
     },
     async ({ name, dck }) => run(() => bridge.post("/lobby/deck", { name, dck })),
@@ -109,6 +115,7 @@ export function registerTools(server: McpServer, bridge: Bridge): void {
       title: "Send lobby chat",
       description: "Say something in the lobby/game chat. Use it to greet, to explain a play when coaching, or to concede politely.",
       inputSchema: z.object({ text: z.string().min(1) }),
+      outputSchema: out.OkResult,
       annotations: acting,
     },
     async ({ text }) => run(() => bridge.post("/chat", { text })),
@@ -122,6 +129,7 @@ export function registerTools(server: McpServer, bridge: Bridge): void {
         "The pack in front of us: pack and pick numbers, the pick timer, and every card with mana cost, type, colors, P/T and oracle text. " +
         "`pickPending` false means we have already picked and the next pack has not arrived; use forge_wait.",
       inputSchema: z.object({}),
+      outputSchema: out.Draft,
       annotations: readOnly,
     },
     async () => run(() => bridge.get("/draft/pack")),
@@ -133,6 +141,7 @@ export function registerTools(server: McpServer, bridge: Bridge): void {
       title: "Draft pick",
       description: "Pick a card from the current pack by exact name (or its 0-based index in the pack).",
       inputSchema: z.object({ card: z.string().min(1) }),
+      outputSchema: out.PickResult,
       annotations: acting,
     },
     async ({ card }) => run(() => bridge.post("/draft/pick", { card })),
@@ -144,6 +153,7 @@ export function registerTools(server: McpServer, bridge: Bridge): void {
       title: "Drafted pool",
       description: "The card pool delivered when the draft ended, its event tags, and the .dck path it was saved to.",
       inputSchema: z.object({}),
+      outputSchema: out.Pool,
       annotations: readOnly,
     },
     async () => run(() => bridge.get("/draft/pool")),
@@ -157,6 +167,7 @@ export function registerTools(server: McpServer, bridge: Bridge): void {
         "Full view of the current game: turn, phase, active player, each player's life and zones (our hand, both battlefields, graveyards), " +
         "the stack, combat, the current prompt text, the OK/Cancel buttons, and any pending decision that must be answered with forge_game_decide.",
       inputSchema: z.object({}),
+      outputSchema: out.Game,
       annotations: readOnly,
     },
     async () => run(() => bridge.get("/game")),
@@ -168,6 +179,7 @@ export function registerTools(server: McpServer, bridge: Bridge): void {
       title: "Game log",
       description: "Game log lines starting at index `since` (0 for all).",
       inputSchema: z.object({ since: z.number().int().min(0).default(0) }),
+      outputSchema: out.LogResult,
       annotations: readOnly,
     },
     async ({ since }) => run(() => bridge.get("/game/log", { since })),
@@ -181,12 +193,14 @@ export function registerTools(server: McpServer, bridge: Bridge): void {
         "One click in the match UI. `ok` and `cancel` press the two prompt buttons (OK passes priority or confirms; Cancel declines). " +
         "`selectCard` with a card `id` from forge_game_state plays, activates, taps or targets that card, as the prompt allows. " +
         "`selectPlayer` targets a player by `id`. `useMana` pays with a floating mana color (color: 1=W 2=U 4=B 8=R 16=G 32=C). " +
-        "`alphaStrike` attacks with everything, `undo` takes back the last action, `concede` ends the game.",
+        "`alphaStrike` attacks with everything, `undo` takes back the last action, `concede` ends the game. " +
+        "Once `gameOver` is true: `quit` leaves the match and returns everyone to the lobby, `continue` plays the next game of the match, `newMatch` restarts it.",
       inputSchema: z.object({
-        action: z.enum(["ok", "cancel", "selectCard", "selectPlayer", "useMana", "alphaStrike", "undo", "concede"]),
+        action: z.enum(["ok", "cancel", "selectCard", "selectPlayer", "useMana", "alphaStrike", "undo", "concede", "quit", "continue", "newMatch"]),
         id: z.number().int().optional().describe("Card or player id for selectCard / selectPlayer"),
         color: z.number().int().optional().describe("Mana color bits for useMana"),
       }),
+      outputSchema: out.Game,
       annotations: acting,
     },
     async ({ action, id, color }) => run(() => bridge.post("/game/act", { action, id, color })),
@@ -205,6 +219,7 @@ export function registerTools(server: McpServer, bridge: Bridge): void {
         choices: z.array(z.number().int().min(0)).default([]),
         text: z.string().optional(),
       }),
+      outputSchema: out.Game,
       annotations: acting,
     },
     async ({ id, choices, text }) => run(() => bridge.post("/game/decide", { id, choices, text })),
@@ -221,6 +236,7 @@ export function registerTools(server: McpServer, bridge: Bridge): void {
         since: z.number().int().default(-1).describe("Last seen revision; -1 returns immediately"),
         timeout: z.number().int().min(1).max(120).default(30),
       }),
+      outputSchema: out.Status,
       annotations: readOnly,
     },
     async ({ since, timeout }) => run(() => bridge.get("/wait", { since, timeout })),

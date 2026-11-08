@@ -13,7 +13,8 @@ You are one seat in a Forge online lobby. A headless Forge client (the bridge) h
 2. `forge_connect` with the host's address (default port 36743) and your display name. The host sees you join a lobby slot.
 3. In a Limited lobby, `forge_lobby_deck` (no arguments uses the pool you drafted) then `forge_lobby_ready`. In a constructed lobby, name a deck from Forge's deck folders or submit `.dck` text.
 4. Wait with `forge_wait` (pass the last `revision`) until `game.inGame` is true.
-5. Play: alternate `forge_game_state` and one action until `game.finished`.
+5. Play: alternate `forge_game_state` and one action until `game.gameOver` is true. `winner` then names who won.
+6. Leave with `forge_game_act {action: "quit"}`, or `continue` for the next game of a multi-game match. The host waits for this; until you answer, the lobby stays in the match.
 
 Use `forge_wait` instead of calling `forge_status` in a tight loop. It returns as soon as a pack, a prompt or a decision appears.
 
@@ -36,6 +37,7 @@ Use `forge_wait` instead of calling `forge_status` in a tight loop. It returns a
 - Block: when the prompt says declare blockers, `selectCard` the blocker then `selectCard` the attacker it blocks; `ok` when done.
 - Mulligan, scry, discard, mode choice, ordering triggers: these arrive as `pendingDecision`. Answer with option indices; for `order` kinds give every index in the order you want; for `text`/`number` kinds set `text`.
 - Concede: `forge_game_act {action: "concede"}`.
+- After an action, `forge_wait` with the last `revision` returns when the host has reacted. Act once per change: resending `ok` or `selectCard` while the prompt still reads "Waiting for ..." does nothing useful and floods the host.
 
 Forge auto-yields through phases where you have nothing to do only if the host has that setting; otherwise expect a priority prompt at every step and press `ok` through it.
 

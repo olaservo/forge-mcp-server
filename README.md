@@ -7,7 +7,7 @@ Not affiliated with Card-Forge or Wizards of the Coast.
 ## Pieces
 
 - **Bridge** (Java, in the Forge fork on branch `personal/agent-bridge`): console mode `agent` in `forge-gui-desktop`, package `forge.agent`. Boots the card database headless and serves `GET /status`, `GET /wait`, `POST /connect`, `POST /lobby/ready`, `POST /lobby/deck`, `POST /chat`, `GET /draft/pack`, `POST /draft/pick`, `GET /draft/pool`, `GET /game`, `GET /game/log`, `POST /game/act`, `POST /game/decide` on `127.0.0.1:36744`.
-- **This server** (TypeScript): tools `forge_status`, `forge_connect`, `forge_disconnect`, `forge_lobby_ready`, `forge_lobby_deck`, `forge_chat`, `forge_draft_pack`, `forge_draft_pick`, `forge_draft_pool`, `forge_game_state`, `forge_game_log`, `forge_game_act`, `forge_game_decide`, `forge_wait`; resources `forge://status`, `forge://game/log`, `forge://draft/pool`; skills `forge-player` and `forge-drafter` served through the MCP skills extension.
+- **This server** (TypeScript): tools `forge_status`, `forge_connect`, `forge_disconnect`, `forge_lobby_ready`, `forge_lobby_deck`, `forge_chat`, `forge_draft_pack`, `forge_draft_pick`, `forge_draft_pool`, `forge_game_state`, `forge_game_log`, `forge_game_act`, `forge_game_decide`, `forge_wait`; resources `forge://status`, `forge://game/log`, `forge://draft/pool`; skills `forge-player` and `forge-drafter` served through the MCP skills extension. Every tool declares an `outputSchema` (`src/schemas.ts`) and returns `structuredContent`. A watcher long-polls the bridge and pushes `notifications/resources/updated` for `forge://status` to `subscriptions/listen` subscribers (on stdio through the server, on HTTP through the handler's event bus), so a client that subscribes does not need `forge_wait`.
 
 ## Run
 
@@ -33,8 +33,8 @@ Claude Code: `claude mcp add forge -- node <path>/dist/index.js`. Environment: `
 
 ## Test
 
-`npm test` runs an in-process MCP client against the server with a fake bridge. The Java side has `AgentDraftTest` in `forge-gui-desktop/src/test/java/forge/agent/`, which hosts a two-seat draft in-process and lets the bridge take the second seat.
+`npm test` runs an in-process MCP client against the server with a fake bridge, including a `subscriptions/listen` round trip. The Java side has `AgentDraftTest` and `AgentGameTest` in `forge-gui-desktop/src/test/java/forge/agent/`: the first hosts a two-seat draft in-process and lets the bridge take the second seat, the second hosts a Limited match against the AI and lets the bridge play it to the end with a pass-or-first-option policy.
 
 ## Status
 
-Phase 1 of the plan in the goldmind notes (`research/mtg/forge-mcp-server-plan.md`): lobby and draft work end to end against an in-process host. Game actions and decisions are wired but untested against a live match. Skills are first drafts.
+Phase 2 of the plan in the goldmind notes (`research/mtg/forge-mcp-server-plan.md`): lobby, draft and a full match work end to end against an in-process host. Not yet exercised against a live desktop host or over the LAN. Skills are first drafts.
