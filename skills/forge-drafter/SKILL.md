@@ -9,7 +9,7 @@ The host configures the event in their lobby (product, pod size, pick timer) and
 
 ## Pick loop
 
-1. `forge_connect`, then `forge_wait` until `draft.pickPending` is true.
+1. `forge_connect`, then `forge_lobby_ready` straight away: the host cannot start the event while any seat is unready, and in a Limited lobby no deck is needed to be ready before the draft. Then `forge_wait` until `draft.pickPending` is true.
 2. `forge_draft_pack`: `packNumber`, `pickNumber`, `timerSeconds` (0 means no clock) and `pack[]` with each card's `index`, `name`, `manaCost`, `type`, `colors`, `power`, `toughness`, `rarity` and `oracle`.
 3. Decide, then `forge_draft_pick {card: "<exact name>"}` (or the index). The result confirms the card.
 4. `forge_wait` with the returned `revision` until the next pack arrives or `draft.poolReceived` becomes true.
@@ -45,4 +45,4 @@ Tags=<the tags, comma separated>
 ...
 ```
 
-Basic lands can be named with the set code of the draft's land set (`LandSetCode` in the pool, or the set you drafted). Then `forge_lobby_ready` and switch to the `forge-player` skill for the match. Submitting the raw pool with no arguments works only when the host has deck conformance off.
+Basic lands can be named with the set code of the draft's land set (`LandSetCode` in the pool, or the set you drafted). Your ready flag from before the draft stays set; check `lobby.slots` in `forge_status` and `forge_lobby_ready` again only if it shows you unready. Then switch to the `forge-player` skill for the match. Submitting the raw pool with no arguments works only when the host has deck conformance off.
