@@ -1,0 +1,16 @@
+{
+  "picked": {
+    "name": "Haunting Echoes",
+    "set": "M11",
+    "collectorNumber": "99",
+    "rarity": "Rare",
+    "manaCost": "{3}{B}{B}",
+    "type": "Sorcery",
+    "colors": "B",
+    "power": null,
+    "toughness": null,
+    "oracle": "Exile all cards from target player's graveyard other than basic land cards. For each card exiled this way, search that player's library for all cards with the same name as that card and exile them. Then that player shuffles."
+  },
+  "packNumber": 3,
+  "pickNumber": 13
+}

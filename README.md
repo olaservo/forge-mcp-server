@@ -33,7 +33,7 @@ Claude Code: `claude mcp add forge -- node <path>/dist/index.js`. Environment: `
 
 ## Test
 
-`npm test` runs an in-process MCP client against the server with a fake bridge, including a `subscriptions/listen` round trip. The Java side has `AgentDraftTest` and `AgentGameTest` in `forge-gui-desktop/src/test/java/forge/agent/`: the first hosts a two-seat draft in-process and lets the bridge take the second seat, the second hosts a Limited match against the AI and lets the bridge play it to the end with a pass-or-first-option policy.
+`npm test` runs an in-process MCP client against the server with a fake bridge, including a `subscriptions/listen` round trip, and `test/fixtures.test.ts` checks every tool's output schema against real bridge payloads in `test/fixtures/`, then runs all 14 tools over them. The fixtures are recorded by the Java tests (`BridgeHttp.saveFixtures`, written to `forge-gui-desktop/target/agent-fixtures`); copy them over after a bridge change. The Java side has `AgentDraftTest` and `AgentGameTest` in `forge-gui-desktop/src/test/java/forge/agent/`: the first hosts a two-seat draft in-process and lets the bridge take the second seat, the second hosts a Limited match against the AI and lets the bridge play it to the end with a pass-or-first-option policy.
 
 ## Status
 

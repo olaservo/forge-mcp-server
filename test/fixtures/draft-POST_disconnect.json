@@ -1,0 +1,97 @@
+{
+  "revision": 192,
+  "connection": {
+    "connected": false,
+    "host": "127.0.0.1",
+    "port": 36799,
+    "name": "AgentBot",
+    "reconnectState": null,
+    "closeReason": null
+  },
+  "lobby": {
+    "mySlot": -1
+  },
+  "draft": {
+    "seatIndex": 1,
+    "packNumber": 3,
+    "pickNumber": 14,
+    "timerSeconds": 0,
+    "pickPending": false,
+    "packSize": 0,
+    "seatQueueDepths": [
+      0,
+      0
+    ],
+    "picks": [
+      "Harbor Serpent",
+      "Tireless Missionaries",
+      "Hunters' Feast",
+      "Palace Guard",
+      "Barony Vampire",
+      "Fog",
+      "Dryad's Favor",
+      "Unsummon",
+      "Wall of Vines",
+      "Wall of Frost",
+      "Wall of Frost",
+      "Armored Ascension",
+      "Hoarding Dragon",
+      "Mountain",
+      "Fire Servant",
+      "Liliana's Specter",
+      "Goblin Balloon Brigade",
+      "Llanowar Elves",
+      "Blinding Mage",
+      "Fog",
+      "Holy Strength",
+      "Cloud Crusader",
+      "Yavimaya Wurm",
+      "Greater Basilisk",
+      "Llanowar Elves",
+      "Serra Angel",
+      "Armored Ascension",
+      "Elite Vanguard",
+      "Captivating Vampire",
+      "Forest",
+      "Phantom Beast",
+      "Greater Basilisk",
+      "Stormfront Pegasus",
+      "Plummet",
+      "Nether Horror",
+      "Spined Wurm",
+      "Doom Blade",
+      "Merfolk Spy",
+      "Garruk's Companion",
+      "Giant Spider",
+      "Juggernaut",
+      "Rise from the Grave",
+      "Howling Banshee",
+      "Haunting Echoes",
+      "Plains"
+    ],
+    "autoPicks": [],
+    "poolReceived": true,
+    "poolEventId": "cc07dc05",
+    "poolPath": "C:\\Users\\johnn\\AppData\\Roaming\\Forge\\decks\\network-events\\Draft - Block  Set - 2026-11-08.dck"
+  },
+  "game": {
+    "inGame": false,
+    "finished": false,
+    "prompt": "",
+    "promptCard": null,
+    "buttons": {
+      "ok": "OK",
+      "okEnabled": false,
+      "cancel": "Cancel",
+      "cancelEnabled": false
+    },
+    "incorrectActions": 0,
+    "messages": []
+  },
+  "chat": [
+    "AgentBot joined the lobby.",
+    "AFK timeout: 5:00",
+    "AgentBot is ready (1/2 players ready)",
+    "AgentBot: thanks for the draft"
+  ]
+}

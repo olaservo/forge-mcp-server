@@ -1,0 +1,20 @@
+{
+  "inGame": true,
+  "finished": false,
+  "prompt": "Select creatures to block Illusion Token (109) or select another attacker to declare blockers for.",
+  "promptCard": null,
+  "buttons": {
+    "ok": "OK",
+    "okEnabled": true,
+    "cancel": "Cancel",
+    "cancelEnabled": false
+  },
+  "incorrectActions": 0,
+  "messages": [],
+  "turn": 11,
+  "phase": "COMBAT_DECLARE_BLOCKERS",
+  "activePlayer": "HostAI",
+  "gameOver": false,
+  "winner": "",
+  "me": "AgentBot"
+}

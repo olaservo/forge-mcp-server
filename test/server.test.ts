@@ -1,38 +1,10 @@
 import { describe, expect, it } from "vitest";
-import { Client, StreamableHTTPClientTransport } from "@modelcontextprotocol/client";
 import { SkillsClient } from "@modelcontextprotocol/client/ext/skills";
-import { createMcpHandler } from "@modelcontextprotocol/server";
-import { Bridge } from "../src/bridge.js";
 import { InMemoryServerEventBus } from "@modelcontextprotocol/server";
-import { STATUS_URI, createServer, skillCatalog } from "../src/server.js";
+import { Bridge } from "../src/bridge.js";
+import { STATUS_URI } from "../src/server.js";
 import { StatusWatcher } from "../src/watcher.js";
-
-/** A fake Forge bridge: records calls and answers with canned JSON. */
-function fakeBridge(responses: Record<string, unknown>) {
-  const calls: { method: string; path: string; body?: unknown }[] = [];
-  const fetchImpl: typeof fetch = async (input, init) => {
-    const url = new URL(typeof input === "string" ? input : (input as URL).toString());
-    const key = `${init?.method ?? "GET"} ${url.pathname}`;
-    calls.push({ method: init?.method ?? "GET", path: url.pathname, body: init?.body ? JSON.parse(String(init.body)) : undefined });
-    const hit = responses[key];
-    if (hit === undefined) {
-      return new Response(JSON.stringify({ error: `unknown route ${key}` }), { status: 400 });
-    }
-    return new Response(JSON.stringify(hit), { status: 200, headers: { "content-type": "application/json" } });
-  };
-  return { bridge: new Bridge({ baseUrl: "http://bridge.test", fetch: fetchImpl }), calls };
-}
-
-async function connect(bridge: Bridge, bus?: InMemoryServerEventBus) {
-  const skills = await skillCatalog();
-  const handler = createMcpHandler(() => createServer({ bridge, skills }), bus ? { bus } : {});
-  const transport = new StreamableHTTPClientTransport(new URL("http://test.local/mcp"), {
-    fetch: (url, init) => handler.fetch(new Request(url, init)),
-  });
-  const client = new Client({ name: "test", version: "0.0.0" }, { versionNegotiation: { mode: "auto" } });
-  await client.connect(transport);
-  return client;
-}
+import { connect, fakeBridge } from "./helpers.js";
 
 const status = {
   revision: 3,

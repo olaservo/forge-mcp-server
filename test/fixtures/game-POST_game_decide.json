@@ -1,0 +1,20 @@
+{
+  "inGame": true,
+  "finished": false,
+  "prompt": "Priority: AgentBot\nTurn: 8 (AgentBot)\nPhase: Main phase, precombat\nStack: Empty",
+  "promptCard": null,
+  "buttons": {
+    "ok": "OK",
+    "okEnabled": true,
+    "cancel": "End Turn",
+    "cancelEnabled": true
+  },
+  "incorrectActions": 0,
+  "messages": [],
+  "turn": 8,
+  "phase": "MAIN1",
+  "activePlayer": "AgentBot",
+  "gameOver": false,
+  "winner": "",
+  "me": "AgentBot"
+}

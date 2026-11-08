@@ -1,0 +1,88 @@
+{
+  "revision": 390,
+  "connection": {
+    "connected": true,
+    "host": "127.0.0.1",
+    "port": 36798,
+    "name": "AgentBot",
+    "reconnectState": "CONNECTED",
+    "closeReason": null
+  },
+  "lobby": {
+    "mySlot": 1,
+    "limitedMode": true,
+    "activeEventId": null,
+    "formatName": null,
+    "slots": [
+      {
+        "index": 0,
+        "type": "AI",
+        "name": "HostAI",
+        "ready": true,
+        "team": 0,
+        "deckName": null,
+        "hasDeck": true
+      },
+      {
+        "index": 1,
+        "type": "REMOTE",
+        "name": "AgentBot",
+        "ready": true,
+        "team": 1,
+        "deckName": null,
+        "hasDeck": true
+      }
+    ]
+  },
+  "draft": {
+    "seatIndex": -1,
+    "packNumber": 0,
+    "pickNumber": 0,
+    "timerSeconds": 0,
+    "pickPending": false,
+    "packSize": 0,
+    "seatQueueDepths": [],
+    "picks": [],
+    "autoPicks": [],
+    "poolReceived": false,
+    "poolEventId": null,
+    "poolPath": null
+  },
+  "game": {
+    "inGame": true,
+    "finished": false,
+    "prompt": "Priority: AgentBot\nTurn: 8 (AgentBot)\nPhase: Main phase, precombat\nStack: Empty",
+    "promptCard": null,
+    "buttons": {
+      "ok": "OK",
+      "okEnabled": true,
+      "cancel": "End Turn",
+      "cancelEnabled": true
+    },
+    "incorrectActions": 0,
+    "pendingDecision": {
+      "id": 3,
+      "kind": "choices",
+      "prompt": "Choose optional costs",
+      "options": [
+        "Kicker – {R}"
+      ],
+      "min": 0,
+      "max": 1,
+      "default": null
+    },
+    "messages": [],
+    "turn": 8,
+    "phase": "MAIN1",
+    "activePlayer": "AgentBot",
+    "gameOver": false,
+    "winner": "",
+    "me": "AgentBot"
+  },
+  "chat": [
+    "AgentBot joined the lobby.",
+    "AFK timeout: 5:00",
+    "AgentBot is ready (1/1 players ready)",
+    "AgentBot: gl hf"
+  ]
+}

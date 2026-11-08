@@ -1,0 +1,43 @@
+{
+  "revision": 1,
+  "connection": {
+    "connected": true,
+    "host": "127.0.0.1",
+    "port": 36799,
+    "name": "AgentBot",
+    "reconnectState": "CONNECTED",
+    "closeReason": null
+  },
+  "lobby": {
+    "mySlot": -1
+  },
+  "draft": {
+    "seatIndex": -1,
+    "packNumber": 0,
+    "pickNumber": 0,
+    "timerSeconds": 0,
+    "pickPending": false,
+    "packSize": 0,
+    "seatQueueDepths": [],
+    "picks": [],
+    "autoPicks": [],
+    "poolReceived": false,
+    "poolEventId": null,
+    "poolPath": null
+  },
+  "game": {
+    "inGame": false,
+    "finished": false,
+    "prompt": "",
+    "promptCard": null,
+    "buttons": {
+      "ok": "OK",
+      "okEnabled": false,
+      "cancel": "Cancel",
+      "cancelEnabled": false
+    },
+    "incorrectActions": 0,
+    "messages": []
+  },
+  "chat": []
+}
