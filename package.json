@@ -1,0 +1,51 @@
+{
+  "name": "@olaservo/forge-mcp-server",
+  "version": "0.1.0",
+  "description": "MCP server that lets an agent take a seat in a Forge (Card-Forge) network draft or match through a headless Forge client.",
+  "type": "module",
+  "main": "dist/index.js",
+  "bin": {
+    "forge-mcp-server": "dist/index.js"
+  },
+  "files": [
+    "dist",
+    "skills"
+  ],
+  "keywords": [
+    "mcp",
+    "model-context-protocol",
+    "magic-the-gathering",
+    "mtg",
+    "forge",
+    "draft"
+  ],
+  "license": "MIT",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/olaservo/forge-mcp-server.git"
+  },
+  "engines": {
+    "node": ">=22.0.0"
+  },
+  "scripts": {
+    "build": "tsc",
+    "typecheck": "tsc --noEmit",
+    "test": "vitest run",
+    "start": "node dist/index.js",
+    "start:http": "node dist/index.js streamableHttp",
+    "dev": "tsx src/index.ts",
+    "inspector": "npx @modelcontextprotocol/inspector node dist/index.js"
+  },
+  "dependencies": {
+    "@modelcontextprotocol/node": "^2.1.2",
+    "@modelcontextprotocol/server": "^2.4.0",
+    "zod": "^4.2.0"
+  },
+  "devDependencies": {
+    "@modelcontextprotocol/client": "^2.4.0",
+    "@types/node": "^22.10.0",
+    "tsx": "^4.19.2",
+    "typescript": "^5.7.2",
+    "vitest": "^3.0.0"
+  }
+}
