@@ -22,6 +22,17 @@ async function run(fn: () => Promise<unknown>): Promise<CallToolResult> {
   }
 }
 
+/**
+ * A lobby change. The bridge answers before the host has applied it, so this waits for the
+ * host's next update and returns the lobby as it then stands.
+ */
+async function lobbyChange(bridge: Bridge, path: string, body: unknown): Promise<unknown> {
+  const before = (await bridge.get<{ revision?: number }>("/status")).revision ?? -1;
+  const answer = await bridge.post(path, body);
+  await bridge.get("/wait", { since: before, timeout: 2 });
+  return (await bridge.get<{ lobby?: unknown }>("/status")).lobby ?? answer;
+}
+
 const readOnly = { readOnlyHint: true, destructiveHint: false, idempotentHint: true, openWorldHint: false } as const;
 const acting = { readOnlyHint: false, destructiveHint: false, idempotentHint: false, openWorldHint: false } as const;
 
@@ -90,7 +101,7 @@ export function registerTools(server: McpServer, bridge: Bridge): void {
       outputSchema: out.Lobby,
       annotations: acting,
     },
-    async ({ ready }) => run(() => bridge.post("/lobby/ready", { ready })),
+    async ({ ready }) => run(() => lobbyChange(bridge, "/lobby/ready", { ready })),
   );
 
   server.registerTool(
@@ -133,7 +144,7 @@ export function registerTools(server: McpServer, bridge: Bridge): void {
       outputSchema: out.Lobby,
       annotations: acting,
     },
-    async ({ index }) => run(() => bridge.post("/lobby/avatar", { index })),
+    async ({ index }) => run(() => lobbyChange(bridge, "/lobby/avatar", { index })),
   );
 
   server.registerTool(

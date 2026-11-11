@@ -1,0 +1,5 @@
+{
+  "name": "forge-mcp-server",
+  "owner": { "name": "olaservo" },
+  "plugins": [{ "name": "mcp-events", "source": "./claude-code-mod/mcp-events" }]
+}
