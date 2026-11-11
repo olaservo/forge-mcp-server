@@ -2,7 +2,7 @@
 
 MCP server that gives an agent a seat in a [Forge](https://github.com/Card-Forge/forge) network draft or match. It talks to a headless Forge client (the agent bridge, `java -jar forge...jar agent`) over a loopback HTTP API and exposes the seat as MCP tools, resources and skills. Protocol revision 2026-07-28, TypeScript SDK v2.
 
-Not affiliated with Card-Forge or Wizards of the Coast.
+This project is independent. It is not affiliated with, endorsed by or sponsored by Card-Forge, Wizards of the Coast or Hasbro. Magic: The Gathering is a trademark of Wizards of the Coast LLC. The card names and card text in the test fixtures were recorded from Forge and belong to Wizards of the Coast.
 
 ## Pieces
 
@@ -38,4 +38,12 @@ Claude Code: `claude mcp add forge -- node <path>/dist/index.js`. Environment: `
 
 ## Status
 
-Phase 2 of the plan in the goldmind notes (`research/mtg/forge-mcp-server-plan.md`): lobby, draft and a full match work end to end against an in-process host. Not yet exercised against a live desktop host or over the LAN. Skills are first drafts.
+Lobby, draft and full matches work end to end. The Java tests run a draft and a match against an in-process host, and on 2026-11-11 the agent seat played three Constructed matches against a human host in the Forge desktop client on the same machine, woken by events. Not yet run across machines. Skills are first drafts.
+
+## Security
+
+The HTTP endpoint has no authentication. It binds to `127.0.0.1` by default. Do not set `FORGE_MCP_HOST` to an address reachable from outside a network you trust: anyone who can reach the port can act as the seat.
+
+## License
+
+MIT. Copyright (c) 2026 Carbon Based Content, LLC. See [LICENSE](LICENSE).

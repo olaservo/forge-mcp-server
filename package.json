@@ -19,6 +19,7 @@
     "forge",
     "draft"
   ],
+  "author": "Carbon Based Content, LLC",
   "license": "MIT",
   "repository": {
     "type": "git",
