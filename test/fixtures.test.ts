@@ -55,6 +55,8 @@ describe("bridge fixtures", () => {
       const route = routeOf(key);
       if (key.startsWith("game ") || !(route in responses)) responses[route] = fixture(file);
     }
+    // No recording yet: the bridge answers /lobby/avatar with the same lobby snapshot as /lobby/ready.
+    responses["POST /lobby/avatar"] = responses["POST /lobby/ready"];
     const { bridge, calls } = fakeBridge(responses);
     const client = await connect(bridge);
     const args: Record<string, Record<string, unknown>> = {
@@ -62,6 +64,7 @@ describe("bridge fixtures", () => {
       forge_connect: { host: "127.0.0.1", port: 36743, name: "Agent" },
       forge_disconnect: {},
       forge_lobby_ready: { ready: true },
+      forge_lobby_avatar: { index: 3 },
       forge_lobby_deck: { dck: "[Main]\n40 Plains" },
       forge_chat: { text: "hi" },
       forge_draft_pack: {},

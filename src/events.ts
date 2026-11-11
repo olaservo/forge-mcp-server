@@ -105,7 +105,8 @@ export function pendingMove(status: SeatStatus): { key: string; data: Record<str
       return { key: `decision:${decision.id}`, data: { kind: "decision", prompt: decision.prompt, decisionKind: decision.kind, ...at } };
     }
     const prompt = game.prompt ?? "";
-    if ((game.buttons?.okEnabled || game.buttons?.cancelEnabled) && !prompt.includes("Waiting for")) {
+    // An empty prompt is the gap between two inputs, not an ask.
+    if ((game.buttons?.okEnabled || game.buttons?.cancelEnabled) && prompt.trim() !== "" && !prompt.includes("Waiting for")) {
       return { key: `priority:${game.turn}:${game.phase}:${prompt}`, data: { kind: "priority", prompt, ...at } };
     }
     return undefined;

@@ -27,6 +27,7 @@ If your client delivers `forge.your_move` events, do not wait at all. Act on wha
 - `players[]` has life, zone sizes, `battlefield`, `graveyard`, and `hand` for your own seat only. Every card has an `id`; actions use it.
 - `stack[]` lists what is waiting to resolve, newest last. If the stack is non-empty and you have priority, Forge is asking whether you respond.
 - `combat[]` lists attackers, defenders and blockers while combat is being declared or resolved.
+- `selection`, when present, lists the cards the current prompt lets you pick, with `min` and `max`. It includes cards in zones the state does not otherwise show, such as your library during a search. Pick with `selectCard` and the card's `id`.
 - `pendingDecision`, when present, must be answered with `forge_game_decide` before anything else happens. It carries `kind`, `prompt`, `options`, `min`, `max` and sometimes a `default`.
 
 ## Taking actions

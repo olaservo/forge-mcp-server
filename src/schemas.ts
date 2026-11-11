@@ -58,6 +58,7 @@ export const LobbySlot = z.looseObject({
   type: str,
   name: str,
   ready: bool,
+  avatar: num,
   team: num,
   deckName: str,
   hasDeck: bool,
@@ -156,6 +157,7 @@ export const Game = z.looseObject({
   combat: z
     .array(z.looseObject({ attacker: str, attackerId: num, defender: str, blockers: strings }))
     .nullish(),
+  selection: z.looseObject({ min: num, max: num, cards: z.array(BoardCard).nullish() }).nullish(),
 });
 
 export const Status = z.looseObject({

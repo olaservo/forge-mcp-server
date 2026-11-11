@@ -93,6 +93,20 @@ export function registerTools(server: McpServer, bridge: Bridge): void {
   );
 
   server.registerTool(
+    "forge_lobby_avatar",
+    {
+      title: "Set lobby avatar",
+      description:
+        "Choose the avatar picture for our lobby slot by its index in Forge's avatar sheet. " +
+        "Without this the seat uses the avatar from the Forge preferences on the bridge's machine, which matches the host's when both run there.",
+      inputSchema: z.object({ index: z.number().int().min(0) }),
+      outputSchema: out.Lobby,
+      annotations: acting,
+    },
+    async ({ index }) => run(() => bridge.post("/lobby/avatar", { index })),
+  );
+
+  server.registerTool(
     "forge_lobby_deck",
     {
       title: "Set lobby deck",
@@ -165,7 +179,8 @@ export function registerTools(server: McpServer, bridge: Bridge): void {
       title: "Game state",
       description:
         "Full view of the current game: turn, phase, active player, each player's life and zones (our hand, both battlefields, graveyards), " +
-        "the stack, combat, the current prompt text, the OK/Cancel buttons, and any pending decision that must be answered with forge_game_decide.",
+        "the stack, combat, the current prompt text, the OK/Cancel buttons, and any pending decision that must be answered with forge_game_decide. " +
+        "`selection` lists the cards the prompt offers, including cards in a zone the state does not show, such as the library during a search.",
       inputSchema: z.object({}),
       outputSchema: out.Game,
       annotations: readOnly,
