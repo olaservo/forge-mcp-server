@@ -8,6 +8,7 @@ Not affiliated with Card-Forge or Wizards of the Coast.
 
 - **Bridge** (Java, in the Forge fork, `master` of `olaservo/forge`): console mode `agent` in `forge-gui-desktop`, package `forge.agent`. Boots the card database headless and serves `GET /status`, `GET /wait`, `POST /connect`, `POST /lobby/ready`, `POST /lobby/deck`, `POST /chat`, `GET /draft/pack`, `POST /draft/pick`, `GET /draft/pool`, `GET /game`, `GET /game/log`, `POST /game/act`, `POST /game/decide` on `127.0.0.1:36744`.
 - **This server** (TypeScript): tools `forge_status`, `forge_connect`, `forge_disconnect`, `forge_lobby_ready`, `forge_lobby_deck`, `forge_chat`, `forge_draft_pack`, `forge_draft_pick`, `forge_draft_pool`, `forge_game_state`, `forge_game_log`, `forge_game_act`, `forge_game_decide`, `forge_wait`; resources `forge://status`, `forge://game/log`, `forge://draft/pool`; skills `forge-player` and `forge-drafter` served through the MCP skills extension. Every tool declares an `outputSchema` (`src/schemas.ts`) and returns `structuredContent`. A watcher long-polls the bridge and pushes `notifications/resources/updated` for `forge://status` to `subscriptions/listen` subscribers (on stdio through the server, on HTTP through the handler's event bus), so a client that subscribes does not need `forge_wait`.
+- **Events** (experimental): `events/list` and `events/poll` from [SEP-3415](https://github.com/modelcontextprotocol/modelcontextprotocol/pull/3415) (read at `b08e4f9`; error codes provisional), declared as `capabilities.extensions["io.modelcontextprotocol/events"]` and registered as custom methods in `src/events.ts` because SDK 2.4.0 has no events support. One event type, `forge.your_move`, poll delivery only. The watcher emits it when the seat's pending ask changes: a draft pick, a priority prompt, a choice dialog, or the end of a game. Events are kept in memory (1000 entries), cursors are per process, and a cursor from before a restart polls as `truncated`. No push (`events/stream`) or webhook delivery yet.
 
 ## Run
 
@@ -29,7 +30,7 @@ npm start                 # stdio
 npm run start:http        # Streamable HTTP on http://127.0.0.1:3080/mcp (FORGE_MCP_HOST, FORGE_MCP_PORT, FORGE_MCP_ALLOWED_HOSTS)
 ```
 
-Claude Code: `claude mcp add forge -- node <path>/dist/index.js`. Environment: `FORGE_BRIDGE_URL` (default `http://127.0.0.1:36744`).
+Claude Code: `claude mcp add forge -- node <path>/dist/index.js`. Environment: `FORGE_BRIDGE_URL` (default `http://127.0.0.1:36744`). With `FORGE_MCP_PORT` set, the stdio server also serves `/mcp` over HTTP on that port, sharing the same event log. Claude Code 2.1.322 has no MCP Events client, so the `mcp-events` mod in `claude-code-mod/mcp-events` polls `events/poll` there and starts a turn when `forge.your_move` fires. Load it with `claude --plugin-dir <path>/claude-code-mod/mcp-events`; its test runs with `claude plugin test`.
 
 ## Test
 

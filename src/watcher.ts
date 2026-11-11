@@ -12,7 +12,7 @@ export class StatusWatcher {
 
   constructor(
     private readonly bridge: Bridge,
-    private readonly onChange: (revision: number) => void | Promise<void>,
+    private readonly onChange: (revision: number, status: Record<string, unknown>) => void | Promise<void>,
     private readonly opts: { timeoutSeconds?: number; retryMs?: number; sleep?: (ms: number) => Promise<void> } = {},
   ) {}
 
@@ -30,7 +30,7 @@ export class StatusWatcher {
     const sleep = this.opts.sleep ?? ((ms: number) => new Promise<void>((r) => setTimeout(r, ms)));
     while (this.running) {
       try {
-        const status = await this.bridge.get<{ revision: number }>("/wait", {
+        const status = await this.bridge.get<{ revision: number } & Record<string, unknown>>("/wait", {
           since: this.since,
           timeout: this.opts.timeoutSeconds ?? 30,
         });
@@ -38,7 +38,7 @@ export class StatusWatcher {
         const seeded = this.since >= 0;
         if (status.revision !== this.since) {
           this.since = status.revision;
-          if (seeded) await this.onChange(status.revision);
+          if (seeded) await this.onChange(status.revision, status);
         }
       } catch {
         if (!this.running) return;

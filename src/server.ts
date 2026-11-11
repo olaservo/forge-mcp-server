@@ -1,8 +1,9 @@
 import { fileURLToPath } from "node:url";
-import { McpServer } from "@modelcontextprotocol/server";
+import { McpServer, type ServerCapabilities } from "@modelcontextprotocol/server";
 import type { SkillCatalog } from "@modelcontextprotocol/server/ext/skills";
 import { loadSkills } from "@modelcontextprotocol/server/ext/skills/node";
 import { Bridge } from "./bridge.js";
+import { EventLog, registerEvents } from "./events.js";
 import { registerTools } from "./tools/index.js";
 
 export const SERVER_INFO = { name: "forge-mcp-server", version: "0.1.0" } as const;
@@ -21,21 +22,29 @@ export function skillCatalog(): Promise<SkillCatalog> {
 export interface CreateServerOptions {
   bridge?: Bridge;
   skills?: SkillCatalog;
+  /** Shared across server instances so every request polls the same log. */
+  events?: EventLog;
 }
 
 export function createServer(opts: CreateServerOptions = {}): McpServer {
   const bridge = opts.bridge ?? new Bridge();
   const server = new McpServer(SERVER_INFO, {
     // subscribe: lets subscriptions/listen honour resourceSubscriptions for forge://status
-    capabilities: { resources: { subscribe: true, listChanged: true } },
+    // extensions: MCP Events (SEP-3415), declared through extension negotiation
+    capabilities: {
+      resources: { subscribe: true, listChanged: true },
+      extensions: { "io.modelcontextprotocol/events": {} },
+    } as ServerCapabilities,
     instructions:
       "Forge (Card-Forge) seat for an agent. Tools drive one headless Forge client that joins a host's online lobby, " +
       "drafts and plays. Start with forge_status, then forge_connect. Load the forge-player skill (skill://forge/forge-player/SKILL.md) " +
       "before playing and forge-drafter before drafting. Use forge_wait between turns instead of polling, " +
-      "or subscribe to forge://status through subscriptions/listen to be told when the seat changes.",
+      "or subscribe to forge://status through subscriptions/listen to be told when the seat changes. " +
+      "A client that speaks MCP Events can subscribe to forge.your_move and is woken when the seat has to act.",
   });
 
   registerTools(server, bridge);
+  registerEvents(server, opts.events ?? new EventLog());
 
   server.registerResource(
     "status",

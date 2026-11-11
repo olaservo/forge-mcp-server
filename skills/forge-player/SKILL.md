@@ -18,6 +18,8 @@ You are one seat in a Forge online lobby. A headless Forge client (the bridge) h
 
 Use `forge_wait` instead of calling `forge_status` in a tight loop. It returns as soon as a pack, a prompt or a decision appears.
 
+If your client delivers `forge.your_move` events, do not wait at all. Act on what the status shows, and when the prompt reads "Waiting for ..." end your turn. The next event starts a new one.
+
 ## Reading the game state
 
 - `prompt` is the text Forge shows above the buttons, for example "Play spells and abilities, or pass priority" or "Declare attackers". It tells you what the current input wants.

@@ -1,0 +1,25 @@
+{
+  "name": "mcp-events",
+  "version": "0.1.0",
+  "description": "Polls MCP Events (events/list, events/poll) on an MCP server's HTTP endpoint and starts a turn when one fires",
+  "userConfig": {
+    "url": {
+      "type": "string",
+      "title": "MCP endpoint",
+      "description": "Streamable HTTP endpoint of the server whose events to poll",
+      "default": "http://127.0.0.1:3080/mcp"
+    },
+    "server": {
+      "type": "string",
+      "title": "Server name",
+      "description": "The server's name in /mcp, used to tell the model whose tools to use",
+      "default": "forge"
+    },
+    "events": {
+      "type": "string",
+      "title": "Event names",
+      "description": "Comma-separated event names to subscribe to; empty: every event the server lists with poll delivery",
+      "default": ""
+    }
+  }
+}

@@ -1,6 +1,7 @@
 import { Client, StreamableHTTPClientTransport } from "@modelcontextprotocol/client";
 import { InMemoryServerEventBus, createMcpHandler } from "@modelcontextprotocol/server";
 import { Bridge } from "../src/bridge.js";
+import type { EventLog } from "../src/events.js";
 import { createServer, skillCatalog } from "../src/server.js";
 
 /** A fake Forge bridge: records calls and answers with canned JSON keyed by `METHOD /path`. */
@@ -20,9 +21,9 @@ export function fakeBridge(responses: Record<string, unknown>) {
 }
 
 /** An in-process MCP client over the Streamable HTTP handler, with no sockets. */
-export async function connect(bridge: Bridge, bus?: InMemoryServerEventBus) {
+export async function connect(bridge: Bridge, bus?: InMemoryServerEventBus, events?: EventLog) {
   const skills = await skillCatalog();
-  const handler = createMcpHandler(() => createServer({ bridge, skills }), bus ? { bus } : {});
+  const handler = createMcpHandler(() => createServer({ bridge, skills, events }), bus ? { bus } : {});
   const transport = new StreamableHTTPClientTransport(new URL("http://test.local/mcp"), {
     fetch: (url, init) => handler.fetch(new Request(url, init)),
   });

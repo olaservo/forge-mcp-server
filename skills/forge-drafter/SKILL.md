@@ -12,7 +12,7 @@ The host configures the event in their lobby (product, pod size, pick timer) and
 1. `forge_connect`, then `forge_lobby_ready` straight away: the host cannot start the event while any seat is unready, and in a Limited lobby no deck is needed to be ready before the draft. Then `forge_wait` until `draft.pickPending` is true.
 2. `forge_draft_pack`: `packNumber`, `pickNumber`, `timerSeconds` (0 means no clock) and `pack[]` with each card's `index`, `name`, `manaCost`, `type`, `colors`, `power`, `toughness`, `rarity` and `oracle`.
 3. Decide, then `forge_draft_pick {card: "<exact name>"}` (or the index). The result confirms the card.
-4. `forge_wait` with the returned `revision` until the next pack arrives or `draft.poolReceived` becomes true.
+4. `forge_wait` with the returned `revision` until the next pack arrives or `draft.poolReceived` becomes true. If your client delivers `forge.your_move` events, end your turn here instead; the next pack starts a new one.
 
 If the pick timer runs out the host auto-picks for you; those cards show up in `draft.autoPicks`. Keep picks under the timer: decide from the pack text you have, do not fetch extra data on the clock unless the timer is generous.
 
