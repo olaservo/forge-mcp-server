@@ -24,6 +24,17 @@ describe("events", () => {
     expect(moves.observe(pick)?.data).toMatchObject({ kind: "draft_pick" });
   });
 
+  it("emits game_over once when the seat is already back in the lobby", () => {
+    const moves = new MoveTracker(new EventLog());
+    const over = { revision: 9, game: { inGame: false, finished: true, gameOver: true, winner: "Agent", turn: 14 } };
+    expect(moves.observe(priority("Priority: Agent", 8))?.data).toMatchObject({ kind: "priority" });
+    expect(moves.observe(over)?.data).toMatchObject({ kind: "game_over", prompt: "Game over. Winner: Agent" });
+    expect(moves.observe({ ...over, revision: 10 })).toBeUndefined();
+    const pick = { ...over, revision: 11, draft: { pickPending: true, packNumber: 1, pickNumber: 1 } };
+    expect(moves.observe(pick)?.data).toMatchObject({ kind: "draft_pick" });
+    expect(moves.observe({ ...over, revision: 12 })).toBeUndefined();
+  });
+
   it("emits forge.chat for new lines from other players only", () => {
     const chat = new ChatTracker(new EventLog());
     const seat = { connection: { name: "Claude" }, lobby: { slots: [{ name: "Ola" }, { name: "Claude" }] } };

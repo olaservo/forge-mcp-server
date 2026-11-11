@@ -114,19 +114,29 @@ export function pendingMove(status: SeatStatus): { key: string; data: Record<str
     const prompt = `Pack ${draft.packNumber}, pick ${draft.pickNumber}`;
     return { key: `draft_pick:${draft.packNumber}:${draft.pickNumber}`, data: { kind: "draft_pick", prompt, revision } };
   }
+  // The host can return the seat to the lobby as the game ends, so the result arrives with inGame false.
+  // It stays in the status afterwards. The key does not change, so it fires once.
+  if (game?.gameOver || game?.finished) {
+    const data = { kind: "game_over", prompt: `Game over. Winner: ${game.winner ?? ""}`, revision, turn: game.turn, phase: game.phase };
+    return { key: `game_over:${game.turn}:${game.winner}`, data };
+  }
   return undefined;
 }
 
 /** Emits `forge.your_move` each time the seat's pending ask changes to a new one. */
 export class MoveTracker {
   private last: string | undefined;
+  /** The finished game already reported. Its result stays in the status under later asks. */
+  private reported: string | undefined;
 
   constructor(private readonly log: EventLog) {}
 
   observe(status: SeatStatus): EventOccurrence | undefined {
-    const move = pendingMove(status);
+    const pending = pendingMove(status);
+    const move = pending?.data.kind === "game_over" && pending.key === this.reported ? undefined : pending;
     const changed = move !== undefined && move.key !== this.last;
     this.last = move?.key;
+    if (changed && move.data.kind === "game_over") this.reported = move.key;
     return changed ? this.log.emit(YOUR_MOVE, move.data) : undefined;
   }
 }
