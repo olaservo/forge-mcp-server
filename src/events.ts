@@ -3,13 +3,13 @@ import { type McpServer, ProtocolError } from "@modelcontextprotocol/server";
 import { z } from "zod";
 
 /**
- * MCP Events (SEP-3415, read at b08e4f9), poll delivery only.
+ * MCP Events (SEP-3415, Accepted 2026-11-11, read at f77a5fe), poll delivery only.
  * `events/list` and `events/poll` are registered as custom methods because SDK 2.4.0 has no events support.
  */
 export const YOUR_MOVE = "forge.your_move";
 export const CHAT = "forge.chat";
 
-/** `-32023 NotFound`, provisional until SEP-3415 is accepted. */
+/** `-32023 NotFound`. The SEP is accepted; the number is final once the SEP merges with no other code allocated before it. */
 const NOT_FOUND = -32023;
 const POLL_MS = 1000;
 
