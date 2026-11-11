@@ -64,6 +64,8 @@ export const LobbySlot = z.looseObject({
   hasDeck: bool,
 });
 
+export const Avatars = z.looseObject({ count: num, page: num, pages: num, first: num, last: num });
+
 export const EventView = z.looseObject({
   eventId: str,
   format: str,

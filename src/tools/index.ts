@@ -1,5 +1,6 @@
 import type { CallToolResult, McpServer } from "@modelcontextprotocol/server";
 import { z } from "zod";
+import { avatarPage, avatarSheetPath, AVATARS_PER_PAGE } from "../avatars.js";
 import { Bridge, BridgeError } from "../bridge.js";
 import * as out from "../schemas.js";
 
@@ -93,11 +94,40 @@ export function registerTools(server: McpServer, bridge: Bridge): void {
   );
 
   server.registerTool(
+    "forge_lobby_avatars",
+    {
+      title: "Show lobby avatars",
+      description:
+        `A picture of the avatars a seat can use, ${AVATARS_PER_PAGE} per page, each with its index underneath. ` +
+        "Look before choosing one with forge_lobby_avatar. Read from Forge's default skin on this machine.",
+      inputSchema: z.object({ page: z.number().int().min(0).default(0) }),
+      outputSchema: out.Avatars,
+      annotations: readOnly,
+    },
+    async ({ page }) => {
+      try {
+        const path = avatarSheetPath();
+        if (!path) throw new Error("Set FORGE_HOME (the forge-gui folder) or FORGE_AVATARS (the sprite_avatars.png file).");
+        const { png, ...info } = await avatarPage(path, page);
+        return {
+          content: [
+            { type: "image", data: png.toString("base64"), mimeType: "image/png" },
+            { type: "text", text: JSON.stringify(info) },
+          ],
+          structuredContent: info,
+        };
+      } catch (e) {
+        return failure(e);
+      }
+    },
+  );
+
+  server.registerTool(
     "forge_lobby_avatar",
     {
       title: "Set lobby avatar",
       description:
-        "Choose the avatar picture for our lobby slot by its index in Forge's avatar sheet. " +
+        "Choose the avatar picture for our lobby slot by its index. forge_lobby_avatars shows the pictures and their indices. " +
         "Without this the seat uses the avatar from the Forge preferences on the bridge's machine, which matches the host's when both run there.",
       inputSchema: z.object({ index: z.number().int().min(0) }),
       outputSchema: out.Lobby,

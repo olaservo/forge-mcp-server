@@ -2,7 +2,7 @@ import { readFileSync } from "node:fs";
 import { describe, expect, it } from "vitest";
 import type { z } from "zod";
 import * as out from "../src/schemas.js";
-import { connect, fakeBridge } from "./helpers.js";
+import { avatarSheet, connect, fakeBridge } from "./helpers.js";
 
 /**
  * Real bridge payloads, recorded by the Java tests (`BridgeHttp.saveFixtures` in
@@ -57,6 +57,7 @@ describe("bridge fixtures", () => {
     }
     // No recording yet: the bridge answers /lobby/avatar with the same lobby snapshot as /lobby/ready.
     responses["POST /lobby/avatar"] = responses["POST /lobby/ready"];
+    process.env.FORGE_AVATARS = avatarSheet(3, 2);
     const { bridge, calls } = fakeBridge(responses);
     const client = await connect(bridge);
     const args: Record<string, Record<string, unknown>> = {
@@ -65,6 +66,7 @@ describe("bridge fixtures", () => {
       forge_disconnect: {},
       forge_lobby_ready: { ready: true },
       forge_lobby_avatar: { index: 3 },
+      forge_lobby_avatars: { page: 0 },
       forge_lobby_deck: { dck: "[Main]\n40 Plains" },
       forge_chat: { text: "hi" },
       forge_draft_pack: {},
@@ -83,7 +85,8 @@ describe("bridge fixtures", () => {
       expect(res.isError, `${tool.name}: ${JSON.stringify(res.content)}`).toBeFalsy();
       expect(res.structuredContent, `${tool.name} returned structuredContent`).toBeDefined();
     }
-    expect(calls.length).toBeGreaterThanOrEqual(tools.length);
+    // forge_lobby_avatars reads a file and does not call the bridge.
+    expect(calls.length).toBeGreaterThanOrEqual(tools.length - 1);
     await client.close();
   });
 });

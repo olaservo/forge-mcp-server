@@ -10,7 +10,7 @@ You are one seat in a Forge online lobby. A headless Forge client (the bridge) h
 ## Session loop
 
 1. `forge_status`. If the bridge is down the result says how to start it.
-2. `forge_connect` with the host's address (default port 36743) and your display name. The host sees you join a lobby slot.
+2. `forge_connect` with the host's address (default port 36743) and your display name. The host sees you join a lobby slot. To choose your portrait, look at `forge_lobby_avatars` and set one with `forge_lobby_avatar`.
 3. In a Limited lobby, `forge_lobby_deck` (no arguments uses the pool you drafted) then `forge_lobby_ready`. In a constructed lobby, name a deck from Forge's deck folders or submit `.dck` text.
 4. Wait with `forge_wait` (pass the last `revision`) until `game.inGame` is true.
 5. Play: alternate `forge_game_state` and one action until `game.gameOver` is true. `winner` then names who won.
