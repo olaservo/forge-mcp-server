@@ -12,10 +12,7 @@ describe("events", () => {
   it("emits forge.your_move once per new ask and not while waiting", () => {
     const moves = new MoveTracker(new EventLog());
     expect(moves.observe({ revision: 1, game: { inGame: true, prompt: "Waiting for HostAI...", buttons: { okEnabled: true } } })).toBeUndefined();
-    const yielding = "Yielding until end of turn.
-You may cancel this yield to take an action.
-
-Waiting for HostAI...";
+    const yielding = "Yielding until end of turn.\nYou may cancel this yield to take an action.\n\nWaiting for HostAI...";
     expect(moves.observe({ revision: 1, game: { inGame: true, prompt: yielding, buttons: { cancelEnabled: true } } })).toBeUndefined();
     expect(moves.observe(priority("Priority: Agent", 2))?.data).toMatchObject({ kind: "priority", revision: 2 });
     expect(moves.observe(priority("Priority: Agent", 3))).toBeUndefined();
