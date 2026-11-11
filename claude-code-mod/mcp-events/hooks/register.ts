@@ -12,6 +12,8 @@ type Subscription = { name: string; cursor: string | null; nextAt: number; hasPo
 
 const POLL_FLOOR_MS = 1000
 const LIST_RETRY_MS = 5000
+/** The server may gain or lose event types without the connection failing, so the list is read again this often. */
+const LIST_REFRESH_MS = 60_000
 const MAX_AGE_MS = 300_000
 /** A tool result may predate its return by this much, so an event this close to it is still delivered. */
 const TOOL_MARGIN_MS = 100
@@ -50,11 +52,14 @@ async function rpc<T>($: EngineInterface, url: string, method: string, params: {
   return message.result
 }
 
-async function subscribe($: EngineInterface, url: string, wanted: readonly string[]): Promise<Subscription[]> {
+/** Lists the server's poll events. A subscription already held keeps its cursor. */
+async function subscribe($: EngineInterface, url: string, wanted: readonly string[], current: readonly Subscription[] = []): Promise<Subscription[]> {
   const { events } = await rpc<{ events: EventType[] }>($, url, 'events/list', {})
   const names = events.filter(e => e.delivery.includes('poll') && (wanted.length === 0 || wanted.includes(e.name))).map(e => e.name)
   return Promise.all(
     names.map(async name => {
+      const held = current.find(s => s.name === name)
+      if (held) return held
       const stored = await $.store.get(storeKey(url, name))
       return { name, cursor: typeof stored === 'string' ? stored : null, nextAt: 0, hasPolled: false }
     }),
@@ -107,6 +112,8 @@ async function pollOne($: EngineInterface, url: string, sub: Subscription) {
     }
     // A stale cursor on the first poll is a restart of either side: nothing this session was missed.
     if (res.truncated && sub.hasPolled) missed.add(sub.name)
+    // A truncated poll usually means the server restarted, possibly with other event types.
+    if (res.truncated) listAt = 0
     sub.hasPolled = true
     for (const event of res.events) {
       if (seen.has(event.eventId)) continue
@@ -126,6 +133,10 @@ async function tick($: EngineInterface, url: string, wanted: readonly string[]) 
       if (Date.now() < listAt) return
       listAt = Date.now() + LIST_RETRY_MS
       subscriptions = await subscribe($, url, wanted)
+      listAt = Date.now() + LIST_REFRESH_MS
+    } else if (Date.now() >= listAt) {
+      listAt = Date.now() + LIST_REFRESH_MS
+      subscriptions = await subscribe($, url, wanted, subscriptions)
     }
     for (const sub of subscriptions) {
       if (Date.now() >= sub.nextAt) await pollOne($, url, sub)
@@ -135,6 +146,7 @@ async function tick($: EngineInterface, url: string, wanted: readonly string[]) 
     lastError = err instanceof Error ? err.message : String(err)
     // The server may have restarted with other event types: list again.
     subscriptions = undefined
+    listAt = Date.now() + LIST_RETRY_MS
   } finally {
     isTicking = false
   }
