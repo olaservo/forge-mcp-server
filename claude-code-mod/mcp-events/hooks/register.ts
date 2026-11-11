@@ -1,7 +1,7 @@
 import type { EngineInterface, Register } from 'claude-code'
 
 /**
- * A client for MCP Events poll delivery (experimental-ext-triggers-events design sketch), for
+ * A client for MCP Events poll delivery (SEP-3415), for
  * Claude Code builds without one. It polls the server over HTTP because a mod cannot send
  * a custom method on the engine's own MCP connection.
  */
@@ -13,6 +13,8 @@ type Subscription = { name: string; cursor: string | null; nextAt: number; hasPo
 const POLL_FLOOR_MS = 1000
 const LIST_RETRY_MS = 5000
 const MAX_AGE_MS = 300_000
+/** A tool result may predate its return by this much, so an event this close to it is still delivered. */
+const TOOL_MARGIN_MS = 100
 
 let subscriptions: Subscription[] | undefined
 let listAt = 0
@@ -21,6 +23,8 @@ let isTurnRunning = false
 let lastError: string | undefined
 let fired = 0
 let nextId = 1
+/** When the model last got a result from one of the server's tools. */
+let lastToolAt = 0
 const seen = new Set<string>()
 /** Events not yet submitted, newest per name: a burst, or what arrived during a turn, wakes the model once. */
 const held = new Map<string, Occurrence>()
@@ -74,13 +78,15 @@ function submit($: EngineInterface, text: string) {
 }
 
 /** Submits what is held, between turns. Called from the timer and from turn.complete. */
-function flush($: EngineInterface, server: string) {
+function flush($: EngineInterface, server: string, superseded: readonly string[]) {
   if (isTurnRunning) return
   for (const name of missed) {
     $.ui.toast(`Events may have been missed: ${server} ${name}`)
     submit($, `The ${server} server reports that ${name} events may have been missed. Read the current state with the ${server} tools and act if something is needed, then end your turn.`)
   }
   for (const event of held.values()) {
+    // The model has read the server's state since this event, so it has already seen what the event reports.
+    if (superseded.includes(event.name) && Date.parse(event.timestamp) <= lastToolAt) continue
     fired++
     $.ui.toast(`Event triggered: ${server} ${event.name}`)
     submit($, eventPrompt(server, event))
@@ -139,11 +145,19 @@ export const register: Register = (on, options) => {
   const url = String(options.url ?? 'http://127.0.0.1:3080/mcp')
   const server = String(options.server ?? 'forge')
   const wanted = String(options.events ?? '').split(',').map(s => s.trim()).filter(Boolean)
+  const superseded = String(options.superseded ?? 'forge.your_move').split(',').map(s => s.trim()).filter(Boolean)
+  const toolPrefix = `mcp__${server}__`
 
   on('session.start', async ($, e, next) => {
     await $.command.register({ name: 'mcp-events', description: 'Poll MCP events now and show the subscriptions' })
-    $.clock.every(POLL_FLOOR_MS, () => void tick($, url, wanted).then(() => flush($, server)))
+    $.clock.every(POLL_FLOOR_MS, () => void tick($, url, wanted).then(() => flush($, server, superseded)))
     return next(e)
+  })
+
+  on('tool.call', async ($, e, next) => {
+    const result = await next(e)
+    if (String(e.tool).startsWith(toolPrefix)) lastToolAt = Date.now() - TOOL_MARGIN_MS
+    return result
   })
 
   on('turn.start', ($, e, next) => {
@@ -155,7 +169,7 @@ export const register: Register = (on, options) => {
     const done = await next(e)
     if (e.agentId !== undefined) return done
     isTurnRunning = false
-    flush($, server)
+    flush($, server, superseded)
     return done
   })
 

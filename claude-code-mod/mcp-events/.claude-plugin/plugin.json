@@ -20,6 +20,12 @@
       "title": "Event names",
       "description": "Comma-separated event names to subscribe to; empty: every event the server lists with poll delivery",
       "default": ""
+    },
+    "superseded": {
+      "type": "string",
+      "title": "Superseded event names",
+      "description": "Comma-separated event names that are dropped when the model has called one of the server's tools since the event",
+      "default": "forge.your_move"
     }
   }
 }
