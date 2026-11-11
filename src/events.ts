@@ -3,10 +3,11 @@ import { type McpServer, ProtocolError } from "@modelcontextprotocol/server";
 import { z } from "zod";
 
 /**
- * MCP Events (experimental-ext-triggers-events design sketch at d5316be), poll delivery only.
+ * MCP Events (SEP-3415, read at b08e4f9), poll delivery only.
  * `events/list` and `events/poll` are registered as custom methods because SDK 2.4.0 has no events support.
  */
 export const YOUR_MOVE = "forge.your_move";
+export const CHAT = "forge.chat";
 
 /** `-32023 NotFound`, provisional until SEP-3415 is accepted. */
 const NOT_FOUND = -32023;
@@ -74,6 +75,9 @@ export class EventLog {
 
 interface SeatStatus {
   revision?: number;
+  chat?: string[] | null;
+  connection?: { name?: string | null } | null;
+  lobby?: { slots?: { name?: string | null }[] | null } | null;
   draft?: { pickPending?: boolean | null; packNumber?: number | null; pickNumber?: number | null } | null;
   game?: {
     inGame?: boolean | null;
@@ -127,6 +131,35 @@ export class MoveTracker {
   }
 }
 
+/**
+ * Emits `forge.chat` for each new chat line from another player. The bridge reports the last 20 lines,
+ * so new lines are the ones after the overlap with the previous report. Lines from the server and from
+ * our own seat are skipped.
+ */
+export class ChatTracker {
+  private last: string[] | undefined;
+
+  constructor(private readonly log: EventLog) {}
+
+  observe(status: SeatStatus): EventOccurrence[] {
+    const lines = status.chat ?? [];
+    const prev = this.last;
+    this.last = lines;
+    if (prev === undefined) return [];
+    let shift = 0;
+    while (shift < prev.length && !prev.slice(shift).every((line, i) => lines[i] === line)) shift++;
+    const me = status.connection?.name;
+    const others = new Set((status.lobby?.slots ?? []).map((s) => s.name).filter((n) => n && n !== me));
+    const emitted: EventOccurrence[] = [];
+    for (const line of lines.slice(prev.length - shift)) {
+      const at = line.indexOf(": ");
+      const from = at > 0 ? line.slice(0, at) : "";
+      if (others.has(from)) emitted.push(this.log.emit(CHAT, { from, text: line.slice(at + 2), revision: status.revision }));
+    }
+    return emitted;
+  }
+}
+
 const EVENT_TYPES = [
   {
     name: YOUR_MOVE,
@@ -146,6 +179,21 @@ const EVENT_TYPES = [
         phase: { type: "string" },
       },
       required: ["kind"],
+    },
+  },
+  {
+    name: CHAT,
+    description: "Fires when another player says something in the lobby or game chat. Answer with forge_chat.",
+    delivery: ["poll"],
+    inputSchema: { type: "object", properties: {} },
+    payloadSchema: {
+      type: "object",
+      properties: {
+        from: { type: "string" },
+        text: { type: "string" },
+        revision: { type: "integer", description: "Bridge revision the line was seen at" },
+      },
+      required: ["from", "text"],
     },
   },
 ];

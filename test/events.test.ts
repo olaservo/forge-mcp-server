@@ -1,6 +1,6 @@
 import { describe, expect, it } from "vitest";
 import { z } from "zod";
-import { EventLog, MoveTracker, YOUR_MOVE, type PollResult } from "../src/events.js";
+import { CHAT, ChatTracker, EventLog, MoveTracker, YOUR_MOVE, type PollResult } from "../src/events.js";
 import { connect, fakeBridge } from "./helpers.js";
 
 const priority = (prompt: string, revision: number) => ({
@@ -24,6 +24,19 @@ describe("events", () => {
     expect(moves.observe(pick)?.data).toMatchObject({ kind: "draft_pick" });
   });
 
+  it("emits forge.chat for new lines from other players only", () => {
+    const chat = new ChatTracker(new EventLog());
+    const seat = { connection: { name: "Claude" }, lobby: { slots: [{ name: "Ola" }, { name: "Claude" }] } };
+    const old = ["Claude joined the lobby.", "AFK timeout: 5:00", "Ola: before we were watching"];
+    expect(chat.observe({ ...seat, chat: old })).toEqual([]);
+    expect(chat.observe({ ...seat, chat: old })).toEqual([]);
+    const next = chat.observe({ ...seat, revision: 9, chat: [...old, "Claude: hi", "Ola: do you see this?", "AFK timeout: 4:00"] });
+    expect(next.map((e) => e.data)).toEqual([{ from: "Ola", text: "do you see this?", revision: 9 }]);
+    const full = Array.from({ length: 20 }, (_, i) => `Ola: line ${i}`);
+    chat.observe({ ...seat, chat: full });
+    expect(chat.observe({ ...seat, chat: [...full.slice(2), "Ola: one", "Ola: two"] }).map((e) => e.data.text)).toEqual(["one", "two"]);
+  });
+
   it("serves events/list and events/poll with cursors", async () => {
     const { bridge } = fakeBridge({});
     const log = new EventLog();
@@ -31,7 +44,7 @@ describe("events", () => {
     const Any = z.looseObject({});
 
     const listed = (await client.request({ method: "events/list", params: {} }, Any)) as { events: { name: string; delivery: string[] }[] };
-    expect(listed.events.map((e) => [e.name, e.delivery])).toEqual([[YOUR_MOVE, ["poll"]]]);
+    expect(listed.events.map((e) => [e.name, e.delivery])).toEqual([[YOUR_MOVE, ["poll"]], [CHAT, ["poll"]]]);
 
     const poll = (cursor: string | null) =>
       client.request({ method: "events/poll", params: { name: YOUR_MOVE, arguments: {}, cursor } }, Any) as Promise<PollResult>;
