@@ -1,24 +1,42 @@
+import { createHash, timingSafeEqual } from "node:crypto";
 import { createServer as createHttpServer } from "node:http";
+import type { AddressInfo } from "node:net";
 import { hostHeaderValidation, toNodeHandler } from "@modelcontextprotocol/node";
-import { InMemoryServerEventBus, createMcpHandler } from "@modelcontextprotocol/server";
+import { type AuthInfo, InMemoryServerEventBus, createMcpHandler } from "@modelcontextprotocol/server";
 import type { SkillCatalog } from "@modelcontextprotocol/server/ext/skills";
 import { STATUS_URI, createServer } from "../server.js";
 import type { Bridge } from "../bridge.js";
 import type { EventLog } from "../events.js";
+import { WebhookHub } from "../webhooks.js";
 
 export interface HttpOptions {
   bridge: Bridge;
   skills: SkillCatalog;
   events: EventLog;
   port: number;
+  /** Bearer token every request must carry. Defaults to `FORGE_MCP_TOKEN`. Webhook delivery is offered only with one. */
+  token?: string;
+  /** Defaults to a hub configured from `FORGE_MCP_SUBSCRIPTIONS` and `FORGE_MCP_WEBHOOK_INSECURE` when there is a token. */
+  webhooks?: WebhookHub;
 }
 
-/** Serves `/mcp` over Streamable HTTP. Servers are per request, so resource updates go on the handler's event bus. */
-export function listenHttp({ bridge, skills, events, port }: HttpOptions) {
+const digest = (value: string) => createHash("sha256").update(value).digest();
+
+/**
+ * Serves `/mcp` over Streamable HTTP. Servers are per request, so resource updates go on the handler's event bus.
+ * With a token, a request without `Authorization: Bearer <token>` gets 401, and the caller's principal is
+ * `token:` and the first 8 hex digits of the token's SHA-256.
+ */
+export function listenHttp({ bridge, skills, events, port, ...opts }: HttpOptions) {
   const host = process.env.FORGE_MCP_HOST ?? "127.0.0.1";
   const allowedHosts = (process.env.FORGE_MCP_ALLOWED_HOSTS ?? `${host},localhost,127.0.0.1`).split(",").map((s) => s.trim());
+  const token = opts.token ?? process.env.FORGE_MCP_TOKEN;
+  const webhooks =
+    opts.webhooks ??
+    (token ? new WebhookHub(events, { file: process.env.FORGE_MCP_SUBSCRIPTIONS, insecure: process.env.FORGE_MCP_WEBHOOK_INSECURE === "1" }) : undefined);
+  const auth: AuthInfo | undefined = token ? { token, clientId: `token:${digest(token).toString("hex").slice(0, 8)}`, scopes: [] } : undefined;
   const bus = new InMemoryServerEventBus((e) => console.error(`[forge-mcp-server] ${e.message}`));
-  const handler = createMcpHandler(() => createServer({ bridge, skills, events }), { bus });
+  const handler = createMcpHandler((ctx) => createServer({ bridge, skills, events, webhooks, principal: ctx.authInfo?.clientId }), { bus });
   const nodeHandler = toNodeHandler(handler);
   const guard = hostHeaderValidation(allowedHosts);
 
@@ -29,12 +47,25 @@ export function listenHttp({ bridge, skills, events, port }: HttpOptions) {
       res.end("forge-mcp-server: POST /mcp");
       return;
     }
-    void nodeHandler(req, res);
+    if (token) {
+      const given = /^Bearer (.+)$/i.exec(req.headers.authorization ?? "")?.[1] ?? "";
+      if (!timingSafeEqual(digest(given), digest(token))) {
+        res.writeHead(401, { "www-authenticate": "Bearer" });
+        res.end("forge-mcp-server: missing or wrong bearer token");
+        return;
+      }
+    }
+    void nodeHandler(Object.assign(req, { auth }), res);
   });
-  http.listen(port, host, () => console.error(`forge-mcp-server on http://${host}:${port}/mcp; bridge at ${bridge.url}`));
+  http.listen(port, host, () => {
+    const mode = token ? "bearer token required" : "no authentication";
+    console.error(`forge-mcp-server on http://${host}:${(http.address() as AddressInfo).port}/mcp (${mode}); bridge at ${bridge.url}`);
+  });
 
   return {
     statusChanged: () => bus.publish({ kind: "resource_updated", uri: STATUS_URI }),
+    /** The port in use, once listening. */
+    port: () => (http.address() as AddressInfo).port,
     close: () => {
       http.close();
       void handler.close();

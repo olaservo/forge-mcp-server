@@ -1,0 +1,31 @@
+{
+  "$schema": "https://agent-plugins.org/schemas/1.0.0/plugin.schema.json",
+  "name": "forge-seat",
+  "version": "0.1.0",
+  "description": "Take a seat in a Forge (Card-Forge) online lobby: draft, play, and get woken when it is your move.",
+  "author": {
+    "name": "Carbon-Based Content LLC",
+    "url": "https://www.carbonbasedcontent.com"
+  },
+  "homepage": "https://github.com/olaservo/forge-mcp-server",
+  "repository": "https://github.com/olaservo/forge-mcp-server",
+  "license": "MIT",
+  "keywords": ["mcp", "magic-the-gathering", "forge", "draft"],
+  "extensions": {
+    "com.openai": {
+      "interface": {
+        "displayName": "Forge Seat",
+        "shortDescription": "Draft and play Magic in a Forge online lobby",
+        "longDescription": "Connects to a forge-mcp-server you run beside Forge. The tools join a host's lobby, draft and play one seat. The server sends forge.your_move and forge.chat as MCP Events, so a chat subscribed to them is started when the seat has to act or another player speaks.",
+        "developerName": "Carbon-Based Content LLC",
+        "category": "Entertainment",
+        "capabilities": ["Read", "Write"],
+        "websiteURL": "https://github.com/olaservo/forge-mcp-server",
+        "defaultPrompt": [
+          "Join my Forge lobby with Forge Seat, subscribe to forge.your_move and forge.chat, and play each time it is your move.",
+          "Use Forge Seat to draft in my Forge lobby and tell me each pick."
+        ]
+      }
+    }
+  }
+}

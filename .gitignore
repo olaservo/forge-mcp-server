@@ -3,3 +3,4 @@ dist/
 *.log
 .DS_Store
 claude-code-mod/**/.claude-plugin/types/
+chatgpt-plugin/build/

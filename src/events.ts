@@ -1,16 +1,15 @@
 import { randomUUID } from "node:crypto";
 import { type McpServer, ProtocolError } from "@modelcontextprotocol/server";
 import { z } from "zod";
+import { FORBIDDEN, INVALID_PARAMS, NOT_FOUND, UNSUPPORTED, type WebhookHub } from "./webhooks.js";
 
 /**
- * MCP Events (SEP-3415, Accepted 2026-11-11, read at f77a5fe), poll delivery only.
- * `events/list` and `events/poll` are registered as custom methods because SDK 2.4.0 has no events support.
+ * MCP Events (SEP-3415, Accepted 2026-11-11, read at f77a5fe), poll and webhook delivery.
+ * The `events/*` methods are registered as custom methods because SDK 2.4.0 has no events support.
  */
 export const YOUR_MOVE = "forge.your_move";
 export const CHAT = "forge.chat";
 
-/** `-32023 NotFound`. The SEP is accepted; the number is final once the SEP merges with no other code allocated before it. */
-const NOT_FOUND = -32023;
 const POLL_MS = 1000;
 
 export interface EventOccurrence {
@@ -35,15 +34,22 @@ export interface PollResult {
 export class EventLog {
   private readonly epoch = randomUUID().slice(0, 8);
   private readonly entries: { seq: number; event: EventOccurrence }[] = [];
+  private readonly listeners: ((event: EventOccurrence) => void)[] = [];
   private seq = 0;
 
   constructor(private readonly capacity = 1000) {}
+
+  /** Calls `listener` with each event as it is emitted. */
+  onEmit(listener: (event: EventOccurrence) => void): void {
+    this.listeners.push(listener);
+  }
 
   emit(name: string, data: Record<string, unknown>): EventOccurrence {
     const seq = ++this.seq;
     const event = { eventId: `${this.epoch}-${seq}`, name, timestamp: new Date().toISOString(), data };
     this.entries.push({ seq, event });
     if (this.entries.length > this.capacity) this.entries.shift();
+    for (const listener of this.listeners) listener(event);
     return event;
   }
 
@@ -171,14 +177,15 @@ export class ChatTracker {
   }
 }
 
+const NO_ARGUMENTS = { type: "object", properties: {}, additionalProperties: false };
+
 const EVENT_TYPES = [
   {
     name: YOUR_MOVE,
     description:
       "Fires when the Forge seat is asked to act: a draft pick, a priority prompt, a choice dialog, or the end of a game. " +
       "The payload is a summary. Read the full state with forge_status before acting.",
-    delivery: ["poll"],
-    inputSchema: { type: "object", properties: {} },
+    inputSchema: NO_ARGUMENTS,
     payloadSchema: {
       type: "object",
       properties: {
@@ -195,8 +202,7 @@ const EVENT_TYPES = [
   {
     name: CHAT,
     description: "Fires when another player says something in the lobby or game chat. Answer with forge_chat.",
-    delivery: ["poll"],
-    inputSchema: { type: "object", properties: {} },
+    inputSchema: NO_ARGUMENTS,
     payloadSchema: {
       type: "object",
       properties: {
@@ -217,12 +223,48 @@ const PollParams = z.looseObject({
   maxEvents: z.number().int().positive().optional(),
 });
 
-export function registerEvents(server: McpServer, log: EventLog): void {
-  server.server.setRequestHandler("events/list", { params: z.looseObject({}).optional() }, async () => ({ resultType: "complete", events: EVENT_TYPES }));
+const SubscribeParams = z.looseObject({
+  name: z.string(),
+  arguments: z.record(z.string(), z.unknown()).nullish(),
+  delivery: z.looseObject({ mode: z.string().optional(), url: z.string(), secret: z.string().optional() }),
+  ttlMs: z.number().nullish(),
+});
+
+export interface WebhookAccess {
+  hub: WebhookHub;
+  /** The authenticated caller of this request. Webhook subscriptions are refused without one. */
+  principal?: string;
+}
+
+/** Throws unless the event exists and takes these arguments. Neither event type has any. */
+function checkEvent(name: string, args?: Record<string, unknown> | null): void {
+  if (!EVENT_TYPES.some((e) => e.name === name)) throw new ProtocolError(NOT_FOUND, "NotFound", { kind: "event" });
+  if (args && Object.keys(args).length > 0) throw new ProtocolError(INVALID_PARAMS, `${name} takes no arguments`);
+}
+
+/** The hub and principal for a webhook request, or the error the SEP gives for a server or caller that has none. */
+function webhookCaller(webhooks: WebhookAccess | undefined): { hub: WebhookHub; principal: string } {
+  if (!webhooks) throw new ProtocolError(UNSUPPORTED, "Unsupported", { feature: "deliveryMode", value: "webhook" });
+  if (!webhooks.principal) throw new ProtocolError(FORBIDDEN, "Forbidden", { reason: "Webhook subscriptions need an authenticated caller" });
+  return { hub: webhooks.hub, principal: webhooks.principal };
+}
+
+export function registerEvents(server: McpServer, log: EventLog, webhooks?: WebhookAccess): void {
+  const delivery = webhooks ? ["poll", "webhook"] : ["poll"];
+  const events = EVENT_TYPES.map((e) => ({ ...e, delivery }));
+  server.server.setRequestHandler("events/list", { params: z.looseObject({}).optional() }, async () => ({ resultType: "complete", events }));
   server.server.setRequestHandler("events/poll", { params: PollParams }, async (params) => {
-    if (!EVENT_TYPES.some((e) => e.name === params.name)) {
-      throw new ProtocolError(NOT_FOUND, "NotFound", { kind: "event" });
-    }
+    checkEvent(params.name);
     return { resultType: "complete", ...log.poll(params.name, params.cursor, params.maxEvents, params.maxAgeMs) };
+  });
+  server.server.setRequestHandler("events/subscribe", { params: SubscribeParams }, async (params) => {
+    const { hub, principal } = webhookCaller(webhooks);
+    checkEvent(params.name, params.arguments);
+    return { resultType: "complete", ...(await hub.subscribe(principal, params)) };
+  });
+  server.server.setRequestHandler("events/unsubscribe", { params: SubscribeParams }, async (params) => {
+    const { hub, principal } = webhookCaller(webhooks);
+    hub.unsubscribe(principal, params);
+    return { resultType: "complete" };
   });
 }

@@ -7,6 +7,7 @@ import { PNG } from "pngjs";
 import { Bridge } from "../src/bridge.js";
 import type { EventLog } from "../src/events.js";
 import { createServer, skillCatalog } from "../src/server.js";
+import type { WebhookHub } from "../src/webhooks.js";
 
 /** A fake Forge bridge: records calls and answers with canned JSON keyed by `METHOD /path`. */
 export function fakeBridge(responses: Record<string, unknown>) {
@@ -25,11 +26,14 @@ export function fakeBridge(responses: Record<string, unknown>) {
 }
 
 /** An in-process MCP client over the Streamable HTTP handler, with no sockets. */
-export async function connect(bridge: Bridge, bus?: InMemoryServerEventBus, events?: EventLog) {
+export async function connect(bridge: Bridge, bus?: InMemoryServerEventBus, events?: EventLog, webhooks?: { hub: WebhookHub; principal?: string }) {
   const skills = await skillCatalog();
-  const handler = createMcpHandler(() => createServer({ bridge, skills, events }), bus ? { bus } : {});
+  const factory = (ctx: { authInfo?: { clientId: string } }) =>
+    createServer({ bridge, skills, events, webhooks: webhooks?.hub, principal: ctx.authInfo?.clientId });
+  const handler = createMcpHandler(factory, bus ? { bus } : {});
+  const authInfo = webhooks?.principal ? { token: "test", clientId: webhooks.principal, scopes: [] } : undefined;
   const transport = new StreamableHTTPClientTransport(new URL("http://test.local/mcp"), {
-    fetch: (url, init) => handler.fetch(new Request(url, init)),
+    fetch: (url, init) => handler.fetch(new Request(url, init), { authInfo }),
   });
   const client = new Client({ name: "test", version: "0.0.0" }, { versionNegotiation: { mode: "auto" } });
   await client.connect(transport);

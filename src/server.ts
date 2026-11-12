@@ -4,6 +4,7 @@ import type { SkillCatalog } from "@modelcontextprotocol/server/ext/skills";
 import { loadSkills } from "@modelcontextprotocol/server/ext/skills/node";
 import { Bridge } from "./bridge.js";
 import { EventLog, registerEvents } from "./events.js";
+import type { WebhookHub } from "./webhooks.js";
 import { registerTools } from "./tools/index.js";
 
 export const SERVER_INFO = { name: "forge-mcp-server", version: "0.1.0" } as const;
@@ -24,6 +25,10 @@ export interface CreateServerOptions {
   skills?: SkillCatalog;
   /** Shared across server instances so every request polls the same log. */
   events?: EventLog;
+  /** Webhook subscriptions, shared like `events`. Without it the event types offer poll only. */
+  webhooks?: WebhookHub;
+  /** The authenticated caller of the request this instance serves. */
+  principal?: string;
 }
 
 export function createServer(opts: CreateServerOptions = {}): McpServer {
@@ -31,9 +36,11 @@ export function createServer(opts: CreateServerOptions = {}): McpServer {
   const server = new McpServer(SERVER_INFO, {
     // subscribe: lets subscriptions/listen honour resourceSubscriptions for forge://status
     // extensions: MCP Events (SEP-3415), declared through extension negotiation
+    // events: the same, under the key the design sketch used; the ChatGPT client reads this one
     capabilities: {
       resources: { subscribe: true, listChanged: true },
       extensions: { "io.modelcontextprotocol/events": {} },
+      events: {},
     } as ServerCapabilities,
     instructions:
       "Forge (Card-Forge) seat for an agent. Tools drive one headless Forge client that joins a host's online lobby, " +
@@ -44,7 +51,7 @@ export function createServer(opts: CreateServerOptions = {}): McpServer {
   });
 
   registerTools(server, bridge);
-  registerEvents(server, opts.events ?? new EventLog());
+  registerEvents(server, opts.events ?? new EventLog(), opts.webhooks && { hub: opts.webhooks, principal: opts.principal });
 
   server.registerResource(
     "status",
