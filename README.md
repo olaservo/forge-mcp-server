@@ -46,4 +46,4 @@ The HTTP endpoint has no authentication. It binds to `127.0.0.1` by default. Do 
 
 ## License
 
-MIT. Copyright (c) 2026 Carbon Based Content, LLC. See [LICENSE](LICENSE).
+MIT. Copyright (c) 2026 Carbon-Based Content LLC. See [LICENSE](LICENSE).
