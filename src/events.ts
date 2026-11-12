@@ -117,7 +117,9 @@ export function pendingMove(status: SeatStatus): { key: string; data: Record<str
     if (prompt.startsWith("Priority:") && game.hasPriority === false) return undefined;
     // An empty prompt is the gap between two inputs, not an ask.
     if ((game.buttons?.okEnabled || game.buttons?.cancelEnabled) && prompt.trim() !== "" && !prompt.includes("Waiting for")) {
-      return { key: `priority:${game.turn}:${game.phase}:${prompt}`, data: { kind: "priority", prompt, ...at } };
+      // The key leaves the phase out: the host updates the phase before the prompt, so keying on both
+      // reported each priority twice, a second apart, the first time with the previous prompt's text.
+      return { key: `priority:${game.turn}:${prompt}`, data: { kind: "priority", prompt, ...at } };
     }
     return undefined;
   }
