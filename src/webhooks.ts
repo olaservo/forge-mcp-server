@@ -184,6 +184,8 @@ export interface WebhookOptions {
   /** Waits before the second and later attempts of a delivery. */
   retryDelaysMs?: number[];
   now?: () => number;
+  /** Receives one line per subscribe, unsubscribe and delivery attempt. Nothing is logged without it. */
+  log?: (line: string) => void;
 }
 
 interface EventSource {
@@ -205,6 +207,7 @@ export class WebhookHub {
   private readonly file: string | undefined;
   private readonly retryDelaysMs: number[];
   private readonly now: () => number;
+  private readonly log: (line: string) => void;
 
   constructor(source: EventSource, opts: WebhookOptions = {}) {
     this.insecure = opts.insecure ?? false;
@@ -212,6 +215,7 @@ export class WebhookHub {
     this.file = opts.file;
     this.retryDelaysMs = opts.retryDelaysMs ?? [1000, 5000, 25_000];
     this.now = opts.now ?? Date.now;
+    this.log = opts.log ?? (() => {});
     this.load();
     source.onEmit((event) => this.dispatch(event));
   }
@@ -257,6 +261,7 @@ export class WebhookHub {
     const sub: Subscription = { ...existing, id, principal, url, name: params.name, arguments: args, secret, previous: rotated, expiresAt };
     this.subs.set(id, sub);
     this.save();
+    this.log(`webhook ${existing ? "refresh" : "subscribe"} ${id} ${params.name} principal=${principal} expires=${expiresAt === null ? "never" : new Date(expiresAt).toISOString()}`);
 
     return {
       id,
@@ -273,6 +278,7 @@ export class WebhookHub {
   unsubscribe(principal: string, params: { name: string; arguments?: Record<string, unknown> | null; delivery: { url: string } }): boolean {
     const removed = this.subs.delete(subscriptionId(principal, params.delivery.url, params.name, params.arguments ?? {}));
     if (removed) this.save();
+    this.log(`webhook unsubscribe ${params.name} principal=${principal} ${removed ? "removed" : "unknown"}`);
     return removed;
   }
 
@@ -319,13 +325,13 @@ export class WebhookHub {
     }
     for (const sub of this.subs.values()) {
       if (sub.name !== event.name) continue;
-      const delivery = this.deliver(sub, event.eventId, body).finally(() => this.inFlight.delete(delivery));
+      const delivery = this.deliver(sub, event.name, event.eventId, body).finally(() => this.inFlight.delete(delivery));
       this.inFlight.add(delivery);
     }
   }
 
   /** One event to one subscription. Each attempt is signed again. 410 and 413 are not retried. */
-  private async deliver(sub: Subscription, eventId: string, body: string): Promise<void> {
+  private async deliver(sub: Subscription, name: string, eventId: string, body: string): Promise<void> {
     for (let attempt = 0; ; attempt++) {
       // A refresh replaces the stored object, so read the current secret each time.
       const current = this.subs.get(sub.id);
@@ -333,8 +339,11 @@ export class WebhookHub {
       const secrets = [current.secret, ...(current.previous && current.previous.until > this.now() ? [current.previous.secret] : [])];
       let error: DeliveryErrorReason;
       let final = false;
+      const started = Date.now();
+      const note = (result: string | number) => this.log(`webhook delivery ${name} ${eventId} to ${current.id} attempt ${attempt + 1}: ${result} in ${Date.now() - started} ms`);
       try {
         const { status } = await this.post(current.url, this.headers(current.id, eventId, secrets, body), body);
+        note(status);
         if (status >= 200 && status < 300) {
           current.lastDeliveryAt = new Date(this.now()).toISOString();
           current.lastError = null;
@@ -345,6 +354,7 @@ export class WebhookHub {
         final = status === 410 || status === 413;
       } catch (err) {
         error = reasonOf(err);
+        note(error);
       }
       current.lastError = error;
       current.failedSince ??= new Date(this.now()).toISOString();

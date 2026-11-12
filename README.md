@@ -54,6 +54,7 @@ ChatGPT cannot connect with that token. Its Add custom MCP server form offers OA
 
 Other settings:
 
+- The HTTP server logs one line to stderr for each subscribe, unsubscribe and delivery attempt, with the callback's status and the time it took.
 - `FORGE_MCP_SUBSCRIPTIONS`: a JSON file that keeps subscriptions across restarts. It holds the signing secrets. Without it subscriptions live in memory, last an hour by default (a day at most), and a request for no expiry gets a day.
 - `FORGE_MCP_WEBHOOK_INSECURE=1`: allow `http` callbacks and non-public addresses, for a receiver on the same machine.
 - `FORGE_MCP_ALLOWED_HOSTS`: add the public host name the server is reached under.
@@ -83,7 +84,7 @@ Setup, from `worker/`:
 5. Secrets: `npx wrangler secret put GOOGLE_CLIENT_ID`, `GOOGLE_CLIENT_SECRET`, `ALLOWED_EMAILS` (comma-separated, lowercase) and `ORIGIN_TOKEN` (the server's `FORGE_MCP_PROXY_TOKEN`, 32+ random characters). Optional `CONSENT_SECRET` (32+ random characters) remembers an approved client for 30 days.
 6. `npm run deploy`, and start the server with `FORGE_MCP_PROXY_TOKEN` set.
 
-`npm run dev` serves the Worker on `http://localhost:8788` from a `.dev.vars` file; copy `.dev.vars.example`. Sign-in is fail-closed: an empty `ALLOWED_EMAILS` rejects everyone.
+`npm run dev` serves the Worker on `http://localhost:8788` from a `.dev.vars` file; copy `.dev.vars.example`. Sign-in is fail-closed: an empty `ALLOWED_EMAILS` rejects everyone. The allow-list is checked again on every request to `/mcp`, so taking an account off it stops that account's existing tokens. Dynamic client registration is open, as MCP clients expect: anyone can register a client and reach the consent page, and nobody gets a token without an allowed Google account.
 
 Deployed once, on 2026-11-12, with a Workers VPC service on `127.0.0.1`. Checked: the Worker's forwarding against the server in `test/worker-forward.test.ts`, and on the deployed Worker a client that registered itself, signed in with Google and called `initialize`, `tools/list` and `events/list` through the VPC route. ChatGPT connected with OAuth and subscribed to both events, each stored under the principal `google:<sub>` after the callback verification. Not yet run: a game played by ChatGPT through the Worker.
 

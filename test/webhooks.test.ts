@@ -43,7 +43,8 @@ describe("webhook delivery", () => {
   it("subscribes, verifies the callback, delivers signed events and unsubscribes", async () => {
     const log = new EventLog();
     const { posts, post, events } = receiver();
-    const hub = new WebhookHub(log, { post });
+    const lines: string[] = [];
+    const hub = new WebhookHub(log, { post, log: (line) => lines.push(line) });
     const client = await connect(fakeBridge({}).bridge, undefined, log, { hub, principal: "ola" });
     const secret = newSecret();
 
@@ -61,6 +62,10 @@ describe("webhook delivery", () => {
     const emitted = log.emit(YOUR_MOVE, { kind: "priority", prompt: "Priority: Agent" });
     log.emit(CHAT, { from: "Ola", text: "not subscribed" });
     await hub.idle();
+    expect(lines).toEqual([
+      expect.stringMatching(/^webhook subscribe sub_\w+ forge\.your_move principal=ola expires=/),
+      expect.stringContaining(`webhook delivery forge.your_move ${emitted.eventId} to ${sub.id} attempt 1: 200 in `),
+    ]);
     expect(events()).toHaveLength(1);
     const delivery = events()[0]!;
     expect(delivery.url).toBe(URL_A);

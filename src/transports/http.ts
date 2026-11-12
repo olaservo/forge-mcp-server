@@ -40,7 +40,7 @@ export function listenHttp({ bridge, skills, events, port, ...opts }: HttpOption
   const proxyToken = opts.proxyToken ?? process.env.FORGE_MCP_PROXY_TOKEN;
   const webhooks =
     opts.webhooks ??
-    (token || proxyToken ? new WebhookHub(events, { file: process.env.FORGE_MCP_SUBSCRIPTIONS, insecure: process.env.FORGE_MCP_WEBHOOK_INSECURE === "1" }) : undefined);
+    (token || proxyToken ? new WebhookHub(events, { file: process.env.FORGE_MCP_SUBSCRIPTIONS, insecure: process.env.FORGE_MCP_WEBHOOK_INSECURE === "1", log: (line) => console.error(`${new Date().toISOString()} [forge-mcp-server] ${line}`) }) : undefined);
   const tokenAuth: AuthInfo | undefined = token ? { token, clientId: `token:${digest(token).toString("hex").slice(0, 8)}`, scopes: [] } : undefined;
   const bus = new InMemoryServerEventBus((e) => console.error(`[forge-mcp-server] ${e.message}`));
   const handler = createMcpHandler((ctx) => createServer({ bridge, skills, events, webhooks, principal: ctx.authInfo?.clientId }), { bus });

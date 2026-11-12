@@ -3,7 +3,7 @@
  * discovery documents; /mcp is forwarded to forge-mcp-server once the bearer token checks out.
  */
 import OAuthProvider from "@cloudflare/workers-oauth-provider";
-import type { Env, Props } from "./env.js";
+import { parseAllowedEmails, type Env, type Props } from "./env.js";
 import { forward } from "./forward.js";
 import { googleHandler } from "./google-handler.js";
 
@@ -11,7 +11,9 @@ const SCOPES = ["mcp"];
 
 /** Runs only after the provider validated the bearer token; ctx carries what completeAuthorization stored. */
 const mcpApiHandler = {
-  fetch(request: Request, env: Env, ctx: ExecutionContext<Props>): Promise<Response> {
+  async fetch(request: Request, env: Env, ctx: ExecutionContext<Props>): Promise<Response> {
+    // A grant outlives the sign-in, so an account taken off the allow-list is turned away here too.
+    if (!parseAllowedEmails(env.ALLOWED_EMAILS).has(ctx.props.email)) return new Response("Not authorized", { status: 403 });
     return forward(request, {
       url: env.ORIGIN_URL,
       token: env.ORIGIN_TOKEN,
