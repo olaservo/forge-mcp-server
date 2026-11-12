@@ -48,26 +48,25 @@ ChatGPT's MCP Events client uses webhook delivery only ([MCP Events for plugins]
 
 The server follows ChatGPT where it differs from the SEP at `f77a5fe`: `webhook-id` is the event's `eventId`, `events/unsubscribe` of an unknown subscription succeeds, the capability is also declared under the top-level `events` key, and no `gap` or `terminated` envelope is sent.
 
-Webhook subscriptions need a principal. The server has two ways to get one:
+Webhook subscriptions need an authenticated caller, so they are offered only when `FORGE_MCP_TOKEN` is set. Every request to `/mcp` must then carry `Authorization: Bearer <token>`.
 
-- `FORGE_MCP_TOKEN=<long random string>`: every request to `/mcp` must carry `Authorization: Bearer <token>`. ChatGPT cannot use this: its Add custom MCP server form offers OAuth or no authentication, and a packaged plugin whose `mcp.json` declares a bearer token installs without a server connection.
-- `FORGE_MCP_ANONYMOUS_PRINCIPAL=<name>`: with no token set, treat every caller as this one principal. This is how ChatGPT connected in the test below. It waives the SEP's rule that webhook subscriptions need an authenticated caller, and anyone who can reach the URL can act as the seat. Use it for one user behind a URL only they know, and only while testing. The server has no OAuth yet.
+ChatGPT cannot connect with that token. Its Add custom MCP server form offers OAuth or no authentication, and a packaged plugin whose `mcp.json` declares a bearer token installs without a server connection. The server has no OAuth yet, so ChatGPT can list the tools and events but cannot subscribe until it does.
 
 Other settings:
 
 - `FORGE_MCP_SUBSCRIPTIONS`: a JSON file that keeps subscriptions across restarts. It holds the signing secrets. Without it subscriptions live in memory, last an hour by default (a day at most), and a request for no expiry gets a day.
 - `FORGE_MCP_WEBHOOK_INSECURE=1`: allow `http` callbacks and non-public addresses, for a receiver on the same machine.
-- `FORGE_MCP_ALLOWED_HOSTS`: add the public host name, or have the tunnel send a local Host header.
+- `FORGE_MCP_ALLOWED_HOSTS`: add the public host name the server is reached under.
 
-To connect ChatGPT:
+How ChatGPT connects, once the server can authenticate it:
 
-1. Start the server over HTTP and put a public HTTPS URL in front of it, for example `cloudflared tunnel --url http://127.0.0.1:3080 --http-host-header 127.0.0.1`. The server also has to reach ChatGPT's callback URL over outbound HTTPS.
-2. At chatgpt.com/plugins choose Add, Add custom MCP server, enter `https://<host>/mcp` and No authentication, and create it as a plugin. Its page lists the tools and an Events section.
+1. The server needs a public HTTPS URL, and has to reach ChatGPT's callback URL over outbound HTTPS.
+2. At chatgpt.com/plugins choose Add, Add custom MCP server, and enter `https://<host>/mcp`. Its page lists the tools and an Events section.
 3. In a Work chat on the web, mention the plugin and ask it to subscribe to `forge.your_move` and `forge.chat`. Events do not arrive in ordinary chats, or through an MCP server added in the desktop app's own settings.
 
 `npm run plugin:chatgpt -- --url https://<host>/mcp` writes a local marketplace to `chatgpt-plugin/build` with a `forge-seat` plugin. Installed through `codex plugin marketplace add`, it gives the desktop app the two skills only. To carry the server connection it would need an `.app.json` that names the ID of the plugin made in step 2.
 
-Run against ChatGPT on 2026-11-11: it listed 16 tools and both events, subscribed, passed the callback verification, joined a lobby and played two games. In the first game events started its turns with nobody typing. In the second it needed a typed nudge for most turns while the server sent 77 `forge.your_move` events in 16 minutes; whether ChatGPT drops events that arrive while it is working is not established. Telling it to stop made it unsubscribe.
+Tried against ChatGPT on 2026-11-11 with a test build that accepted its unauthenticated connection: it listed 16 tools and both events, subscribed, passed the callback verification, joined a lobby and played two games. In the first game events started its turns with nobody typing. In the second it needed a typed nudge for most turns while the server sent 77 `forge.your_move` events in 16 minutes; whether ChatGPT drops events that arrive while it is working is not established. Telling it to stop made it unsubscribe.
 
 ## Test
 

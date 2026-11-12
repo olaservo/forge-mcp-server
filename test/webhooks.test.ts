@@ -180,33 +180,6 @@ describe("webhook delivery", () => {
     }
   });
 
-  it("accepts subscriptions without a token only when a principal is named for anonymous callers", async () => {
-    const skills = await skillCatalog();
-    const subscribe = async (port: number) => {
-      const res = await fetch(`http://127.0.0.1:${port}/mcp`, {
-        method: "POST",
-        headers: { "content-type": "application/json", accept: "application/json, text/event-stream" },
-        body: JSON.stringify({ jsonrpc: "2.0", id: 1, method: "events/subscribe", params: subscribeParams(newSecret()) }),
-      });
-      const text = await res.text();
-      return JSON.parse(text.startsWith("{") ? text : text.split(String.fromCharCode(10)).find((l) => l.startsWith("data: "))!.slice(6)) as {
-        result?: { id: string };
-        error?: { code: number };
-      };
-    };
-    const open = (anonymousPrincipal?: string) => {
-      const log = new EventLog();
-      const webhooks = anonymousPrincipal ? new WebhookHub(log, { post: receiver().post }) : undefined;
-      return listenHttp({ bridge: fakeBridge({}).bridge, skills, events: log, port: 0, token: "", anonymousPrincipal, webhooks });
-    };
-    const [plain, named] = [open(), open("ola")];
-    await new Promise((resolve) => setTimeout(resolve, 50));
-    expect((await subscribe(plain.port())).error?.code).toBe(-32026);
-    expect((await subscribe(named.port())).result?.id).toBe(subscriptionId("anonymous:ola", URL_A, YOUR_MOVE, {}));
-    plain.close();
-    named.close();
-  });
-
   it("serves the whole exchange over sockets behind a bearer token", async () => {
     const received: { headers: Record<string, unknown>; body: string }[] = [];
     const callback = createHttpServer((req, res) => {

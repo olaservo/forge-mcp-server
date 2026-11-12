@@ -16,13 +16,7 @@ export interface HttpOptions {
   port: number;
   /** Bearer token every request must carry. Defaults to `FORGE_MCP_TOKEN`. Webhook delivery is offered only with one. */
   token?: string;
-  /**
-   * Name to treat every caller as when there is no token. Defaults to `FORGE_MCP_ANONYMOUS_PRINCIPAL`.
-   * For one user behind a private URL, with a client that cannot send a fixed token. The SEP requires
-   * an authenticated caller for webhook subscriptions, and this setting waives that.
-   */
-  anonymousPrincipal?: string;
-  /** Defaults to a hub configured from `FORGE_MCP_SUBSCRIPTIONS` and `FORGE_MCP_WEBHOOK_INSECURE` when callers have a principal. */
+  /** Defaults to a hub configured from `FORGE_MCP_SUBSCRIPTIONS` and `FORGE_MCP_WEBHOOK_INSECURE` when there is a token. */
   webhooks?: WebhookHub;
 }
 
@@ -37,12 +31,10 @@ export function listenHttp({ bridge, skills, events, port, ...opts }: HttpOption
   const host = process.env.FORGE_MCP_HOST ?? "127.0.0.1";
   const allowedHosts = (process.env.FORGE_MCP_ALLOWED_HOSTS ?? `${host},localhost,127.0.0.1`).split(",").map((s) => s.trim());
   const token = opts.token ?? process.env.FORGE_MCP_TOKEN;
-  const anonymous = token ? undefined : (opts.anonymousPrincipal ?? process.env.FORGE_MCP_ANONYMOUS_PRINCIPAL);
-  const clientId = token ? `token:${digest(token).toString("hex").slice(0, 8)}` : anonymous ? `anonymous:${anonymous}` : undefined;
   const webhooks =
     opts.webhooks ??
-    (clientId ? new WebhookHub(events, { file: process.env.FORGE_MCP_SUBSCRIPTIONS, insecure: process.env.FORGE_MCP_WEBHOOK_INSECURE === "1" }) : undefined);
-  const auth: AuthInfo | undefined = clientId ? { token: token ?? "", clientId, scopes: [] } : undefined;
+    (token ? new WebhookHub(events, { file: process.env.FORGE_MCP_SUBSCRIPTIONS, insecure: process.env.FORGE_MCP_WEBHOOK_INSECURE === "1" }) : undefined);
+  const auth: AuthInfo | undefined = token ? { token, clientId: `token:${digest(token).toString("hex").slice(0, 8)}`, scopes: [] } : undefined;
   const bus = new InMemoryServerEventBus((e) => console.error(`[forge-mcp-server] ${e.message}`));
   const handler = createMcpHandler((ctx) => createServer({ bridge, skills, events, webhooks, principal: ctx.authInfo?.clientId }), { bus });
   const nodeHandler = toNodeHandler(handler);
@@ -70,7 +62,7 @@ export function listenHttp({ bridge, skills, events, port, ...opts }: HttpOption
     console.error(`forge-mcp-server: no HTTP endpoint on ${host}:${port} (${err.code ?? err.message}); events over HTTP are unavailable in this process`);
   });
   http.listen(port, host, () => {
-    const mode = token ? "bearer token required" : anonymous ? `no authentication, every caller is ${clientId}` : "no authentication";
+    const mode = token ? "bearer token required" : "no authentication";
     console.error(`forge-mcp-server on http://${host}:${(http.address() as AddressInfo).port}/mcp (${mode}); bridge at ${bridge.url}`);
   });
 
