@@ -3,17 +3,20 @@ import { serveStdio } from "@modelcontextprotocol/server/stdio";
 import { STATUS_URI, createServer, skillCatalog } from "../server.js";
 import { Bridge } from "../bridge.js";
 import { ChatTracker, EventLog, MoveTracker } from "../events.js";
+import { fileLog, logEmitted } from "../log.js";
 import { StatusWatcher } from "../watcher.js";
 import { listenHttp } from "./http.js";
 
 const bridge = new Bridge();
 const skills = await skillCatalog();
 const events = new EventLog();
+const log = fileLog();
+logEmitted(events, log);
 const moves = new MoveTracker(events);
 const chat = new ChatTracker(events);
 
 let server: McpServer | undefined;
-void serveStdio(() => (server = createServer({ bridge, skills, events })));
+void serveStdio(() => (server = createServer({ bridge, skills, events, log })));
 // FORGE_MCP_PORT also serves /mcp over HTTP, for a client that polls events outside the stdio connection
 const http = process.env.FORGE_MCP_PORT ? listenHttp({ bridge, skills, events, port: Number(process.env.FORGE_MCP_PORT) }) : undefined;
 // stdio has one server; its outbound resources/updated is routed to listen subscribers by the SDK

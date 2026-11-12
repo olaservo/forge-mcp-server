@@ -255,13 +255,15 @@ function webhookCaller(webhooks: WebhookAccess | undefined): { hub: WebhookHub; 
   return { hub: webhooks.hub, principal: webhooks.principal };
 }
 
-export function registerEvents(server: McpServer, log: EventLog, webhooks?: WebhookAccess): void {
+export function registerEvents(server: McpServer, log: EventLog, webhooks?: WebhookAccess, activity?: (line: string) => void): void {
   const delivery = webhooks ? ["poll", "webhook"] : ["poll"];
   const events = EVENT_TYPES.map((e) => ({ ...e, delivery }));
   server.server.setRequestHandler("events/list", { params: z.looseObject({}).optional() }, async () => ({ resultType: "complete", events }));
   server.server.setRequestHandler("events/poll", { params: PollParams }, async (params) => {
     checkEvent(params.name);
-    return { resultType: "complete", ...log.poll(params.name, params.cursor, params.maxEvents, params.maxAgeMs) };
+    const result = log.poll(params.name, params.cursor, params.maxEvents, params.maxAgeMs);
+    if (result.events.length > 0) activity?.(`poll ${params.name} returned ${result.events.map((e) => e.eventId).join(" ")}`);
+    return { resultType: "complete", ...result };
   });
   server.server.setRequestHandler("events/subscribe", { params: SubscribeParams }, async (params) => {
     const { hub, principal } = webhookCaller(webhooks);

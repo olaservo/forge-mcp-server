@@ -29,7 +29,7 @@ export interface CreateServerOptions {
   webhooks?: WebhookHub;
   /** The authenticated caller of the request this instance serves. */
   principal?: string;
-  /** Receives one line per finished tool call. */
+  /** Receives one line per finished tool call and per poll that returns events. */
   log?: (line: string) => void;
 }
 
@@ -53,7 +53,7 @@ export function createServer(opts: CreateServerOptions = {}): McpServer {
   });
 
   registerTools(server, bridge, opts.log);
-  registerEvents(server, opts.events ?? new EventLog(), opts.webhooks && { hub: opts.webhooks, principal: opts.principal });
+  registerEvents(server, opts.events ?? new EventLog(), opts.webhooks && { hub: opts.webhooks, principal: opts.principal }, opts.log);
 
   server.registerResource(
     "status",
