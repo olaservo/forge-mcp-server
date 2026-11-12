@@ -26,6 +26,12 @@
       "title": "Superseded event names",
       "description": "Comma-separated event names that are dropped when the model has called one of the server's tools since the event",
       "default": "forge.your_move"
+    },
+    "stateTools": {
+      "type": "string",
+      "title": "State tools",
+      "description": "Comma-separated tool names (without the server prefix) whose results show the server's state; a call to one of them means the model has seen everything up to then",
+      "default": "forge_status,forge_wait,forge_game_state,forge_game_act,forge_game_decide"
     }
   }
 }

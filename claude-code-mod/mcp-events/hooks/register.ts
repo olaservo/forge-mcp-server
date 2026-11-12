@@ -159,6 +159,12 @@ export const register: Register = (on, options) => {
   const wanted = String(options.events ?? '').split(',').map(s => s.trim()).filter(Boolean)
   const superseded = String(options.superseded ?? 'forge.your_move').split(',').map(s => s.trim()).filter(Boolean)
   const toolPrefix = `mcp__${server}__`
+  // Only a tool whose result shows the server's state counts as the model having seen it. A chat or lobby
+  // call returns no game state, and counting it dropped an event the model had not seen.
+  const stateTools = String(options.stateTools ?? 'forge_status,forge_wait,forge_game_state,forge_game_act,forge_game_decide')
+    .split(',')
+    .map(s => s.trim())
+    .filter(Boolean)
 
   on('session.start', async ($, e, next) => {
     await $.command.register({ name: 'mcp-events', description: 'Poll MCP events now and show the subscriptions' })
@@ -168,7 +174,8 @@ export const register: Register = (on, options) => {
 
   on('tool.call', async ($, e, next) => {
     const result = await next(e)
-    if (String(e.tool).startsWith(toolPrefix)) lastToolAt = Date.now() - TOOL_MARGIN_MS
+    const tool = String(e.tool)
+    if (tool.startsWith(toolPrefix) && stateTools.includes(tool.slice(toolPrefix.length))) lastToolAt = Date.now() - TOOL_MARGIN_MS
     return result
   })
 
