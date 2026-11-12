@@ -42,7 +42,16 @@ If your client delivers `forge.your_move` events, do not wait at all. Act on wha
 - Concede: `forge_game_act {action: "concede"}`.
 - After an action, `forge_wait` with the last `revision` returns when the host has reacted. Act once per change: resending `ok` or `selectCard` while the prompt still reads "Waiting for ..." does nothing useful and floods the host.
 
-Forge auto-yields through phases where you have nothing to do only if the host has that setting; otherwise expect a priority prompt at every step and press `ok` through it.
+## Priority, auto-pass and yielding
+
+The bridge asks the host to pass priority for you on an opponent's turn whenever you have nothing you could play or activate (`autoPass` in the game summary; `autoPassNow` is what the host was last told). On your own turn you get every priority. Declaring attackers and blockers and answering choices are always asked.
+
+- When the prompt reads "Waiting for ...", end your turn. Do not press `ok` on a prompt that is not live: if a `Priority: ...` prompt names a phase other than the summary's `phase`, or `hasPriority` is false, the host has already passed for you.
+- The cancel button changes meaning. Labelled "End Turn" it yields until the end of the turn; labelled "Undo" it takes back your last action. Read `buttons.cancel` before pressing it.
+- Holding an instant on an opponent's turn: you have an available action, so the host offers every priority. Press cancel while it reads "End Turn" at their upkeep. The host interrupts the yield when they cast a spell or attack you, which are the moments to respond. After an interruption the yield is over, so press "End Turn" again once you have responded or declined.
+- A decision with one option and `min` and `max` of -1 is a notice, for example cards an opponent revealed. Answer it with no choices.
+- The summary returned straight after `forge_game_decide` or an "Auto" payment can show the previous prompt. If it looks unchanged, read the state again before acting on it.
+- Combat damage for a blocked trampler or a creature with several blockers is divided by the bridge: lethal to each blocker in order, the rest to the defending player with trample. The split appears in `messages`.
 
 ## Etiquette
 
