@@ -94,6 +94,8 @@ interface SeatStatus {
     turn?: number | null;
     phase?: string | null;
     buttons?: { okEnabled?: boolean | null; cancelEnabled?: boolean | null } | null;
+    /** Whether the seat holds priority. Absent from bridges older than forge-agent-bridge 0.1.0 of 2026-11-11. */
+    hasPriority?: boolean | null;
     pendingDecision?: { id?: number | null; kind?: string | null; prompt?: string | null } | null;
   } | null;
 }
@@ -111,6 +113,8 @@ export function pendingMove(status: SeatStatus): { key: string; data: Record<str
       return { key: `decision:${decision.id}`, data: { kind: "decision", prompt: decision.prompt, decisionKind: decision.kind, ...at } };
     }
     const prompt = game.prompt ?? "";
+    // When the host auto-passes for the seat it sends no new prompt, so the last "Priority: ..." text stays up.
+    if (prompt.startsWith("Priority:") && game.hasPriority === false) return undefined;
     // An empty prompt is the gap between two inputs, not an ask.
     if ((game.buttons?.okEnabled || game.buttons?.cancelEnabled) && prompt.trim() !== "" && !prompt.includes("Waiting for")) {
       return { key: `priority:${game.turn}:${game.phase}:${prompt}`, data: { kind: "priority", prompt, ...at } };
