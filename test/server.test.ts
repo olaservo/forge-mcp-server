@@ -1,7 +1,8 @@
 import { describe, expect, it } from "vitest";
 import { SkillsClient } from "@modelcontextprotocol/client/ext/skills";
 import { InMemoryServerEventBus } from "@modelcontextprotocol/server";
-import { Bridge } from "../src/bridge.js";
+import { delimiter } from "node:path";
+import { Bridge, launch } from "../src/bridge.js";
 import { STATUS_URI } from "../src/server.js";
 import { StatusWatcher } from "../src/watcher.js";
 import { connect, fakeBridge } from "./helpers.js";
@@ -14,6 +15,13 @@ const status = {
   game: { inGame: false },
   chat: [],
 };
+
+describe("bridge launch", () => {
+  it("runs the fork's agent mode, or a separate bridge jar beside an unmodified Forge jar", () => {
+    expect(launch("forge.jar")).toEqual(["-jar", "forge.jar", "agent"]);
+    expect(launch("forge.jar", "bridge.jar")).toEqual(["-cp", `bridge.jar${delimiter}forge.jar`, "forge.agent.AgentMain"]);
+  });
+});
 
 describe("forge-mcp-server", () => {
   it("lists the forge tools and the skills", async () => {

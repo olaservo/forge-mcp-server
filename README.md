@@ -29,7 +29,7 @@ cd forge-gui
 java -Djava.awt.headless=true -Dfile.encoding=UTF-8 -Xmx2048m -jar ../forge-gui-desktop/target/forge-gui-desktop-2.0.16-SNAPSHOT-jar-with-dependencies.jar agent --port 36744
 ```
 
-It prints `AGENT_BRIDGE_READY port=36744` after loading cards (about 40 s). Alternatively set `FORGE_JAR` (path to that jar) and `FORGE_HOME` (the `forge-gui` folder) and the server starts the bridge itself on first use.
+It prints `AGENT_BRIDGE_READY port=36744` after loading cards (about 40 s). Alternatively set `FORGE_JAR` (path to that jar) and `FORGE_HOME` (the `forge-gui` folder) and the server starts the bridge itself on first use. With `FORGE_BRIDGE_JAR` also set to a [forge-agent-bridge](https://github.com/olaservo/forge-agent-bridge) jar, the server runs that jar beside the Forge jar, and `FORGE_JAR` can be an unmodified Forge build.
 
 Then:
 
