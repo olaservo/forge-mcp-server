@@ -1,0 +1,10 @@
+# Copy to .dev.vars for `wrangler dev`. Never commit .dev.vars.
+GOOGLE_CLIENT_ID=<google oauth client id>
+GOOGLE_CLIENT_SECRET=<google oauth client secret>
+# Comma-separated, lowercase. Empty means nobody can sign in.
+ALLOWED_EMAILS=you@gmail.com,them@gmail.com
+# The MCP endpoint URL clients connect to. http is accepted on loopback only.
+MCP_RESOURCE_URL=http://localhost:8788/mcp
+# Where forge-mcp-server listens, and its FORGE_MCP_PROXY_TOKEN.
+ORIGIN_URL=http://127.0.0.1:3080
+ORIGIN_TOKEN=<same value as FORGE_MCP_PROXY_TOKEN>

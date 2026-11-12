@@ -48,9 +48,9 @@ ChatGPT's MCP Events client uses webhook delivery only ([MCP Events for plugins]
 
 The server follows ChatGPT where it differs from the SEP at `f77a5fe`: `webhook-id` is the event's `eventId`, `events/unsubscribe` of an unknown subscription succeeds, the capability is also declared under the top-level `events` key, and no `gap` or `terminated` envelope is sent.
 
-Webhook subscriptions need an authenticated caller, so they are offered only when `FORGE_MCP_TOKEN` is set. Every request to `/mcp` must then carry `Authorization: Bearer <token>`.
+Webhook subscriptions need an authenticated caller, so they are offered only when `FORGE_MCP_TOKEN` or `FORGE_MCP_PROXY_TOKEN` is set. Every request to `/mcp` must then carry `Authorization: Bearer <token>`.
 
-ChatGPT cannot connect with that token. Its Add custom MCP server form offers OAuth or no authentication, and a packaged plugin whose `mcp.json` declares a bearer token installs without a server connection. The server has no OAuth yet, so ChatGPT can list the tools and events but cannot subscribe until it does.
+ChatGPT cannot connect with that token. Its Add custom MCP server form offers OAuth or no authentication, and a packaged plugin whose `mcp.json` declares a bearer token installs without a server connection. The Worker in `worker/` provides the OAuth side (see Sign-in proxy below).
 
 Other settings:
 
@@ -58,15 +58,34 @@ Other settings:
 - `FORGE_MCP_WEBHOOK_INSECURE=1`: allow `http` callbacks and non-public addresses, for a receiver on the same machine.
 - `FORGE_MCP_ALLOWED_HOSTS`: add the public host name the server is reached under.
 
-How ChatGPT connects, once the server can authenticate it:
+How ChatGPT connects:
 
-1. The server needs a public HTTPS URL, and has to reach ChatGPT's callback URL over outbound HTTPS.
-2. At chatgpt.com/plugins choose Add, Add custom MCP server, and enter `https://<host>/mcp`. Its page lists the tools and an Events section.
+1. Deploy the Worker. The server has to reach ChatGPT's callback URL over outbound HTTPS.
+2. At chatgpt.com/plugins choose Add, Add custom MCP server, enter the Worker's `MCP_RESOURCE_URL`, choose OAuth and sign in with Google. Its page lists the tools and an Events section.
 3. In a Work chat on the web, mention the plugin and ask it to subscribe to `forge.your_move` and `forge.chat`. Events do not arrive in ordinary chats, or through an MCP server added in the desktop app's own settings.
 
 `npm run plugin:chatgpt -- --url https://<host>/mcp` writes a local marketplace to `chatgpt-plugin/build` with a `forge-seat` plugin. Installed through `codex plugin marketplace add`, it gives the desktop app the two skills only. To carry the server connection it would need an `.app.json` that names the ID of the plugin made in step 2.
 
 Tried against ChatGPT on 2026-11-11 with a test build that accepted its unauthenticated connection: it listed 16 tools and both events, subscribed, passed the callback verification, joined a lobby and played two games. In the first game events started its turns with nobody typing. In the second it needed a typed nudge for most turns while the server sent 77 `forge.your_move` events in 16 minutes; whether ChatGPT drops events that arrive while it is working is not established. Telling it to stop made it unsubscribe.
+
+## Sign-in proxy
+
+`worker/` is a Cloudflare Worker that puts the server behind Google sign-in. It is an OAuth authorization server for MCP clients (`@cloudflare/workers-oauth-provider`: dynamic registration, client ID metadata documents, a consent page), it accepts only the Google accounts in `ALLOWED_EMAILS`, and it forwards `/mcp` to the server. The server stays on the machine that runs Forge.
+
+The Worker replaces the caller's token with `FORGE_MCP_PROXY_TOKEN` and sets `x-forge-principal: google:<sub>`. The server takes the principal from that header only on a request that carries the proxy token, and webhook subscriptions are keyed on it. `FORGE_MCP_TOKEN` is not needed beside it.
+
+Setup, from `worker/`:
+
+1. Google Cloud Console: an OAuth client of type Web application, redirect URI `https://<worker host>/callback`. Consent screen in Testing is enough; add each allowed account as a test user.
+2. `npm install`, `npx wrangler login`, and copy `wrangler.example.jsonc` to `wrangler.jsonc`. The copy holds your host name and resource ids and is not committed. Then `npx wrangler kv namespace create forge-seat-oauth` and paste the id into it.
+3. Set `MCP_RESOURCE_URL` in `wrangler.jsonc` to the deployed endpoint, `https://forge-seat.<account>.workers.dev/mcp`.
+4. Give the Worker a route to the server. Either a [Workers VPC](https://developers.cloudflare.com/workers-vpc/) service (beta): `npx wrangler tunnel create forge-seat`, `npx wrangler tunnel run forge-seat` on the server's machine, `npx wrangler vpc service create forge-seat --type http --tunnel-id <id> --ipv4 127.0.0.1 --http-port 3080`, and uncomment `vpc_services` in `wrangler.jsonc`. Or a named Cloudflare Tunnel with a public host name: set `ORIGIN_URL` to `https://<tunnel host>` and add that host to `FORGE_MCP_ALLOWED_HOSTS`.
+5. Secrets: `npx wrangler secret put GOOGLE_CLIENT_ID`, `GOOGLE_CLIENT_SECRET`, `ALLOWED_EMAILS` (comma-separated, lowercase) and `ORIGIN_TOKEN` (the server's `FORGE_MCP_PROXY_TOKEN`, 32+ random characters). Optional `CONSENT_SECRET` (32+ random characters) remembers an approved client for 30 days.
+6. `npm run deploy`, and start the server with `FORGE_MCP_PROXY_TOKEN` set.
+
+`npm run dev` serves the Worker on `http://localhost:8788` from a `.dev.vars` file; copy `.dev.vars.example`. Sign-in is fail-closed: an empty `ALLOWED_EMAILS` rejects everyone.
+
+Deployed once, on 2026-11-12, with a Workers VPC service on `127.0.0.1`. Checked: the Worker's forwarding against the server in `test/worker-forward.test.ts`, and on the deployed Worker a client that registered itself, signed in with Google and called `initialize`, `tools/list` and `events/list` through the VPC route. ChatGPT connected with OAuth and subscribed to both events, each stored under the principal `google:<sub>` after the callback verification. Not yet run: a game played by ChatGPT through the Worker.
 
 ## Test
 
@@ -78,7 +97,7 @@ Lobby, draft and full matches work end to end. The Java tests run a draft and a 
 
 ## Security
 
-The HTTP endpoint has no authentication unless `FORGE_MCP_TOKEN` is set. It binds to `127.0.0.1` by default. Without a token, do not set `FORGE_MCP_HOST` to an address reachable from outside a network you trust: anyone who can reach the port can act as the seat. With a token, anyone who holds it can act as the seat, and the token is the only credential, so serve it over HTTPS only.
+The HTTP endpoint has no authentication unless `FORGE_MCP_TOKEN` is set. It binds to `127.0.0.1` by default. Without a token, do not set `FORGE_MCP_HOST` to an address reachable from outside a network you trust: anyone who can reach the port can act as the seat. With a token, anyone who holds it can act as the seat, and the token is the only credential, so serve it over HTTPS only. The same holds for `FORGE_MCP_PROXY_TOKEN`, and its holder can also name any principal, so only the Worker should have it.
 
 ## License
 

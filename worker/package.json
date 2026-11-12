@@ -1,0 +1,22 @@
+{
+  "name": "@olaservo/forge-seat-worker",
+  "version": "0.1.0",
+  "private": true,
+  "description": "Cloudflare Worker that puts forge-mcp-server behind Google sign-in and forwards /mcp to it.",
+  "type": "module",
+  "license": "MIT",
+  "scripts": {
+    "typecheck": "wrangler types && tsc --noEmit",
+    "dev": "wrangler dev",
+    "deploy": "wrangler deploy",
+    "cf-typegen": "wrangler types"
+  },
+  "dependencies": {
+    "@cloudflare/workers-oauth-provider": "^1.1.0",
+    "hono": "^4.12.0"
+  },
+  "devDependencies": {
+    "typescript": "^5.9.0",
+    "wrangler": "^4.160.0"
+  }
+}

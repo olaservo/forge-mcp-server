@@ -237,4 +237,42 @@ describe("webhook delivery", () => {
     server.close();
     callback.close();
   });
+
+  it("takes the principal from a proxy that holds the proxy token", async () => {
+    const log = new EventLog();
+    const hub = new WebhookHub(log, { insecure: true });
+    const server = listenHttp({ bridge: fakeBridge({}).bridge, skills: await skillCatalog(), events: log, port: 0, proxyToken: "pr0xy", webhooks: hub });
+    await new Promise((resolve) => setTimeout(resolve, 50));
+    const callback = createHttpServer((req, res) => {
+      let body = "";
+      req.on("data", (chunk) => (body += chunk));
+      req.on("end", () => {
+        res.writeHead(200, { "content-type": "application/json" });
+        res.end(JSON.stringify({ challenge: (JSON.parse(body) as { challenge?: string }).challenge }));
+      });
+    });
+    await new Promise<void>((resolve) => callback.listen(0, "127.0.0.1", resolve));
+    const url = `http://127.0.0.1:${(callback.address() as AddressInfo).port}/hook`;
+    const subscribe = async (headers: Record<string, string>) => {
+      const res = await fetch(`http://127.0.0.1:${server.port()}/mcp`, {
+        method: "POST",
+        headers: { "content-type": "application/json", accept: "application/json, text/event-stream", ...headers },
+        body: JSON.stringify({ jsonrpc: "2.0", id: 1, method: "events/subscribe", params: { name: YOUR_MOVE, arguments: {}, delivery: { mode: "webhook", url, secret: newSecret() }, cursor: null } }),
+      });
+      const text = await res.text();
+      const json = text.startsWith("{") ? text : (text.split("\n").find((l) => l.startsWith("data: "))?.slice(6) ?? "{}");
+      return { status: res.status, id: (JSON.parse(json) as { result?: { id?: string } }).result?.id };
+    };
+
+    expect((await subscribe({ "x-forge-principal": "google:1" })).status).toBe(401);
+    expect((await subscribe({ authorization: "Bearer wrong", "x-forge-principal": "google:1" })).status).toBe(401);
+    expect((await subscribe({ authorization: "Bearer pr0xy" })).status).toBe(401);
+    const one = await subscribe({ authorization: "Bearer pr0xy", "x-forge-principal": "google:1" });
+    const two = await subscribe({ authorization: "Bearer pr0xy", "x-forge-principal": "google:2" });
+    expect(one.id).toBe(subscriptionId("google:1", url, YOUR_MOVE, {}));
+    expect(two.id).toBe(subscriptionId("google:2", url, YOUR_MOVE, {}));
+
+    server.close();
+    callback.close();
+  });
 });

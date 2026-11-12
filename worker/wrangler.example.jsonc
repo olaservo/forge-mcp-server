@@ -1,0 +1,32 @@
+// Cloudflare Workers config for the Forge seat's sign-in proxy.
+// Copy to wrangler.jsonc, which is not committed, and fill in the KV namespace id, the URLs and the VPC service id; see README.md.
+{
+  "$schema": "node_modules/wrangler/config-schema.json",
+  "name": "forge-seat",
+  "main": "src/worker.ts",
+  "compatibility_date": "2026-11-01",
+  "compatibility_flags": ["nodejs_compat", "global_fetch_strictly_public"],
+  "vars": {
+    "MCP_RESOURCE_URL": "https://forge-seat.<account>.workers.dev/mcp",
+    "ORIGIN_URL": "http://127.0.0.1:3080"
+  },
+  "kv_namespaces": [
+    {
+      "binding": "OAUTH_KV",
+      "id": "<kv namespace id>"
+    }
+  ],
+  // With a Workers VPC service the server needs no public host name. Without this block the Worker fetches ORIGIN_URL directly.
+  "vpc_services": [
+    {
+      "binding": "ORIGIN",
+      "service_id": "<vpc service id>"
+    }
+  ],
+  "observability": {
+    "enabled": true
+  },
+  "dev": {
+    "port": 8788
+  }
+}
