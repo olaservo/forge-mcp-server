@@ -16,6 +16,7 @@ function session(on: On, polls: Poll[]) {
     return { value: undefined }
   })
   on('turn.complete', () => ({ text: 'ok' }))
+  on('prompt.compose', () => ({ sections: [{ id: 'intro', text: 'base', scope: 'shared' as const }] }))
   on('prompt.submit', (_, e) => {
     prompts.push(e.text)
     return { text: e.text }
@@ -59,4 +60,16 @@ test('an event starts a turn once, and the cursor is passed back and stored', as
   const polls = sent.filter(r => r.method === 'events/poll')
   expect(polls.map(r => r.params.cursor)).toEqual([null, 'c:0', 'c:1'])
   expect([...stored.values()]).toEqual(['c:1'])
+})
+
+test('the system prompt says to end the turn once events are being polled', async ($, on) => {
+  session(on, [{ events: [], cursor: 'c:0' }])
+  const composing = { model: 'm', promptModel: 'm', surfaces: [], tools: [], outputStyle: null, traits: [] }
+  expect((await $.prompt.compose(composing)).sections.map(s => s.id)).toEqual(['intro'])
+  await $.command.run({ command: 'mcp-events' })
+  const sections = (await $.prompt.compose(composing)).sections
+  expect(sections.map(s => s.id)).toEqual(['intro', 'mcp-events:standing'])
+  expect(sections[1]!.text).toContain('forge.your_move')
+  expect(sections[1]!.text).toContain('do not call forge_wait')
+  expect(sections[1]!.scope).toBe('session')
 })

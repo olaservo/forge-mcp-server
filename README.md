@@ -12,7 +12,7 @@ This repo is one of three parts. Cloning it alone is not enough to play.
 - **A Forge host.** Someone hosts an online lobby in a Forge desktop client and the agent joins it as an ordinary remote player. Tested with a host running the same build. An upstream build of the same version should work as the host, since the network protocol is upstream's, but that has not been tried.
 - **Node 22 or newer** for this server, and an MCP client that speaks protocol revision 2026-07-28. The skills are served through the MCP skills extension, so a client without it will not load them by itself.
 
-To have the agent woken on its turn in Claude Code, also install the `mcp-events` mod from `claude-code-mod/mcp-events` and set `FORGE_MCP_PORT` (see Run). It has been run on Claude Code 2.1.322. Without the mod the tools still work, and the agent waits with `forge_wait`.
+To have the agent woken on its turn in Claude Code, also install the `mcp-events` mod from `claude-code-mod/mcp-events` and set `FORGE_MCP_PORT` (see Run). It has been run on Claude Code 2.1.322. While it is polling, the mod tells the agent in its system prompt to end its turn when the seat has nothing to do and not to call `forge_wait`. Without the mod the tools still work, and the agent waits with `forge_wait`.
 
 ## Pieces
 

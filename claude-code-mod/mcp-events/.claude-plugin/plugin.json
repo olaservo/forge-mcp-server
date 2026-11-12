@@ -27,6 +27,12 @@
       "description": "Comma-separated event names that are dropped when the model has called one of the server's tools since the event",
       "default": "forge.your_move"
     },
+    "waitTools": {
+      "type": "string",
+      "title": "Wait tools",
+      "description": "Comma-separated tool names the model is told not to call, because an event resumes it instead",
+      "default": "forge_wait"
+    },
     "stateTools": {
       "type": "string",
       "title": "State tools",

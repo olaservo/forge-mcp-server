@@ -18,6 +18,8 @@ You are one seat in a Forge online lobby. A headless Forge client (the bridge) h
 
 Use `forge_wait` instead of calling `forge_status` in a tight loop. It returns as soon as a pack, a prompt or a decision appears.
 
+If your client delivers `forge.your_move` events, do not wait at all. Wherever these steps say `forge_wait`, end your turn instead: the event starts a new one when the seat has to act. A game played by waiting inside one long turn keeps the whole game in one growing context.
+
 If your client delivers `forge.your_move` events, do not wait at all. Act on what the status shows, and when the prompt reads "Waiting for ..." end your turn. The next event starts a new one. A `forge.chat` event means another player said something: answer with `forge_chat`, and act only if the prompt is also yours.
 
 ## Reading the game state

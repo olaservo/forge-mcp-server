@@ -75,6 +75,14 @@ function eventPrompt(server: string, event: Occurrence): string {
   ].join('\n')
 }
 
+/** Added to the system prompt while events are being polled, so the model stops between asks and lets an event resume it. */
+function standingNote(server: string, names: readonly string[], waitTools: readonly string[]): string {
+  return [
+    `The mcp-events mod is polling the ${server} server for these events: ${names.join(', ')}. When one fires while you are between turns, it starts a new turn with the event as the prompt.`,
+    `So when the ${server} server has nothing for you to do, end your turn. Do not wait for the next change inside a turn${waitTools.length ? `, and do not call ${waitTools.join(' or ')}` : ''}. Events that fire during a turn are held and delivered when it ends.`,
+  ].join('\n')
+}
+
 /** Starts a turn. Not awaited: the prompt runs once the session is idle, and a command.run hook may not wait on it. */
 function submit($: EngineInterface, text: string) {
   $.prompt.submit({ text }).catch((err: unknown) => {
@@ -165,6 +173,15 @@ export const register: Register = (on, options) => {
     .split(',')
     .map(s => s.trim())
     .filter(Boolean)
+
+  const waitTools = String(options.waitTools ?? 'forge_wait').split(',').map(s => s.trim()).filter(Boolean)
+
+  on('prompt.compose', async ($, e, next) => {
+    const composed = await next(e)
+    if (!subscriptions?.length) return composed
+    const text = standingNote(server, subscriptions.map(s => s.name), waitTools)
+    return { sections: [...composed.sections, { id: 'mcp-events:standing', text, scope: 'session' as const }] }
+  })
 
   on('session.start', async ($, e, next) => {
     await $.command.register({ name: 'mcp-events', description: 'Poll MCP events now and show the subscriptions' })
