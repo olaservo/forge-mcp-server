@@ -8,7 +8,7 @@ This project is independent. It is not affiliated with, endorsed by or sponsored
 
 This repo is one of three parts. Cloning it alone is not enough to play.
 
-- **A custom build of Forge.** The server talks to a headless Forge client, the agent bridge, which is not in upstream Forge. It lives in the `master` branch of the fork [olaservo/forge](https://github.com/olaservo/forge), package `forge.agent`. Building it needs a JDK (17 or newer) and Maven, and takes about 15 minutes.
+- **Forge and the agent bridge.** The server talks to a headless Forge client, the agent bridge, which is not part of Forge. It is a small jar from [forge-agent-bridge](https://github.com/olaservo/forge-agent-bridge) (GPL-3.0) that runs beside a Forge desktop jar, built against the Forge version you run. Set `FORGE_JAR`, `FORGE_HOME` and `FORGE_BRIDGE_JAR` and the server starts it. The same classes are also in the `master` branch of the fork [olaservo/forge](https://github.com/olaservo/forge), where the bridge is the `agent` mode of the Forge jar.
 - **A Forge host.** Someone hosts an online lobby in a Forge desktop client and the agent joins it as an ordinary remote player. Tested with a host running the same build. An upstream build of the same version should work as the host, since the network protocol is upstream's, but that has not been tried.
 - **Node 22 or newer** for this server, and an MCP client that speaks protocol revision 2026-07-28. The skills are served through the MCP skills extension, so a client without it will not load them by itself.
 
