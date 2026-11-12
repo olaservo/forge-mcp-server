@@ -4,6 +4,16 @@ MCP server that gives an agent a seat in a [Forge](https://github.com/Card-Forge
 
 This project is independent. It is not affiliated with, endorsed by or sponsored by Card-Forge, Wizards of the Coast or Hasbro. Magic: The Gathering is a trademark of Wizards of the Coast LLC. The card names and card text in the test fixtures were recorded from Forge and belong to Wizards of the Coast.
 
+## Requirements
+
+This repo is one of three parts. Cloning it alone is not enough to play.
+
+- **A custom build of Forge.** The server talks to a headless Forge client, the agent bridge, which is not in upstream Forge. It lives in the `master` branch of the fork [olaservo/forge](https://github.com/olaservo/forge), package `forge.agent`. Building it needs a JDK (17 or newer) and Maven, and takes about 15 minutes.
+- **A Forge host.** Someone hosts an online lobby in a Forge desktop client and the agent joins it as an ordinary remote player. Tested with a host running the same build. An upstream build of the same version should work as the host, since the network protocol is upstream's, but that has not been tried.
+- **Node 22 or newer** for this server, and an MCP client that speaks protocol revision 2026-07-28. The skills are served through the MCP skills extension, so a client without it will not load them by itself.
+
+To have the agent woken on its turn in Claude Code, also install the `mcp-events` mod from `claude-code-mod/mcp-events` and set `FORGE_MCP_PORT` (see Run). It has been run on Claude Code 2.1.322. Without the mod the tools still work, and the agent waits with `forge_wait`.
+
 ## Pieces
 
 - **Bridge** (Java, in the Forge fork, `master` of `olaservo/forge`): console mode `agent` in `forge-gui-desktop`, package `forge.agent`. Boots the card database headless and serves `GET /status`, `GET /wait`, `POST /connect`, `POST /lobby/ready`, `POST /lobby/avatar`, `POST /lobby/deck`, `POST /chat`, `GET /draft/pack`, `POST /draft/pick`, `GET /draft/pool`, `GET /game`, `GET /game/log`, `POST /game/act`, `POST /game/decide` on `127.0.0.1:36744`.
@@ -12,7 +22,7 @@ This project is independent. It is not affiliated with, endorsed by or sponsored
 
 ## Run
 
-Build the Forge fork once (`mvn -U -B clean -P windows-linux install -DskipTests`), then start the bridge from the `forge-gui` folder so it finds `res/`:
+Clone [olaservo/forge](https://github.com/olaservo/forge) and build it once (`mvn -U -B clean -P windows-linux install -DskipTests`), then start the bridge from the `forge-gui` folder so it finds `res/`:
 
 ```
 cd forge-gui
