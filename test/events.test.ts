@@ -15,8 +15,7 @@ describe("events", () => {
     const yielding = "Yielding until end of turn.\nYou may cancel this yield to take an action.\n\nWaiting for HostAI...";
     expect(moves.observe({ revision: 1, game: { inGame: true, prompt: yielding, buttons: { cancelEnabled: true } } })).toBeUndefined();
     expect(moves.observe(priority("", 1))).toBeUndefined();
-    const stale = { revision: 1, game: { inGame: true, prompt: "Priority: Agent
-Phase: Upkeep step", hasPriority: false, buttons: { okEnabled: true } } };
+    const stale = { revision: 1, game: { inGame: true, prompt: "Priority: Agent" + String.fromCharCode(10) + "Phase: Upkeep step", hasPriority: false, buttons: { okEnabled: true } } };
     expect(moves.observe(stale)).toBeUndefined();
     expect(moves.observe(priority("Priority: Agent", 2))?.data).toMatchObject({ kind: "priority", revision: 2 });
     expect(moves.observe(priority("Priority: Agent", 3))).toBeUndefined();
