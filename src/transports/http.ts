@@ -57,6 +57,10 @@ export function listenHttp({ bridge, skills, events, port, ...opts }: HttpOption
     }
     void nodeHandler(Object.assign(req, { auth }), res);
   });
+  // A port that is already taken (another session's server) must not take the stdio server down with it.
+  http.on("error", (err: NodeJS.ErrnoException) => {
+    console.error(`forge-mcp-server: no HTTP endpoint on ${host}:${port} (${err.code ?? err.message}); events over HTTP are unavailable in this process`);
+  });
   http.listen(port, host, () => {
     const mode = token ? "bearer token required" : "no authentication";
     console.error(`forge-mcp-server on http://${host}:${(http.address() as AddressInfo).port}/mcp (${mode}); bridge at ${bridge.url}`);
