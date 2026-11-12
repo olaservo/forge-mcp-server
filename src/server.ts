@@ -29,6 +29,8 @@ export interface CreateServerOptions {
   webhooks?: WebhookHub;
   /** The authenticated caller of the request this instance serves. */
   principal?: string;
+  /** Receives one line per finished tool call. */
+  log?: (line: string) => void;
 }
 
 export function createServer(opts: CreateServerOptions = {}): McpServer {
@@ -50,7 +52,7 @@ export function createServer(opts: CreateServerOptions = {}): McpServer {
       "A client that speaks MCP Events can subscribe to forge.your_move and is woken when the seat has to act.",
   });
 
-  registerTools(server, bridge);
+  registerTools(server, bridge, opts.log);
   registerEvents(server, opts.events ?? new EventLog(), opts.webhooks && { hub: opts.webhooks, principal: opts.principal });
 
   server.registerResource(

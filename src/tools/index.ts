@@ -36,7 +36,24 @@ async function lobbyChange(bridge: Bridge, path: string, body: unknown): Promise
 const readOnly = { readOnlyHint: true, destructiveHint: false, idempotentHint: true, openWorldHint: false } as const;
 const acting = { readOnlyHint: false, destructiveHint: false, idempotentHint: false, openWorldHint: false } as const;
 
-export function registerTools(server: McpServer, bridge: Bridge): void {
+type AnyHandler = (...args: unknown[]) => Promise<unknown>;
+
+/** Makes every tool registered after this report its name, start time and duration when it returns. */
+function logToolCalls(server: McpServer, log: (line: string) => void): void {
+  const original = server.registerTool.bind(server) as (name: string, config: unknown, handler: AnyHandler) => unknown;
+  (server as unknown as { registerTool: unknown }).registerTool = (name: string, config: unknown, handler: AnyHandler) =>
+    original(name, config, async (...args: unknown[]) => {
+      const started = Date.now();
+      try {
+        return await handler(...args);
+      } finally {
+        log(`tool ${name} started ${new Date(started).toISOString()} took ${Date.now() - started} ms`);
+      }
+    });
+}
+
+export function registerTools(server: McpServer, bridge: Bridge, log?: (line: string) => void): void {
+  if (log) logToolCalls(server, log);
   server.registerTool(
     "forge_status",
     {

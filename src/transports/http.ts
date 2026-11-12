@@ -38,12 +38,13 @@ export function listenHttp({ bridge, skills, events, port, ...opts }: HttpOption
   const allowedHosts = (process.env.FORGE_MCP_ALLOWED_HOSTS ?? `${host},localhost,127.0.0.1`).split(",").map((s) => s.trim());
   const token = opts.token ?? process.env.FORGE_MCP_TOKEN;
   const proxyToken = opts.proxyToken ?? process.env.FORGE_MCP_PROXY_TOKEN;
+  const log = (line: string) => console.error(`${new Date().toISOString()} [forge-mcp-server] ${line}`);
   const webhooks =
     opts.webhooks ??
-    (token || proxyToken ? new WebhookHub(events, { file: process.env.FORGE_MCP_SUBSCRIPTIONS, insecure: process.env.FORGE_MCP_WEBHOOK_INSECURE === "1", log: (line) => console.error(`${new Date().toISOString()} [forge-mcp-server] ${line}`) }) : undefined);
+    (token || proxyToken ? new WebhookHub(events, { file: process.env.FORGE_MCP_SUBSCRIPTIONS, insecure: process.env.FORGE_MCP_WEBHOOK_INSECURE === "1", log }) : undefined);
   const tokenAuth: AuthInfo | undefined = token ? { token, clientId: `token:${digest(token).toString("hex").slice(0, 8)}`, scopes: [] } : undefined;
   const bus = new InMemoryServerEventBus((e) => console.error(`[forge-mcp-server] ${e.message}`));
-  const handler = createMcpHandler((ctx) => createServer({ bridge, skills, events, webhooks, principal: ctx.authInfo?.clientId }), { bus });
+  const handler = createMcpHandler((ctx) => createServer({ bridge, skills, events, webhooks, principal: ctx.authInfo?.clientId, log: ctx.authInfo && log }), { bus });
   const nodeHandler = toNodeHandler(handler);
   const guard = hostHeaderValidation(allowedHosts);
 
