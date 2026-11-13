@@ -4,7 +4,7 @@ import type { z } from "zod";
 import * as out from "../src/schemas.js";
 import { avatarSheet, connect, fakeBridge } from "./helpers.js";
 
-/** Real bridge payloads, recorded by forge-agent-bridge's tests (`BridgeHttp.saveFixtures`) while a draft and a match ran in-process. */
+/** Real bridge payloads, recorded by forge-agent-bridge's tests (`BridgeHttp.saveFixtures`) while a draft and a match ran in-process. The rigged, scry, surveil and reveal recordings come from its one-situation tests. */
 const dir = new URL("./fixtures/", import.meta.url);
 const index = JSON.parse(readFileSync(new URL("index.json", dir), "utf8")) as Record<string, string>;
 const fixture = (file: string) => JSON.parse(readFileSync(new URL(file, dir), "utf8")) as Record<string, unknown>;
@@ -15,6 +15,7 @@ const schemaForRoute: Record<string, z.ZodType> = {
   "POST /connect": out.Status,
   "POST /disconnect": out.Status,
   "POST /lobby/ready": out.Lobby,
+  "POST /lobby/avatar": out.Lobby,
   "POST /lobby/deck": out.DeckResult,
   "POST /chat": out.OkResult,
   "GET /draft/pack": out.Draft,
@@ -51,8 +52,6 @@ describe("bridge fixtures", () => {
       const route = routeOf(key);
       if (key.startsWith("game ") || !(route in responses)) responses[route] = fixture(file);
     }
-    // No recording yet: the bridge answers /lobby/avatar with the same lobby snapshot as /lobby/ready.
-    responses["POST /lobby/avatar"] = responses["POST /lobby/ready"];
     process.env.FORGE_AVATARS = avatarSheet(3, 2);
     const { bridge, calls } = fakeBridge(responses);
     const client = await connect(bridge);

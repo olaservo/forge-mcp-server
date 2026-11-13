@@ -20,5 +20,10 @@
   "draft POST /disconnect": "draft-POST_disconnect.json",
   "draft POST /draft/pick": "draft-POST_draft_pick.json",
   "draft POST /lobby/deck": "draft-POST_lobby_deck.json",
-  "draft POST /lobby/ready": "draft-POST_lobby_ready.json"
+  "draft POST /lobby/ready": "draft-POST_lobby_ready.json",
+  "rigged GET /game#selection": "rigged-GET_game_selection.json",
+  "rigged POST /lobby/avatar": "rigged-POST_lobby_avatar.json",
+  "scry GET /game#order": "scry-GET_game_order.json",
+  "surveil GET /game#order": "surveil-GET_game_order.json",
+  "reveal GET /game#revealed": "reveal-GET_game_revealed.json"
 }

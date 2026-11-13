@@ -1,0 +1,170 @@
+{
+  "inGame": true,
+  "finished": false,
+  "prompt": "Priority: AgentBot\nTurn: 1 (AgentBot)\nPhase: Main phase, precombat\nStack: 1 to Resolve.",
+  "promptCard": null,
+  "buttons": {
+    "ok": "OK",
+    "okEnabled": true,
+    "cancel": "Undo",
+    "cancelEnabled": true
+  },
+  "incorrectActions": 0,
+  "pendingDecision": {
+    "id": 1,
+    "kind": "order",
+    "prompt": "Move cards to top or bottom of library / Choose the cards to keep on top, the first one topmost. The rest go to the bottom.",
+    "options": [
+      "Preordain (7)",
+      "Island (33)"
+    ],
+    "min": 0,
+    "max": 2,
+    "default": null
+  },
+  "messages": [],
+  "turn": 1,
+  "phase": "MAIN1",
+  "activePlayer": "AgentBot",
+  "gameOver": false,
+  "winner": "",
+  "me": "AgentBot",
+  "hasPriority": false,
+  "autoPass": "opponent-turns",
+  "autoPassNow": false,
+  "players": [
+    {
+      "id": 0,
+      "name": "AgentBot",
+      "life": 20,
+      "hasPriority": false,
+      "isMe": true,
+      "handSize": 5,
+      "librarySize": 33,
+      "graveyardSize": 0,
+      "exileSize": 0,
+      "battlefield": [
+        {
+          "id": 27,
+          "name": "Island",
+          "zone": "Battlefield",
+          "controller": "AgentBot",
+          "tapped": true,
+          "sick": false,
+          "attacking": false,
+          "blocking": false,
+          "damage": 0,
+          "token": false,
+          "faceDown": false,
+          "type": "Basic Land - Island",
+          "manaCost": "no cost",
+          "text": ""
+        }
+      ],
+      "graveyard": [],
+      "hand": [
+        {
+          "id": 3,
+          "name": "Preordain",
+          "zone": "Hand",
+          "controller": "AgentBot",
+          "tapped": false,
+          "sick": false,
+          "attacking": false,
+          "blocking": false,
+          "damage": 0,
+          "token": false,
+          "faceDown": false,
+          "type": "Sorcery",
+          "manaCost": "{U}",
+          "text": "Scry 2, then draw a card. (To scry 2, look at the top two cards of your library, then put any number of them on the bottom and the rest on top in any order.) "
+        },
+        {
+          "id": 24,
+          "name": "Island",
+          "zone": "Hand",
+          "controller": "AgentBot",
+          "tapped": false,
+          "sick": false,
+          "attacking": false,
+          "blocking": false,
+          "damage": 0,
+          "token": false,
+          "faceDown": false,
+          "type": "Basic Land - Island",
+          "manaCost": "no cost",
+          "text": ""
+        },
+        {
+          "id": 11,
+          "name": "Preordain",
+          "zone": "Hand",
+          "controller": "AgentBot",
+          "tapped": false,
+          "sick": false,
+          "attacking": false,
+          "blocking": false,
+          "damage": 0,
+          "token": false,
+          "faceDown": false,
+          "type": "Sorcery",
+          "manaCost": "{U}",
+          "text": "Scry 2, then draw a card. (To scry 2, look at the top two cards of your library, then put any number of them on the bottom and the rest on top in any order.) "
+        },
+        {
+          "id": 6,
+          "name": "Preordain",
+          "zone": "Hand",
+          "controller": "AgentBot",
+          "tapped": false,
+          "sick": false,
+          "attacking": false,
+          "blocking": false,
+          "damage": 0,
+          "token": false,
+          "faceDown": false,
+          "type": "Sorcery",
+          "manaCost": "{U}",
+          "text": "Scry 2, then draw a card. (To scry 2, look at the top two cards of your library, then put any number of them on the bottom and the rest on top in any order.) "
+        },
+        {
+          "id": 30,
+          "name": "Island",
+          "zone": "Hand",
+          "controller": "AgentBot",
+          "tapped": false,
+          "sick": false,
+          "attacking": false,
+          "blocking": false,
+          "damage": 0,
+          "token": false,
+          "faceDown": false,
+          "type": "Basic Land - Island",
+          "manaCost": "no cost",
+          "text": ""
+        }
+      ]
+    },
+    {
+      "id": 1,
+      "name": "HostAI",
+      "life": 20,
+      "hasPriority": true,
+      "isMe": false,
+      "handSize": 7,
+      "librarySize": 53,
+      "graveyardSize": 0,
+      "exileSize": 0,
+      "battlefield": [],
+      "graveyard": []
+    }
+  ],
+  "stack": [
+    {
+      "id": 2,
+      "source": "Preordain",
+      "by": "AgentBot",
+      "text": "Preordain (4) - AgentBot scries 2. AgentBot draws a card."
+    }
+  ]
+}

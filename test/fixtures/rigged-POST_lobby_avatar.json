@@ -1,0 +1,28 @@
+{
+  "mySlot": 1,
+  "limitedMode": true,
+  "activeEventId": null,
+  "formatName": null,
+  "slots": [
+    {
+      "index": 0,
+      "type": "AI",
+      "name": "HostAI",
+      "ready": true,
+      "avatar": 42,
+      "team": 0,
+      "deckName": null,
+      "hasDeck": true
+    },
+    {
+      "index": 1,
+      "type": "REMOTE",
+      "name": "AgentBot",
+      "ready": false,
+      "avatar": 42,
+      "team": 1,
+      "deckName": null,
+      "hasDeck": false
+    }
+  ]
+}
