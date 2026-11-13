@@ -30,7 +30,7 @@ Build Forge once (`mvn -U -B clean -P windows-linux install -DskipTests` in a Fo
 
 Loading cards takes about 40 s. To start the bridge yourself, follow its README. The server looks for it at `FORGE_BRIDGE_URL` (default `http://127.0.0.1:36744`).
 
-Auto-join is off unless `FORGE_AUTO_JOIN` is set to the host's `host:port`, for example `127.0.0.1:36743`. The server then starts the bridge at start-up, and the bridge takes the first Open slot of each lobby that appears there, with no tool call. `FORGE_AUTO_JOIN_NAME` is the seat name (default `Agent`). `FORGE_AUTO_JOIN_DECK` names a deck in Forge's `constructed` or `network-events` folder; with it the seat also readies, and without it the agent sets a deck and readies. The variables apply only to a bridge this server starts. Leave it off when another player is joining, and see the bridge README for when it tries again.
+Auto-join is off unless `FORGE_AUTO_JOIN` is set to the host's `host:port`, for example `127.0.0.1:36743`. The server then starts the bridge at start-up, and the bridge takes the first Open slot of each lobby that appears there, with no tool call. `FORGE_AUTO_JOIN_NAME` is the seat name (default `Agent`). `FORGE_AUTO_JOIN_DECK` is the path of a `.dck` file, or the name of a deck in the profile's `constructed` or `network-events` folder. A relative path is read from `FORGE_HOME`, so a deck that ships with Forge works on any install, for example `res/quest/precons/Azorius Advance.dck`. With a deck the seat also readies, and without one the agent sets a deck and readies. The variables apply only to a bridge this server starts. Leave it off when another player is joining, and see the bridge README for when it tries again.
 
 Then:
 
