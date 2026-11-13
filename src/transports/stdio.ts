@@ -27,6 +27,8 @@ const watcher = new StatusWatcher(bridge, (_revision, status) => {
   chat.observe(status);
 });
 watcher.start();
+// An auto-join seat has to exist before the agent's first tool call
+if (process.env.FORGE_AUTO_JOIN) void bridge.ensureStarted().catch((e: Error) => console.error(e.message));
 console.error(`forge-mcp-server on stdio; bridge at ${bridge.url}`);
 
 process.on("SIGINT", () => {

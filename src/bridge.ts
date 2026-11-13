@@ -19,6 +19,18 @@ export interface BridgeOptions {
   fetch?: typeof fetch;
 }
 
+/**
+ * Bridge arguments that make it sit down by itself when a lobby appears: `FORGE_AUTO_JOIN` is the host's
+ * `host:port`, `FORGE_AUTO_JOIN_NAME` the seat name, `FORGE_AUTO_JOIN_DECK` a deck name. Empty when off.
+ */
+export function autoJoinArgs(env: NodeJS.ProcessEnv = process.env): string[] {
+  if (!env.FORGE_AUTO_JOIN) return [];
+  const args = ["--auto-join", env.FORGE_AUTO_JOIN];
+  if (env.FORGE_AUTO_JOIN_NAME) args.push("--auto-join-name", env.FORGE_AUTO_JOIN_NAME);
+  if (env.FORGE_AUTO_JOIN_DECK) args.push("--auto-join-deck", env.FORGE_AUTO_JOIN_DECK);
+  return args;
+}
+
 export class BridgeError extends Error {
   constructor(message: string, readonly status?: number) {
     super(message);
@@ -29,6 +41,7 @@ export class Bridge {
   private readonly baseUrl: string;
   private readonly fetchImpl: typeof fetch;
   private child?: ChildProcess;
+  private starting?: Promise<"already-running" | "started" | "not-configured">;
 
   constructor(private readonly opts: BridgeOptions = {}) {
     this.baseUrl = (opts.baseUrl ?? process.env.FORGE_BRIDGE_URL ?? "http://127.0.0.1:36744").replace(/\/$/, "");
@@ -90,7 +103,13 @@ export class Bridge {
   }
 
   /** Starts the Java bridge if both jars are configured and nothing answers yet. Resolves when /status answers. */
-  async ensureStarted(timeoutMs = 180_000): Promise<"already-running" | "started" | "not-configured"> {
+  ensureStarted(timeoutMs = 180_000): Promise<"already-running" | "started" | "not-configured"> {
+    // The bridge answers only after its card load, so a second caller in that time waits for the first start
+    this.starting ??= this.start(timeoutMs).finally(() => (this.starting = undefined));
+    return this.starting;
+  }
+
+  private async start(timeoutMs: number): Promise<"already-running" | "started" | "not-configured"> {
     if (await this.isUp()) return "already-running";
     const jar = this.opts.jar ?? process.env.FORGE_JAR;
     const bridgeJar = this.opts.bridgeJar ?? process.env.FORGE_BRIDGE_JAR;
@@ -107,6 +126,7 @@ export class Bridge {
       "forge.agent.AgentMain",
       "--port",
       port,
+      ...autoJoinArgs(),
     ];
     this.child = spawn("java", args, { cwd, stdio: ["ignore", "pipe", "pipe"] });
     this.child.stdout?.on("data", (d: Buffer) => process.stderr.write(`[forge-bridge] ${d}`));
