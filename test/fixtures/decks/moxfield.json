@@ -1,0 +1,294 @@
+{
+ "name": "Sample Modern Deck",
+ "format": "modern",
+ "boards": {
+  "mainboard": {
+   "count": 60,
+   "cards": {
+    "kaN49": {
+     "quantity": 1,
+     "card": {
+      "name": "Island",
+      "set": "und"
+     }
+    },
+    "EbPg6": {
+     "quantity": 1,
+     "card": {
+      "name": "Plains",
+      "set": "und"
+     }
+    },
+    "kOzVw": {
+     "quantity": 1,
+     "card": {
+      "name": "Swamp",
+      "set": "und"
+     }
+    },
+    "kqdG2": {
+     "quantity": 1,
+     "card": {
+      "name": "Godless Shrine",
+      "set": "gtc"
+     }
+    },
+    "E66Zp": {
+     "quantity": 1,
+     "card": {
+      "name": "Watery Grave",
+      "set": "gtc"
+     }
+    },
+    "EbJXJ": {
+     "quantity": 1,
+     "card": {
+      "name": "Hallowed Fountain",
+      "set": "sld"
+     }
+    },
+    "EromV": {
+     "quantity": 1,
+     "card": {
+      "name": "Overgrown Tomb",
+      "set": "rvr"
+     }
+    },
+    "LRomz": {
+     "quantity": 1,
+     "card": {
+      "name": "Otawara, Soaring City",
+      "set": "neo"
+     }
+    },
+    "E08G3": {
+     "quantity": 1,
+     "card": {
+      "name": "Meticulous Archive",
+      "set": "mkm"
+     }
+    },
+    "YMe06": {
+     "quantity": 1,
+     "card": {
+      "name": "Shadowy Backstreet",
+      "set": "mkm"
+     }
+    },
+    "LwM5Q": {
+     "quantity": 1,
+     "card": {
+      "name": "Undercity Sewers",
+      "set": "mkm"
+     }
+    },
+    "kAVOR": {
+     "quantity": 4,
+     "card": {
+      "name": "Ephemerate",
+      "set": "plst"
+     }
+    },
+    "EbJza": {
+     "quantity": 4,
+     "card": {
+      "name": "Goryo's Vengeance",
+      "set": "uma"
+     }
+    },
+    "kyvD0": {
+     "quantity": 4,
+     "card": {
+      "name": "Thoughtseize",
+      "set": "2xm"
+     }
+    },
+    "Yxx4Q": {
+     "quantity": 4,
+     "card": {
+      "name": "Grief",
+      "set": "mh2"
+     }
+    },
+    "Lmgpx": {
+     "quantity": 4,
+     "card": {
+      "name": "Tainted Indulgence",
+      "set": "snc"
+     }
+    },
+    "LK4RN": {
+     "quantity": 4,
+     "card": {
+      "name": "Fallaji Archaeologist",
+      "set": "bro"
+     }
+    },
+    "E0bX2": {
+     "quantity": 4,
+     "card": {
+      "name": "Atraxa, Grand Unifier",
+      "set": "one"
+     }
+    },
+    "YnAaA": {
+     "quantity": 3,
+     "card": {
+      "name": "Flooded Strand",
+      "set": "mh3"
+     }
+    },
+    "LwQ79": {
+     "quantity": 3,
+     "card": {
+      "name": "Marsh Flats",
+      "set": "mm3"
+     }
+    },
+    "Y8wMo": {
+     "quantity": 3,
+     "card": {
+      "name": "Polluted Delta",
+      "set": "mh3"
+     }
+    },
+    "YjQep": {
+     "quantity": 3,
+     "card": {
+      "name": "Prismatic Ending",
+      "set": "mh2"
+     }
+    },
+    "Lm1r3": {
+     "quantity": 3,
+     "card": {
+      "name": "Faithful Mending",
+      "set": "mid"
+     }
+    },
+    "Yeg6R": {
+     "quantity": 2,
+     "card": {
+      "name": "Griselbrand",
+      "set": "sld"
+     }
+    },
+    "kXwpD": {
+     "quantity": 2,
+     "card": {
+      "name": "Priest of Fell Rites",
+      "set": "mh2"
+     }
+    },
+    "L3OwR": {
+     "quantity": 2,
+     "card": {
+      "name": "Solitude",
+      "set": "mh2"
+     }
+    }
+   }
+  },
+  "sideboard": {
+   "count": 15,
+   "cards": {
+    "kqjZz": {
+     "quantity": 2,
+     "card": {
+      "name": "Supreme Verdict",
+      "set": "ima"
+     }
+    },
+    "kOAm0": {
+     "quantity": 2,
+     "card": {
+      "name": "Teferi, Time Raveler",
+      "set": "war"
+     }
+    },
+    "k7P6B": {
+     "quantity": 2,
+     "card": {
+      "name": "Force of Negation",
+      "set": "mh1"
+     }
+    },
+    "EP04q": {
+     "quantity": 2,
+     "card": {
+      "name": "Cursed Totem",
+      "set": "mh2"
+     }
+    },
+    "Eb9rP": {
+     "quantity": 2,
+     "card": {
+      "name": "Subtlety",
+      "set": "mh2"
+     }
+    },
+    "YnAVR": {
+     "quantity": 3,
+     "card": {
+      "name": "Celestial Purge",
+      "set": "con"
+     }
+    },
+    "L3OwR": {
+     "quantity": 1,
+     "card": {
+      "name": "Solitude",
+      "set": "mh2"
+     }
+    },
+    "EJPKN": {
+     "quantity": 1,
+     "card": {
+      "name": "March of Otherworldly Light",
+      "set": "neo"
+     }
+    }
+   }
+  },
+  "maybeboard": {
+   "count": 0,
+   "cards": {}
+  },
+  "commanders": {
+   "count": 0,
+   "cards": {}
+  },
+  "companions": {
+   "count": 0,
+   "cards": {}
+  },
+  "signatureSpells": {
+   "count": 0,
+   "cards": {}
+  },
+  "attractions": {
+   "count": 0,
+   "cards": {}
+  },
+  "stickers": {
+   "count": 0,
+   "cards": {}
+  },
+  "contraptions": {
+   "count": 0,
+   "cards": {}
+  },
+  "planes": {
+   "count": 0,
+   "cards": {}
+  },
+  "schemes": {
+   "count": 0,
+   "cards": {}
+  },
+  "tokens": {
+   "count": 0,
+   "cards": {}
+  }
+ }
+}

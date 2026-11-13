@@ -63,6 +63,8 @@ describe("bridge fixtures", () => {
       forge_lobby_avatar: { index: 3 },
       forge_lobby_avatars: { page: 0 },
       forge_lobby_deck: { dck: "[Main]\n40 Plains" },
+      forge_decks: {},
+      forge_deck_save: { text: "4 Lightning Bolt\n20 Mountain", name: "Burn", dryRun: true },
       forge_chat: { text: "hi" },
       forge_draft_pack: {},
       forge_draft_pick: { card: "0" },
@@ -80,8 +82,8 @@ describe("bridge fixtures", () => {
       expect(res.isError, `${tool.name}: ${JSON.stringify(res.content)}`).toBeFalsy();
       expect(res.structuredContent, `${tool.name} returned structuredContent`).toBeDefined();
     }
-    // forge_lobby_avatars reads a file and does not call the bridge.
-    expect(calls.length).toBeGreaterThanOrEqual(tools.length - 1);
+    // forge_lobby_avatars, forge_decks and forge_deck_save read files and do not call the bridge.
+    expect(calls.length).toBeGreaterThanOrEqual(tools.length - 3);
     await client.close();
   });
 });

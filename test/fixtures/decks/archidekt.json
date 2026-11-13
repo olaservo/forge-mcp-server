@@ -1,0 +1,1212 @@
+{
+ "name": "Sample Commander Deck",
+ "deckFormat": 3,
+ "categories": [
+  {
+   "name": "Beats",
+   "includedInDeck": true,
+   "isPremier": false
+  },
+  {
+   "name": "Land",
+   "includedInDeck": true,
+   "isPremier": false
+  },
+  {
+   "name": "Enchantment",
+   "includedInDeck": true,
+   "isPremier": false
+  },
+  {
+   "name": "Artifact",
+   "includedInDeck": true,
+   "isPremier": false
+  },
+  {
+   "name": "Big Draw",
+   "includedInDeck": true,
+   "isPremier": false
+  },
+  {
+   "name": "Sorcery",
+   "includedInDeck": true,
+   "isPremier": false
+  },
+  {
+   "name": "Removal",
+   "includedInDeck": true,
+   "isPremier": false
+  },
+  {
+   "name": "Ramp",
+   "includedInDeck": true,
+   "isPremier": false
+  },
+  {
+   "name": "Planeswalker",
+   "includedInDeck": true,
+   "isPremier": false
+  },
+  {
+   "name": "Instant",
+   "includedInDeck": true,
+   "isPremier": false
+  },
+  {
+   "name": "Commander",
+   "includedInDeck": true,
+   "isPremier": true
+  },
+  {
+   "name": "Creature",
+   "includedInDeck": true,
+   "isPremier": false
+  },
+  {
+   "name": "Buff",
+   "includedInDeck": true,
+   "isPremier": false
+  },
+  {
+   "name": "Engines",
+   "includedInDeck": true,
+   "isPremier": false
+  }
+ ],
+ "cards": [
+  {
+   "quantity": 1,
+   "categories": [
+    "Buff"
+   ],
+   "card": {
+    "oracleCard": {
+     "name": "Gaea's Gift"
+    },
+    "edition": {
+     "editioncode": "bro"
+    }
+   }
+  },
+  {
+   "quantity": 1,
+   "categories": [
+    "Buff"
+   ],
+   "card": {
+    "oracleCard": {
+     "name": "Tyvar's Stand"
+    },
+    "edition": {
+     "editioncode": "one"
+    }
+   }
+  },
+  {
+   "quantity": 1,
+   "categories": [
+    "Buff"
+   ],
+   "card": {
+    "oracleCard": {
+     "name": "Invigorate"
+    },
+    "edition": {
+     "editioncode": "a25"
+    }
+   }
+  },
+  {
+   "quantity": 1,
+   "categories": [
+    "Buff"
+   ],
+   "card": {
+    "oracleCard": {
+     "name": "Brute Force"
+    },
+    "edition": {
+     "editioncode": "tsr"
+    }
+   }
+  },
+  {
+   "quantity": 1,
+   "categories": [
+    "Ramp"
+   ],
+   "card": {
+    "oracleCard": {
+     "name": "Kodama's Reach"
+    },
+    "edition": {
+     "editioncode": "cmm"
+    }
+   }
+  },
+  {
+   "quantity": 1,
+   "categories": [
+    "Land"
+   ],
+   "card": {
+    "oracleCard": {
+     "name": "Command Tower"
+    },
+    "edition": {
+     "editioncode": "woc"
+    }
+   }
+  },
+  {
+   "quantity": 10,
+   "categories": [
+    "Land"
+   ],
+   "card": {
+    "oracleCard": {
+     "name": "Forest"
+    },
+    "edition": {
+     "editioncode": "mom"
+    }
+   }
+  },
+  {
+   "quantity": 1,
+   "categories": [
+    "Ramp"
+   ],
+   "card": {
+    "oracleCard": {
+     "name": "Harrow"
+    },
+    "edition": {
+     "editioncode": "plst"
+    }
+   }
+  },
+  {
+   "quantity": 1,
+   "categories": [
+    "Engines"
+   ],
+   "card": {
+    "oracleCard": {
+     "name": "Hunter's Insight"
+    },
+    "edition": {
+     "editioncode": "cmr"
+    }
+   }
+  },
+  {
+   "quantity": 1,
+   "categories": [
+    "Engines"
+   ],
+   "card": {
+    "oracleCard": {
+     "name": "Ohran Viper"
+    },
+    "edition": {
+     "editioncode": "ddm"
+    }
+   }
+  },
+  {
+   "quantity": 1,
+   "categories": [
+    "Removal"
+   ],
+   "card": {
+    "oracleCard": {
+     "name": "Bite Down"
+    },
+    "edition": {
+     "editioncode": "dmu"
+    }
+   }
+  },
+  {
+   "quantity": 1,
+   "categories": [
+    "Removal"
+   ],
+   "card": {
+    "oracleCard": {
+     "name": "Ram Through"
+    },
+    "edition": {
+     "editioncode": "iko"
+    }
+   }
+  },
+  {
+   "quantity": 1,
+   "categories": [
+    "Engines"
+   ],
+   "card": {
+    "oracleCard": {
+     "name": "Mischievous Catgeist // Catlike Curiosity"
+    },
+    "edition": {
+     "editioncode": "vow"
+    }
+   }
+  },
+  {
+   "quantity": 1,
+   "categories": [
+    "Removal"
+   ],
+   "card": {
+    "oracleCard": {
+     "name": "Cosmic Hunger"
+    },
+    "edition": {
+     "editioncode": "mom"
+    }
+   }
+  },
+  {
+   "quantity": 1,
+   "categories": [
+    "Buff"
+   ],
+   "card": {
+    "oracleCard": {
+     "name": "Groundswell"
+    },
+    "edition": {
+     "editioncode": "wwk"
+    }
+   }
+  },
+  {
+   "quantity": 1,
+   "categories": [
+    "Ramp"
+   ],
+   "card": {
+    "oracleCard": {
+     "name": "Growth Spiral"
+    },
+    "edition": {
+     "editioncode": "dmc"
+    }
+   }
+  },
+  {
+   "quantity": 1,
+   "categories": [
+    "Ramp"
+   ],
+   "card": {
+    "oracleCard": {
+     "name": "Eureka Moment"
+    },
+    "edition": {
+     "editioncode": "stx"
+    }
+   }
+  },
+  {
+   "quantity": 1,
+   "categories": [
+    "Removal"
+   ],
+   "card": {
+    "oracleCard": {
+     "name": "Inscription of Abundance"
+    },
+    "edition": {
+     "editioncode": "moc"
+    }
+   }
+  },
+  {
+   "quantity": 1,
+   "categories": [
+    "Buff"
+   ],
+   "card": {
+    "oracleCard": {
+     "name": "Become Immense"
+    },
+    "edition": {
+     "editioncode": "ktk"
+    }
+   }
+  },
+  {
+   "quantity": 1,
+   "categories": [
+    "Engines"
+   ],
+   "card": {
+    "oracleCard": {
+     "name": "Vedalken Heretic"
+    },
+    "edition": {
+     "editioncode": "arb"
+    }
+   }
+  },
+  {
+   "quantity": 1,
+   "categories": [
+    "Removal"
+   ],
+   "card": {
+    "oracleCard": {
+     "name": "Decisive Denial"
+    },
+    "edition": {
+     "editioncode": "stx"
+    }
+   }
+  },
+  {
+   "quantity": 1,
+   "categories": [
+    "Ramp"
+   ],
+   "card": {
+    "oracleCard": {
+     "name": "Deeproot Wayfinder"
+    },
+    "edition": {
+     "editioncode": "mom"
+    }
+   }
+  },
+  {
+   "quantity": 1,
+   "categories": [
+    "Ramp"
+   ],
+   "card": {
+    "oracleCard": {
+     "name": "Joint Exploration"
+    },
+    "edition": {
+     "editioncode": "dmu"
+    }
+   }
+  },
+  {
+   "quantity": 1,
+   "categories": [
+    "Buff"
+   ],
+   "card": {
+    "oracleCard": {
+     "name": "Temur Charm"
+    },
+    "edition": {
+     "editioncode": "c20"
+    }
+   }
+  },
+  {
+   "quantity": 1,
+   "categories": [
+    "Land"
+   ],
+   "card": {
+    "oracleCard": {
+     "name": "Frontier Bivouac"
+    },
+    "edition": {
+     "editioncode": "moc"
+    }
+   }
+  },
+  {
+   "quantity": 1,
+   "categories": [
+    "Land"
+   ],
+   "card": {
+    "oracleCard": {
+     "name": "Simic Growth Chamber"
+    },
+    "edition": {
+     "editioncode": "moc"
+    }
+   }
+  },
+  {
+   "quantity": 1,
+   "categories": [
+    "Land"
+   ],
+   "card": {
+    "oracleCard": {
+     "name": "Gruul Turf"
+    },
+    "edition": {
+     "editioncode": "afc"
+    }
+   }
+  },
+  {
+   "quantity": 1,
+   "categories": [
+    "Land"
+   ],
+   "card": {
+    "oracleCard": {
+     "name": "Izzet Boilerworks"
+    },
+    "edition": {
+     "editioncode": "c20"
+    }
+   }
+  },
+  {
+   "quantity": 1,
+   "categories": [
+    "Land"
+   ],
+   "card": {
+    "oracleCard": {
+     "name": "Evolving Wilds"
+    },
+    "edition": {
+     "editioncode": "woe"
+    }
+   }
+  },
+  {
+   "quantity": 1,
+   "categories": [
+    "Land"
+   ],
+   "card": {
+    "oracleCard": {
+     "name": "Terramorphic Expanse"
+    },
+    "edition": {
+     "editioncode": "moc"
+    }
+   }
+  },
+  {
+   "quantity": 1,
+   "categories": [
+    "Land"
+   ],
+   "card": {
+    "oracleCard": {
+     "name": "Temple of Epiphany"
+    },
+    "edition": {
+     "editioncode": "moc"
+    }
+   }
+  },
+  {
+   "quantity": 1,
+   "categories": [
+    "Land"
+   ],
+   "card": {
+    "oracleCard": {
+     "name": "Temple of Abandon"
+    },
+    "edition": {
+     "editioncode": "moc"
+    }
+   }
+  },
+  {
+   "quantity": 1,
+   "categories": [
+    "Land"
+   ],
+   "card": {
+    "oracleCard": {
+     "name": "Temple of Mystery"
+    },
+    "edition": {
+     "editioncode": "m20"
+    }
+   }
+  },
+  {
+   "quantity": 1,
+   "categories": [
+    "Buff"
+   ],
+   "card": {
+    "oracleCard": {
+     "name": "Simic Charm"
+    },
+    "edition": {
+     "editioncode": "gtc"
+    }
+   }
+  },
+  {
+   "quantity": 6,
+   "categories": [
+    "Land"
+   ],
+   "card": {
+    "oracleCard": {
+     "name": "Island"
+    },
+    "edition": {
+     "editioncode": "mom"
+    }
+   }
+  },
+  {
+   "quantity": 6,
+   "categories": [
+    "Land"
+   ],
+   "card": {
+    "oracleCard": {
+     "name": "Mountain"
+    },
+    "edition": {
+     "editioncode": "mom"
+    }
+   }
+  },
+  {
+   "quantity": 1,
+   "categories": [
+    "Buff"
+   ],
+   "card": {
+    "oracleCard": {
+     "name": "Blossoming Defense"
+    },
+    "edition": {
+     "editioncode": "scd"
+    }
+   }
+  },
+  {
+   "quantity": 1,
+   "categories": [
+    "Land"
+   ],
+   "card": {
+    "oracleCard": {
+     "name": "Izzet Guildgate"
+    },
+    "edition": {
+     "editioncode": "grn"
+    }
+   }
+  },
+  {
+   "quantity": 1,
+   "categories": [
+    "Land"
+   ],
+   "card": {
+    "oracleCard": {
+     "name": "Gruul Guildgate"
+    },
+    "edition": {
+     "editioncode": "rna"
+    }
+   }
+  },
+  {
+   "quantity": 1,
+   "categories": [
+    "Land"
+   ],
+   "card": {
+    "oracleCard": {
+     "name": "Simic Guildgate"
+    },
+    "edition": {
+     "editioncode": "rna"
+    }
+   }
+  },
+  {
+   "quantity": 1,
+   "categories": [
+    "Buff"
+   ],
+   "card": {
+    "oracleCard": {
+     "name": "Titan's Strength"
+    },
+    "edition": {
+     "editioncode": "ths"
+    }
+   }
+  },
+  {
+   "quantity": 1,
+   "categories": [
+    "Engines"
+   ],
+   "card": {
+    "oracleCard": {
+     "name": "Oakhame Adversary"
+    },
+    "edition": {
+     "editioncode": "eld"
+    }
+   }
+  },
+  {
+   "quantity": 1,
+   "categories": [
+    "Removal"
+   ],
+   "card": {
+    "oracleCard": {
+     "name": "Soul's Fire"
+    },
+    "edition": {
+     "editioncode": "cmr"
+    }
+   }
+  },
+  {
+   "quantity": 1,
+   "categories": [
+    "Buff"
+   ],
+   "card": {
+    "oracleCard": {
+     "name": "Shore Up"
+    },
+    "edition": {
+     "editioncode": "dmu"
+    }
+   }
+  },
+  {
+   "quantity": 1,
+   "categories": [
+    "Buff"
+   ],
+   "card": {
+    "oracleCard": {
+     "name": "Vines of Vastwood"
+    },
+    "edition": {
+     "editioncode": "mm2"
+    }
+   }
+  },
+  {
+   "quantity": 1,
+   "categories": [
+    "Buff"
+   ],
+   "card": {
+    "oracleCard": {
+     "name": "Snakeskin Veil"
+    },
+    "edition": {
+     "editioncode": "cmm"
+    }
+   }
+  },
+  {
+   "quantity": 1,
+   "categories": [
+    "Buff"
+   ],
+   "card": {
+    "oracleCard": {
+     "name": "Tamiyo's Safekeeping"
+    },
+    "edition": {
+     "editioncode": "neo"
+    }
+   }
+  },
+  {
+   "quantity": 1,
+   "categories": [
+    "Engines"
+   ],
+   "card": {
+    "oracleCard": {
+     "name": "Djinn Illuminatus"
+    },
+    "edition": {
+     "editioncode": "c20"
+    }
+   }
+  },
+  {
+   "quantity": 1,
+   "categories": [
+    "Engines"
+   ],
+   "card": {
+    "oracleCard": {
+     "name": "Cold-Eyed Selkie"
+    },
+    "edition": {
+     "editioncode": "c20"
+    }
+   }
+  },
+  {
+   "quantity": 1,
+   "categories": [
+    "Engines"
+   ],
+   "card": {
+    "oracleCard": {
+     "name": "Stormchaser Drake"
+    },
+    "edition": {
+     "editioncode": "vow"
+    }
+   }
+  },
+  {
+   "quantity": 1,
+   "categories": [
+    "Removal"
+   ],
+   "card": {
+    "oracleCard": {
+     "name": "Khalni Ambush // Khalni Territory"
+    },
+    "edition": {
+     "editioncode": "znr"
+    }
+   }
+  },
+  {
+   "quantity": 1,
+   "categories": [
+    "Engines"
+   ],
+   "card": {
+    "oracleCard": {
+     "name": "Mercurial Spelldancer"
+    },
+    "edition": {
+     "editioncode": "one"
+    }
+   }
+  },
+  {
+   "quantity": 1,
+   "categories": [
+    "Ramp"
+   ],
+   "card": {
+    "oracleCard": {
+     "name": "Cultivate"
+    },
+    "edition": {
+     "editioncode": "moc"
+    }
+   }
+  },
+  {
+   "quantity": 1,
+   "categories": [
+    "Buff"
+   ],
+   "card": {
+    "oracleCard": {
+     "name": "Colossal Growth"
+    },
+    "edition": {
+     "editioncode": "dmu"
+    }
+   }
+  },
+  {
+   "quantity": 1,
+   "categories": [
+    "Buff"
+   ],
+   "card": {
+    "oracleCard": {
+     "name": "Mutagenic Growth"
+    },
+    "edition": {
+     "editioncode": "nph"
+    }
+   }
+  },
+  {
+   "quantity": 1,
+   "categories": [
+    "Ramp"
+   ],
+   "card": {
+    "oracleCard": {
+     "name": "Sticky Fingers"
+    },
+    "edition": {
+     "editioncode": "snc"
+    }
+   }
+  },
+  {
+   "quantity": 1,
+   "categories": [
+    "Ramp"
+   ],
+   "card": {
+    "oracleCard": {
+     "name": "Roiling Regrowth"
+    },
+    "edition": {
+     "editioncode": "znr"
+    }
+   }
+  },
+  {
+   "quantity": 1,
+   "categories": [
+    "Ramp"
+   ],
+   "card": {
+    "oracleCard": {
+     "name": "Goldvein Pick"
+    },
+    "edition": {
+     "editioncode": "khm"
+    }
+   }
+  },
+  {
+   "quantity": 1,
+   "categories": [
+    "Ramp"
+   ],
+   "card": {
+    "oracleCard": {
+     "name": "Beamtown Beatstick"
+    },
+    "edition": {
+     "editioncode": "mom"
+    }
+   }
+  },
+  {
+   "quantity": 1,
+   "categories": [
+    "Engines"
+   ],
+   "card": {
+    "oracleCard": {
+     "name": "Snake Umbra"
+    },
+    "edition": {
+     "editioncode": "woc"
+    }
+   }
+  },
+  {
+   "quantity": 1,
+   "categories": [
+    "Engines"
+   ],
+   "card": {
+    "oracleCard": {
+     "name": "Combat Research"
+    },
+    "edition": {
+     "editioncode": "dmu"
+    }
+   }
+  },
+  {
+   "quantity": 1,
+   "categories": [
+    "Engines"
+   ],
+   "card": {
+    "oracleCard": {
+     "name": "Geode Golem"
+    },
+    "edition": {
+     "editioncode": "cmm"
+    }
+   }
+  },
+  {
+   "quantity": 1,
+   "categories": [
+    "Commander"
+   ],
+   "card": {
+    "oracleCard": {
+     "name": "Xyris, the Writhing Storm"
+    },
+    "edition": {
+     "editioncode": "dmc"
+    }
+   }
+  },
+  {
+   "quantity": 1,
+   "categories": [
+    "Buff"
+   ],
+   "card": {
+    "oracleCard": {
+     "name": "Fully Grown"
+    },
+    "edition": {
+     "editioncode": "iko"
+    }
+   }
+  },
+  {
+   "quantity": 1,
+   "categories": [
+    "Removal"
+   ],
+   "card": {
+    "oracleCard": {
+     "name": "Sunder Shaman"
+    },
+    "edition": {
+     "editioncode": "rna"
+    }
+   }
+  },
+  {
+   "quantity": 1,
+   "categories": [
+    "Buff"
+   ],
+   "card": {
+    "oracleCard": {
+     "name": "Collision // Colossus"
+    },
+    "edition": {
+     "editioncode": "rna"
+    }
+   }
+  },
+  {
+   "quantity": 1,
+   "categories": [
+    "Engines"
+   ],
+   "card": {
+    "oracleCard": {
+     "name": "Surrakar Spellblade"
+    },
+    "edition": {
+     "editioncode": "roe"
+    }
+   }
+  },
+  {
+   "quantity": 1,
+   "categories": [
+    "Buff"
+   ],
+   "card": {
+    "oracleCard": {
+     "name": "Titanic Growth"
+    },
+    "edition": {
+     "editioncode": "m21"
+    }
+   }
+  },
+  {
+   "quantity": 1,
+   "categories": [
+    "Engines"
+   ],
+   "card": {
+    "oracleCard": {
+     "name": "Bladegriff Prototype"
+    },
+    "edition": {
+     "editioncode": "cmr"
+    }
+   }
+  },
+  {
+   "quantity": 1,
+   "categories": [
+    "Buff"
+   ],
+   "card": {
+    "oracleCard": {
+     "name": "Temur Battle Rage"
+    },
+    "edition": {
+     "editioncode": "cmm"
+    }
+   }
+  },
+  {
+   "quantity": 1,
+   "categories": [
+    "Removal"
+   ],
+   "card": {
+    "oracleCard": {
+     "name": "Thrash // Threat"
+    },
+    "edition": {
+     "editioncode": "rna"
+    }
+   }
+  },
+  {
+   "quantity": 1,
+   "categories": [
+    "Ramp"
+   ],
+   "card": {
+    "oracleCard": {
+     "name": "Coiling Oracle"
+    },
+    "edition": {
+     "editioncode": "mm3"
+    }
+   }
+  },
+  {
+   "quantity": 1,
+   "categories": [
+    "Land"
+   ],
+   "card": {
+    "oracleCard": {
+     "name": "Kessig Wolf Run"
+    },
+    "edition": {
+     "editioncode": "clb"
+    }
+   }
+  },
+  {
+   "quantity": 1,
+   "categories": [
+    "Removal"
+   ],
+   "card": {
+    "oracleCard": {
+     "name": "Trygon Predator"
+    },
+    "edition": {
+     "editioncode": "c20"
+    }
+   }
+  },
+  {
+   "quantity": 1,
+   "categories": [
+    "Buff"
+   ],
+   "card": {
+    "oracleCard": {
+     "name": "Giant Growth"
+    },
+    "edition": {
+     "editioncode": "bro"
+    }
+   }
+  },
+  {
+   "quantity": 1,
+   "categories": [
+    "Engines"
+   ],
+   "card": {
+    "oracleCard": {
+     "name": "Season of Growth"
+    },
+    "edition": {
+     "editioncode": "wot"
+    }
+   }
+  },
+  {
+   "quantity": 1,
+   "categories": [
+    "Engines"
+   ],
+   "card": {
+    "oracleCard": {
+     "name": "Neheb, Dreadhorde Champion"
+    },
+    "edition": {
+     "editioncode": "dmc"
+    }
+   }
+  },
+  {
+   "quantity": 1,
+   "categories": [
+    "Removal"
+   ],
+   "card": {
+    "oracleCard": {
+     "name": "Master's Rebuke"
+    },
+    "edition": {
+     "editioncode": "neo"
+    }
+   }
+  },
+  {
+   "quantity": 1,
+   "categories": [
+    "Buff"
+   ],
+   "card": {
+    "oracleCard": {
+     "name": "Blazing Crescendo"
+    },
+    "edition": {
+     "editioncode": "one"
+    }
+   }
+  },
+  {
+   "quantity": 1,
+   "categories": [
+    "Removal"
+   ],
+   "card": {
+    "oracleCard": {
+     "name": "Armed // Dangerous"
+    },
+    "edition": {
+     "editioncode": "dgm"
+    }
+   }
+  },
+  {
+   "quantity": 1,
+   "categories": [
+    "Removal"
+   ],
+   "card": {
+    "oracleCard": {
+     "name": "Roar of Challenge"
+    },
+    "edition": {
+     "editioncode": "ktk"
+    }
+   }
+  }
+ ]
+}

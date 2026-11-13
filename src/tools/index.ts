@@ -1,26 +1,11 @@
-import type { CallToolResult, McpServer, ToolAnnotations, ToolCallback } from "@modelcontextprotocol/server";
+import type { CallToolResult, McpServer, ToolCallback } from "@modelcontextprotocol/server";
 import { z } from "zod";
 import { avatarPage, avatarSheetPath, AVATARS_PER_PAGE } from "../avatars.js";
-import { Bridge, BridgeError } from "../bridge.js";
+import { Bridge } from "../bridge.js";
+import { sharedLibrary, type DeckLibrary } from "../decks/library.js";
 import * as out from "../schemas.js";
-
-const json = (value: unknown): CallToolResult => ({
-  content: [{ type: "text", text: JSON.stringify(value, null, 2) }],
-  structuredContent: value as Record<string, unknown>,
-});
-
-const failure = (e: unknown): CallToolResult => ({
-  content: [{ type: "text", text: e instanceof BridgeError ? e.message : String(e) }],
-  isError: true,
-});
-
-async function run(fn: () => Promise<unknown>): Promise<CallToolResult> {
-  try {
-    return json(await fn());
-  } catch (e) {
-    return failure(e);
-  }
-}
+import { acting, failure, readOnly, run, type RegisterTool, type ToolConfig } from "./common.js";
+import { registerDeckTools } from "./decks.js";
 
 /**
  * A lobby change. The bridge answers before the host has applied it, so this waits for the
@@ -33,20 +18,9 @@ async function lobbyChange(bridge: Bridge, path: string, body: unknown): Promise
   return (await bridge.get<{ lobby?: unknown }>("/status")).lobby ?? answer;
 }
 
-const readOnly = { readOnlyHint: true, destructiveHint: false, idempotentHint: true, openWorldHint: false } as const;
-const acting = { readOnlyHint: false, destructiveHint: false, idempotentHint: false, openWorldHint: false } as const;
-
-interface ToolConfig<In extends z.ZodType> {
-  title: string;
-  description: string;
-  inputSchema: In;
-  outputSchema: z.ZodType;
-  annotations: ToolAnnotations;
-}
-
-export function registerTools(server: McpServer, bridge: Bridge, log?: (line: string) => void): void {
+export function registerTools(server: McpServer, bridge: Bridge, log?: (line: string) => void, decks: DeckLibrary = sharedLibrary()): void {
   /** Registers a tool and logs each call. */
-  const tool = <In extends z.ZodType>(name: string, config: ToolConfig<In>, handler: (args: z.output<In>) => Promise<CallToolResult>) => {
+  const tool: RegisterTool = <In extends z.ZodType>(name: string, config: ToolConfig<In>, handler: (args: z.output<In>) => Promise<CallToolResult>) => {
     const timed = async (args: z.output<In>) => {
       const started = Date.now();
       try {
@@ -174,16 +148,20 @@ export function registerTools(server: McpServer, bridge: Bridge, log?: (line: st
       title: "Set lobby deck",
       description:
         "Choose the deck for our lobby slot. With no arguments, uses the pool delivered by the draft. " +
-        "`name` picks a deck from Forge's network-events or constructed folders; `dck` submits deck-file text ([metadata]/[Main]/[Sideboard] sections).",
+        "`id` picks any deck listed by forge_decks. `name` picks a deck from Forge's network-events or constructed folders; " +
+        "`dck` submits deck-file text ([metadata]/[Main]/[Sideboard] sections).",
       inputSchema: z.object({
+        id: z.string().optional().describe("A deck id from forge_decks"),
         name: z.string().optional(),
         dck: z.string().optional(),
       }),
       outputSchema: out.DeckResult,
       annotations: acting,
     },
-    async ({ name, dck }) => run(() => bridge.post("/lobby/deck", { name, dck })),
+    async ({ id, name, dck }) => run(async () => bridge.post("/lobby/deck", id ? { dck: decks.read(id).dck } : { name, dck })),
   );
+
+  registerDeckTools(tool, decks);
 
   tool(
     "forge_chat",

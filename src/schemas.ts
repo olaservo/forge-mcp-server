@@ -182,3 +182,25 @@ export const PickResult = z.looseObject({ picked: PaperCard.nullish(), packNumbe
 export const DeckResult = z.looseObject({ deck: str, size: num });
 export const OkResult = z.looseObject({ ok: bool });
 export const LogResult = z.looseObject({ log: strings });
+
+export const DeckSummary = z.looseObject({
+  id: str,
+  folder: str,
+  name: str,
+  main: num,
+  sideboard: num,
+  commander: strings,
+  colors: str,
+  description: str,
+  tags: str,
+});
+export const DeckList = z.looseObject({
+  folders: z.array(z.looseObject({ folder: str, decks: num, writable: bool, about: str })).nullish(),
+  total: num,
+  decks: z.array(DeckSummary).nullish(),
+  deck: DeckSummary.extend({
+    cards: z.record(z.string(), z.array(z.looseObject({ count: num, name: str }))).nullish(),
+    dck: str,
+  }).nullish(),
+});
+export const DeckSaved = DeckSummary.extend({ saved: bool, path: str, unknown: strings, notes: strings, source: str });

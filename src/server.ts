@@ -3,6 +3,7 @@ import { McpServer, type ServerCapabilities } from "@modelcontextprotocol/server
 import type { SkillCatalog } from "@modelcontextprotocol/server/ext/skills";
 import { loadSkills } from "@modelcontextprotocol/server/ext/skills/node";
 import { Bridge } from "./bridge.js";
+import type { DeckLibrary } from "./decks/library.js";
 import { EventLog, registerEvents } from "./events.js";
 import type { WebhookHub } from "./webhooks.js";
 import { registerTools } from "./tools/index.js";
@@ -31,6 +32,8 @@ export interface CreateServerOptions {
   principal?: string;
   /** Receives one line per finished tool call and per poll that returns events. */
   log?: (line: string) => void;
+  /** Forge's deck folders. Default: the ones FORGE_HOME and the user's Forge folder point to. */
+  decks?: DeckLibrary;
 }
 
 export function createServer(opts: CreateServerOptions = {}): McpServer {
@@ -47,13 +50,14 @@ export function createServer(opts: CreateServerOptions = {}): McpServer {
     instructions:
       "Forge (Card-Forge) seat for an agent. Tools drive one headless Forge client that joins a host's online lobby, " +
       "drafts and plays. Start with forge_status, then forge_connect. Load the forge-player skill (skill://forge/forge-player/SKILL.md) " +
-      "before playing and forge-drafter before drafting. While the seat has nothing to do, wait in one of two ways. " +
+      "before playing and forge-drafter before drafting. forge_decks lists the decks the seat can bring to a lobby; load forge-deck " +
+      "before choosing one or importing a new one. While the seat has nothing to do, wait in one of two ways. " +
       "If your client starts a turn for you when forge.your_move fires (an MCP Events client, or Claude Code with the " +
       "mcp-events mod, which tells you so), end your turn after acting and do not call forge_wait. " +
       "Otherwise call forge_wait instead of polling, or subscribe to forge://status through subscriptions/listen.",
   });
 
-  registerTools(server, bridge, opts.log);
+  registerTools(server, bridge, opts.log, opts.decks);
   registerEvents(server, opts.events ?? new EventLog(), opts.webhooks && { hub: opts.webhooks, principal: opts.principal }, opts.log);
 
   server.registerResource(

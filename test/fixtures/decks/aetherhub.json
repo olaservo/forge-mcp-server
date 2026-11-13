@@ -1,0 +1,158 @@
+{
+ "convertedDeck": [
+  {
+   "cardId": 0,
+   "quantity": null,
+   "name": "Deck",
+   "set": "",
+   "number": ""
+  },
+  {
+   "cardId": 0,
+   "quantity": 3,
+   "name": "Plains",
+   "set": "HOP",
+   "number": "146"
+  },
+  {
+   "cardId": 0,
+   "quantity": 1,
+   "name": "Swamp",
+   "set": "HOP",
+   "number": "151"
+  },
+  {
+   "cardId": 0,
+   "quantity": 3,
+   "name": "Godless Shrine",
+   "set": "RNA",
+   "number": "248"
+  },
+  {
+   "cardId": 0,
+   "quantity": 1,
+   "name": "Godless Shrine",
+   "set": "RNA",
+   "number": "248"
+  },
+  {
+   "cardId": 0,
+   "quantity": 2,
+   "name": "Overgrown Tomb",
+   "set": "GRN",
+   "number": "253"
+  },
+  {
+   "cardId": 0,
+   "quantity": 4,
+   "name": "Temple Garden",
+   "set": "GRN",
+   "number": "258"
+  },
+  {
+   "cardId": 0,
+   "quantity": 3,
+   "name": "Amalia Benavides Aguirre",
+   "set": "LCI",
+   "number": "221"
+  },
+  {
+   "cardId": 0,
+   "quantity": 4,
+   "name": "Case of the Uneaten Feast",
+   "set": "MKM",
+   "number": "10"
+  },
+  {
+   "cardId": 0,
+   "quantity": 4,
+   "name": "Essence Channeler",
+   "set": "BLB",
+   "number": "12"
+  },
+  {
+   "cardId": 0,
+   "quantity": 4,
+   "name": "Starscape Cleric",
+   "set": "BLB",
+   "number": "116"
+  },
+  {
+   "cardId": 0,
+   "quantity": 2,
+   "name": "Sheltered by Ghosts",
+   "set": "DSK",
+   "number": "30"
+  },
+  {
+   "cardId": 0,
+   "quantity": 4,
+   "name": "Hinterland Sanctifier",
+   "set": "FDN",
+   "number": "730"
+  },
+  {
+   "cardId": 0,
+   "quantity": 4,
+   "name": "Starting Town",
+   "set": "FIN",
+   "number": "289"
+  },
+  {
+   "cardId": 0,
+   "quantity": 3,
+   "name": "Haliya, Guided by Light",
+   "set": "EOE",
+   "number": "19"
+  },
+  {
+   "cardId": 0,
+   "quantity": 3,
+   "name": "Multiversal Passage",
+   "set": "OM1",
+   "number": "181"
+  },
+  {
+   "cardId": 0,
+   "quantity": 4,
+   "name": "Virulent Emissary",
+   "set": "ECL",
+   "number": "202"
+  },
+  {
+   "cardId": 0,
+   "quantity": 2,
+   "name": "Leonardo, Cutting Edge",
+   "set": "TMT",
+   "number": "15"
+  },
+  {
+   "cardId": 0,
+   "quantity": 2,
+   "name": "Moseo, Vein's New Dean",
+   "set": "SOS",
+   "number": "91"
+  },
+  {
+   "cardId": 0,
+   "quantity": 2,
+   "name": "Tigra, Feline Fury",
+   "set": "MSH",
+   "number": "191"
+  },
+  {
+   "cardId": 0,
+   "quantity": 2,
+   "name": "Professor Dellian Fel",
+   "set": "SOS",
+   "number": "214"
+  },
+  {
+   "cardId": 0,
+   "quantity": 3,
+   "name": "Lunar Convocation",
+   "set": "BLB",
+   "number": "223"
+  }
+ ]
+}

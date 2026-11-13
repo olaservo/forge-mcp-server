@@ -17,7 +17,7 @@ To have the agent woken on its turn in Claude Code, also install the `mcp-events
 ## Pieces
 
 - **Bridge** (Java, [forge-agent-bridge](https://github.com/olaservo/forge-agent-bridge)): a jar that runs beside the Forge jar. Boots the card database headless and serves `GET /status`, `GET /wait`, `POST /connect`, `POST /lobby/ready`, `POST /lobby/avatar`, `POST /lobby/deck`, `POST /chat`, `GET /draft/pack`, `POST /draft/pick`, `GET /draft/pool`, `GET /game`, `GET /game/log`, `POST /game/act`, `POST /game/decide` on `127.0.0.1:36744`.
-- **This server** (TypeScript): tools `forge_status`, `forge_connect`, `forge_disconnect`, `forge_lobby_ready`, `forge_lobby_avatars`, `forge_lobby_avatar`, `forge_lobby_deck`, `forge_chat`, `forge_draft_pack`, `forge_draft_pick`, `forge_draft_pool`, `forge_game_state`, `forge_game_log`, `forge_game_act`, `forge_game_decide`, `forge_wait`; resources `forge://status`, `forge://game/log`, `forge://draft/pool`; skills `forge-player` and `forge-drafter` served through the MCP skills extension. Every tool declares an `outputSchema` (`src/schemas.ts`) and returns `structuredContent`. A watcher long-polls the bridge and pushes `notifications/resources/updated` for `forge://status` to `subscriptions/listen` subscribers (on stdio through the server, on HTTP through the handler's event bus), so a client that subscribes does not need `forge_wait`.
+- **This server** (TypeScript): tools `forge_status`, `forge_connect`, `forge_disconnect`, `forge_lobby_ready`, `forge_lobby_avatars`, `forge_lobby_avatar`, `forge_lobby_deck`, `forge_chat`, `forge_draft_pack`, `forge_draft_pick`, `forge_draft_pool`, `forge_game_state`, `forge_game_log`, `forge_game_act`, `forge_game_decide`, `forge_wait`, and the deck tools `forge_decks` and `forge_deck_save` (see Decks); resources `forge://status`, `forge://game/log`, `forge://draft/pool`; skills `forge-player`, `forge-drafter` and `forge-deck` served through the MCP skills extension. Every tool declares an `outputSchema` (`src/schemas.ts`) and returns `structuredContent`. A watcher long-polls the bridge and pushes `notifications/resources/updated` for `forge://status` to `subscriptions/listen` subscribers (on stdio through the server, on HTTP through the handler's event bus), so a client that subscribes does not need `forge_wait`.
 - **Events**: `events/list` and `events/poll` from [SEP-3415](https://github.com/modelcontextprotocol/modelcontextprotocol/pull/3415) (Accepted by the Core Maintainers on 2026-11-11, not yet merged; read at `f77a5fe`), declared as `capabilities.extensions["io.modelcontextprotocol/events"]` and registered as custom methods in `src/events.ts` because SDK 2.4.0 has no events support. Two event types, delivered by poll, and by webhook when the HTTP endpoint has a token (see ChatGPT below). The watcher emits `forge.your_move` when the seat's pending ask changes: a draft pick, a priority prompt, a choice dialog, or the end of a game. It emits `forge.chat` for each chat line from another player. Events are kept in memory (1000 entries), cursors are per process, and a cursor from before a restart polls as `truncated`. No push (`events/stream`) delivery yet.
 
 ## Run
@@ -44,6 +44,30 @@ Claude Code: `claude mcp add forge -- node <path>/dist/index.js`.
 With `FORGE_MCP_PORT` set, the stdio server also serves `/mcp` over HTTP on that port, sharing the same event log. Claude Code 2.1.322 has no MCP Events client, so the `mcp-events` mod in `claude-code-mod/mcp-events` polls `events/poll` there and starts a turn when `forge.your_move` fires.
 
 Install the mod for sessions started in a folder with `claude plugin marketplace add <path to this repo> --scope project` and `claude plugin install mcp-events@forge-mcp-server --scope project`, run from that folder; a folder marketplace is read in place, so edits here take effect on `/reload-plugins`. For one session, `claude --plugin-dir <path>/claude-code-mod/mcp-events`. Its test runs with `claude plugin test`. Do not install it at user scope: every session would poll the one HTTP port, and a second session would be woken by the first one's game.
+
+## Decks
+
+`forge_decks` lists the decks in Forge's folders on the server's machine, and `forge_lobby_deck` takes a deck `id` from that list. `forge_deck_save` writes a new deck into the folder it belongs in. The three tools read and write files and do not need the bridge. The `forge-deck` skill tells an agent how to use them.
+
+Folders. Under the user's deck folder: `constructed`, `commander`, `brawl`, `oathbreaker`, `tiny_leaders`, `network-events`, `draft`, `sealed`, `net`. Under `FORGE_HOME/res`: `precons` (`quest/precons`), `commander-precons` (`quest/commanderprecons`), `quest-duels` (`quest/duels`) and `cube`. The user's deck folder is found the way Forge finds it: `decksDir` or `userDir` in `FORGE_HOME/forge.profile.properties`, else `%APPDATA%\Forge` on Windows, `~/Library/Application Support/Forge` on macOS and `~/.forge` elsewhere. `FORGE_USER_DIR` and `FORGE_DECKS_DIR` override it.
+
+`forge_deck_save` takes a deck page URL or deck text. Text can be Forge `.dck`, a plain list with or without Arena or Magic Online headings and set codes, or a Magic Online `.dek` file. Card names are checked against Forge's card scripts in `FORGE_HOME/res/cardsfolder` and rewritten to the name Forge uses; a deck with a card Forge does not implement is not saved unless `allowUnknown` is set. The folder follows from the deck: a commander or a Commander format goes to `commander`, a cube to `res/cube` with a `res/draft/<name>.draft` definition, a pool with event tags to `network-events`, anything else to `constructed`. An existing file is replaced only with `overwrite`. Set `FORGE_DECKS_READONLY=1` to leave `forge_deck_save` out.
+
+Sites, each checked on 2026-11-13 by fetching one public deck, converting it and loading the result in Forge 2.0.16 with no card missing:
+
+| Site | Fetched from |
+|---|---|
+| Moxfield | `api2.moxfield.com/v3/decks/all/<id>` |
+| Archidekt | `archidekt.com/api/decks/<id>/` |
+| AetherHub | `aetherhub.com/Deck/FetchMtgaDeckJson?deckId=<id>` |
+| EDHREC average decks | `json.edhrec.com/pages/average-decks/<commander>.json` |
+| MTGTop8 | `mtgtop8.com/mtgo?d=<id>` |
+| MTGDecks | the deck page's Arena export |
+| Cube Cobra | `cubecobra.com/cube/download/forge/<id>` |
+
+MTGGoldfish and TappedOut answered 403 with a Cloudflare challenge to every request tried, so the tool asks for the deck's text export instead. Moxfield, AetherHub and MTGDecks answered 403 to Node's `fetch` and 200 to `node:https` with the same headers, so the fetcher uses `node:https`. None of these endpoints is a documented API. The fetcher sends one or two requests per deck, to these hosts only, over HTTPS.
+
+`FORGE_HOME=<forge folder> npm run check:decks` repeats the check against the live sites: it fetches a sample deck from each and reports any card Forge does not have. `--out <dir>` also writes the converted `.dck` files. The first listing that filters by `query` or `colors` reads every deck file once; with 27,000 files that took 11 s here, and later calls about 1 s.
 
 ## ChatGPT
 
@@ -94,7 +118,7 @@ Deployed once, on 2026-11-12, with a Workers VPC service on `127.0.0.1`. Checked
 
 ## Test
 
-`npm test` runs an in-process MCP client against the server with a fake bridge, including a `subscriptions/listen` round trip. `test/webhooks.test.ts` covers webhook delivery, checks the signatures with the `standardwebhooks` package, and runs one subscription over real sockets behind a token. `test/fixtures.test.ts` checks every tool's output schema against real bridge payloads in `test/fixtures/`, then runs all 16 tools over them. The fixtures are recorded by the bridge's own tests, which host a draft and a match in-process and write its responses to `target/agent-fixtures` in forge-agent-bridge. Copy them over after a bridge change.
+`npm test` runs an in-process MCP client against the server with a fake bridge, including a `subscriptions/listen` round trip. `test/webhooks.test.ts` covers webhook delivery, checks the signatures with the `standardwebhooks` package, and runs one subscription over real sockets behind a token. `test/fixtures.test.ts` checks every tool's output schema against real bridge payloads in `test/fixtures/`, then runs all 18 tools over them. `test/decks.test.ts` covers the deck tools against a small Forge folder built in a temp directory: the card index, each text form, each site's parser over a trimmed recording of its real response in `test/fixtures/decks/`, and the folder and overwrite rules. The fixtures are recorded by the bridge's own tests, which host a draft and a match in-process and write its responses to `target/agent-fixtures` in forge-agent-bridge. Copy them over after a bridge change.
 
 ## Status
 
@@ -103,6 +127,8 @@ Lobby, draft and full matches work end to end. The bridge's tests run a draft an
 ## Security
 
 The HTTP endpoint has no authentication unless `FORGE_MCP_TOKEN` is set. It binds to `127.0.0.1` by default. Without a token, do not set `FORGE_MCP_HOST` to an address reachable from outside a network you trust: anyone who can reach the port can act as the seat. With a token, anyone who holds it can act as the seat, and the token is the only credential, so serve it over HTTPS only. The same holds for `FORGE_MCP_PROXY_TOKEN`, and its holder can also name any principal, so only the Worker should have it.
+
+Whoever can call the tools can also read the deck files in Forge's folders and, through `forge_deck_save`, write `.dck` files into them and make the server fetch from the deck sites listed above. File names are stripped of path characters and deck ids are confined to their folder. `FORGE_DECKS_READONLY=1` removes the saving tool.
 
 ## License
 

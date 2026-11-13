@@ -39,7 +39,8 @@
     "start:http": "node dist/index.js streamableHttp",
     "dev": "tsx src/index.ts",
     "inspector": "npx @modelcontextprotocol/inspector node dist/index.js",
-    "plugin:chatgpt": "node scripts/build-chatgpt-plugin.mjs"
+    "plugin:chatgpt": "node scripts/build-chatgpt-plugin.mjs",
+    "check:decks": "node scripts/check-deck-sites.mjs"
   },
   "dependencies": {
     "@modelcontextprotocol/node": "^2.1.2",
