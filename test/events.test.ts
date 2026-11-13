@@ -41,6 +41,16 @@ describe("events", () => {
     expect(moves.observe({ ...over, revision: 12 })).toBeUndefined();
   });
 
+  it("emits game_over again when a later game ends the same way", () => {
+    const moves = new MoveTracker(new EventLog());
+    const over = { revision: 9, game: { inGame: false, finished: true, gameOver: true, winner: "Agent", turn: 12 } };
+    expect(moves.observe(over)?.data).toMatchObject({ kind: "game_over" });
+    expect(moves.observe({ ...over, revision: 10 })).toBeUndefined();
+    expect(moves.observe(priority("Priority: Agent", 11))?.data).toMatchObject({ kind: "priority" });
+    expect(moves.observe({ ...over, revision: 20 })?.data).toMatchObject({ kind: "game_over", revision: 20 });
+    expect(moves.observe({ ...over, revision: 21 })).toBeUndefined();
+  });
+
   it("emits forge.chat for new lines from other players only", () => {
     const chat = new ChatTracker(new EventLog());
     const seat = { connection: { name: "Claude" }, lobby: { slots: [{ name: "Ola" }, { name: "Claude" }] } };

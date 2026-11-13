@@ -147,6 +147,9 @@ export class MoveTracker {
   constructor(private readonly log: EventLog) {}
 
   observe(status: SeatStatus): EventOccurrence | undefined {
+    // A game in progress means the reported result belongs to an earlier game. The next result is then
+    // new, even when it ends on the same turn with the same winner.
+    if (status.game?.inGame && !status.game.gameOver && !status.game.finished) this.reported = undefined;
     const pending = pendingMove(status);
     const move = pending?.data.kind === "game_over" && pending.key === this.reported ? undefined : pending;
     const changed = move !== undefined && move.key !== this.last;
