@@ -1,9 +1,9 @@
 import type { EngineInterface, Register } from 'claude-code'
 
 /**
- * A client for MCP Events poll delivery (SEP-3415), for
- * Claude Code builds without one. It polls the server over HTTP because a mod cannot send
- * a custom method on the engine's own MCP connection.
+ * A client for MCP Events poll delivery (SEP-3415), for Claude Code builds without one.
+ * It polls the server over HTTP because a mod cannot send a custom method on the engine's
+ * own MCP connection.
  */
 type EventType = { name: string; description?: string; delivery: string[] }
 type Occurrence = { eventId: string; name: string; timestamp: string; data: unknown }
@@ -35,6 +35,8 @@ const missed = new Set<string>()
 
 const storeKey = (url: string, name: string) => `mcp-events:cursor:${url}:${name}`
 
+const list = (value: unknown, fallback = '') => String(value ?? fallback).split(',').map(s => s.trim()).filter(Boolean)
+
 /** One JSON-RPC request as a bare POST. The server answers with JSON or a one-message SSE body. */
 async function rpc<T>($: EngineInterface, url: string, method: string, params: { name?: string }): Promise<T> {
   // SEP-3415 routing headers: Mcp-Method always, Mcp-Name for requests that carry an event name.
@@ -58,8 +60,8 @@ async function subscribe($: EngineInterface, url: string, wanted: readonly strin
   const names = events.filter(e => e.delivery.includes('poll') && (wanted.length === 0 || wanted.includes(e.name))).map(e => e.name)
   return Promise.all(
     names.map(async name => {
-      const held = current.find(s => s.name === name)
-      if (held) return held
+      const existing = current.find(s => s.name === name)
+      if (existing) return existing
       const stored = await $.store.get(storeKey(url, name))
       return { name, cursor: typeof stored === 'string' ? stored : null, nextAt: 0, hasPolled: false }
     }),
@@ -164,17 +166,13 @@ async function tick($: EngineInterface, url: string, wanted: readonly string[]) 
 export const register: Register = (on, options) => {
   const url = String(options.url ?? 'http://127.0.0.1:3080/mcp')
   const server = String(options.server ?? 'forge')
-  const wanted = String(options.events ?? '').split(',').map(s => s.trim()).filter(Boolean)
-  const superseded = String(options.superseded ?? 'forge.your_move').split(',').map(s => s.trim()).filter(Boolean)
+  const wanted = list(options.events)
+  const superseded = list(options.superseded, 'forge.your_move')
   const toolPrefix = `mcp__${server}__`
   // Only a tool whose result shows the server's state counts as the model having seen it. A chat or lobby
   // call returns no game state, and counting it dropped an event the model had not seen.
-  const stateTools = String(options.stateTools ?? 'forge_status,forge_wait,forge_game_state,forge_game_act,forge_game_decide')
-    .split(',')
-    .map(s => s.trim())
-    .filter(Boolean)
-
-  const waitTools = String(options.waitTools ?? 'forge_wait').split(',').map(s => s.trim()).filter(Boolean)
+  const stateTools = list(options.stateTools, 'forge_status,forge_wait,forge_game_state,forge_game_act,forge_game_decide')
+  const waitTools = list(options.waitTools, 'forge_wait')
 
   on('prompt.compose', async ($, e, next) => {
     const composed = await next(e)

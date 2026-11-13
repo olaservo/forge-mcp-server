@@ -4,11 +4,7 @@ import type { z } from "zod";
 import * as out from "../src/schemas.js";
 import { avatarSheet, connect, fakeBridge } from "./helpers.js";
 
-/**
- * Real bridge payloads, recorded by the Java tests (`BridgeHttp.saveFixtures` in
- * forge-gui-desktop/src/test/java/forge/agent) while a draft and a match ran in-process. Every
- * tool's output schema must accept them, and every tool must run end to end over them.
- */
+/** Real bridge payloads, recorded by forge-agent-bridge's tests (`BridgeHttp.saveFixtures`) while a draft and a match ran in-process. */
 const dir = new URL("./fixtures/", import.meta.url);
 const index = JSON.parse(readFileSync(new URL("index.json", dir), "utf8")) as Record<string, string>;
 const fixture = (file: string) => JSON.parse(readFileSync(new URL(file, dir), "utf8")) as Record<string, unknown>;

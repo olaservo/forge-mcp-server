@@ -100,14 +100,19 @@ interface SeatStatus {
   } | null;
 }
 
+type Move = { key: string; data: Record<string, unknown> };
+
+function gameOver(game: NonNullable<SeatStatus["game"]>, revision: number | undefined): Move {
+  const data = { kind: "game_over", prompt: `Game over. Winner: ${game.winner ?? ""}`, revision, turn: game.turn, phase: game.phase };
+  return { key: `game_over:${game.turn}:${game.winner}`, data };
+}
+
 /** What the seat is being asked to do, or undefined when it is waiting on someone else. `key` identifies the ask. */
-export function pendingMove(status: SeatStatus): { key: string; data: Record<string, unknown> } | undefined {
+export function pendingMove(status: SeatStatus): Move | undefined {
   const { draft, game, revision } = status;
   if (game?.inGame) {
+    if (game.gameOver || game.finished) return gameOver(game, revision);
     const at = { revision, turn: game.turn, phase: game.phase };
-    if (game.gameOver || game.finished) {
-      return { key: `game_over:${game.turn}:${game.winner}`, data: { kind: "game_over", prompt: `Game over. Winner: ${game.winner ?? ""}`, ...at } };
-    }
     const decision = game.pendingDecision;
     if (decision) {
       return { key: `decision:${decision.id}`, data: { kind: "decision", prompt: decision.prompt, decisionKind: decision.kind, ...at } };
@@ -129,10 +134,7 @@ export function pendingMove(status: SeatStatus): { key: string; data: Record<str
   }
   // The host can return the seat to the lobby as the game ends, so the result arrives with inGame false.
   // It stays in the status afterwards. The key does not change, so it fires once.
-  if (game?.gameOver || game?.finished) {
-    const data = { kind: "game_over", prompt: `Game over. Winner: ${game.winner ?? ""}`, revision, turn: game.turn, phase: game.phase };
-    return { key: `game_over:${game.turn}:${game.winner}`, data };
-  }
+  if (game?.gameOver || game?.finished) return gameOver(game, revision);
   return undefined;
 }
 
@@ -154,11 +156,14 @@ export class MoveTracker {
   }
 }
 
-/**
- * Emits `forge.chat` for each new chat line from another player. The bridge reports the last 20 lines,
- * so new lines are the ones after the overlap with the previous report. Lines from the server and from
- * our own seat are skipped.
- */
+/** The lines of `now` after its overlap with `before`. Both are the bridge's last 20 chat lines. */
+function newLines(before: string[], now: string[]): string[] {
+  let dropped = 0;
+  while (dropped < before.length && !before.slice(dropped).every((line, i) => now[i] === line)) dropped++;
+  return now.slice(before.length - dropped);
+}
+
+/** Emits `forge.chat` for each new chat line from another player. Lines from the server and from our own seat are skipped. */
 export class ChatTracker {
   private last: string[] | undefined;
 
@@ -169,12 +174,10 @@ export class ChatTracker {
     const prev = this.last;
     this.last = lines;
     if (prev === undefined) return [];
-    let shift = 0;
-    while (shift < prev.length && !prev.slice(shift).every((line, i) => lines[i] === line)) shift++;
     const me = status.connection?.name;
     const others = new Set((status.lobby?.slots ?? []).map((s) => s.name).filter((n) => n && n !== me));
     const emitted: EventOccurrence[] = [];
-    for (const line of lines.slice(prev.length - shift)) {
+    for (const line of newLines(prev, lines)) {
       const at = line.indexOf(": ");
       const from = at > 0 ? line.slice(0, at) : "";
       if (others.has(from)) emitted.push(this.log.emit(CHAT, { from, text: line.slice(at + 2), revision: status.revision }));

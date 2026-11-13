@@ -31,6 +31,7 @@ export class DeliveryError extends Error {
 export type WebhookPost = (url: string, headers: Record<string, string>, body: string) => Promise<{ status: number; body: string }>;
 
 const MAX_BODY_BYTES = 256 * 1024;
+const MAX_RESPONSE_BYTES = 64 * 1024;
 const POST_TIMEOUT_MS = 10_000;
 const DEFAULT_TTL_MS = 60 * 60 * 1000;
 const MIN_TTL_MS = 60 * 1000;
@@ -102,7 +103,7 @@ export function webhookPost({ insecure = false } = {}): WebhookPost {
           let size = 0;
           res.on("data", (chunk: Buffer) => {
             size += chunk.length;
-            if (size <= 64 * 1024) chunks.push(chunk);
+            if (size <= MAX_RESPONSE_BYTES) chunks.push(chunk);
           });
           res.on("end", () => resolve({ status: res.statusCode ?? 0, body: Buffer.concat(chunks).toString("utf8") }));
           res.on("error", (err) => reject(new DeliveryError(reasonOf(err))));
@@ -188,8 +189,15 @@ export interface WebhookOptions {
   log?: (line: string) => void;
 }
 
+interface EmittedEvent {
+  eventId: string;
+  name: string;
+  timestamp: string;
+  data: Record<string, unknown>;
+}
+
 interface EventSource {
-  onEmit(listener: (event: { eventId: string; name: string; timestamp: string; data: Record<string, unknown> }) => void): void;
+  onEmit(listener: (event: EmittedEvent) => void): void;
 }
 
 /**
@@ -255,8 +263,8 @@ export class WebhookHub {
       this.verified.set(pair, now + VERIFIED_FOR_MS);
     }
 
-    const noExpiry = params.ttlMs === null && this.file !== undefined;
-    const expiresAt = noExpiry ? null : now + Math.min(MAX_TTL_MS, Math.max(MIN_TTL_MS, params.ttlMs ?? (params.ttlMs === null ? MAX_TTL_MS : DEFAULT_TTL_MS)));
+    const lifetime = this.lifetimeMs(params.ttlMs);
+    const expiresAt = lifetime === null ? null : now + lifetime;
     const rotated = existing && existing.secret !== secret ? { secret: existing.secret, until: now + ROTATION_GRACE_MS } : existing?.previous;
     const sub: Subscription = { ...existing, id, principal, url, name: params.name, arguments: args, secret, previous: rotated, expiresAt };
     this.subs.set(id, sub);
@@ -280,6 +288,12 @@ export class WebhookHub {
     if (removed) this.save();
     this.log(`webhook unsubscribe ${params.name} principal=${principal} ${removed ? "removed" : "unknown"}`);
     return removed;
+  }
+
+  /** Null is no expiry, which is granted only when subscriptions are kept in a file. */
+  private lifetimeMs(ttlMs: number | null | undefined): number | null {
+    if (ttlMs === null) return this.file === undefined ? MAX_TTL_MS : null;
+    return Math.min(MAX_TTL_MS, Math.max(MIN_TTL_MS, ttlMs ?? DEFAULT_TTL_MS));
   }
 
   private async verify(id: string, url: string, secret: string): Promise<void> {
@@ -316,7 +330,7 @@ export class WebhookHub {
     };
   }
 
-  private dispatch(event: { eventId: string; name: string; timestamp: string; data: Record<string, unknown> }): void {
+  private dispatch(event: EmittedEvent): void {
     this.dropExpired(this.now());
     const body = JSON.stringify({ ...event, cursor: null });
     if (Buffer.byteLength(body) > MAX_BODY_BYTES) {

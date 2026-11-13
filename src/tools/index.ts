@@ -1,4 +1,4 @@
-import type { CallToolResult, McpServer } from "@modelcontextprotocol/server";
+import type { CallToolResult, McpServer, ToolAnnotations, ToolCallback } from "@modelcontextprotocol/server";
 import { z } from "zod";
 import { avatarPage, avatarSheetPath, AVATARS_PER_PAGE } from "../avatars.js";
 import { Bridge, BridgeError } from "../bridge.js";
@@ -36,25 +36,29 @@ async function lobbyChange(bridge: Bridge, path: string, body: unknown): Promise
 const readOnly = { readOnlyHint: true, destructiveHint: false, idempotentHint: true, openWorldHint: false } as const;
 const acting = { readOnlyHint: false, destructiveHint: false, idempotentHint: false, openWorldHint: false } as const;
 
-type AnyHandler = (...args: unknown[]) => Promise<unknown>;
-
-/** Makes every tool registered after this report its name, start time and duration when it returns. */
-function logToolCalls(server: McpServer, log: (line: string) => void): void {
-  const original = server.registerTool.bind(server) as (name: string, config: unknown, handler: AnyHandler) => unknown;
-  (server as unknown as { registerTool: unknown }).registerTool = (name: string, config: unknown, handler: AnyHandler) =>
-    original(name, config, async (...args: unknown[]) => {
-      const started = Date.now();
-      try {
-        return await handler(...args);
-      } finally {
-        log(`tool ${name} started ${new Date(started).toISOString()} took ${Date.now() - started} ms`);
-      }
-    });
+interface ToolConfig<In extends z.ZodType> {
+  title: string;
+  description: string;
+  inputSchema: In;
+  outputSchema: z.ZodType;
+  annotations: ToolAnnotations;
 }
 
 export function registerTools(server: McpServer, bridge: Bridge, log?: (line: string) => void): void {
-  if (log) logToolCalls(server, log);
-  server.registerTool(
+  /** Registers a tool and logs each call. */
+  const tool = <In extends z.ZodType>(name: string, config: ToolConfig<In>, handler: (args: z.output<In>) => Promise<CallToolResult>) => {
+    const timed = async (args: z.output<In>) => {
+      const started = Date.now();
+      try {
+        return await handler(args);
+      } finally {
+        log?.(`tool ${name} started ${new Date(started).toISOString()} took ${Date.now() - started} ms`);
+      }
+    };
+    server.registerTool(name, config, timed as ToolCallback<In>);
+  };
+
+  tool(
     "forge_status",
     {
       title: "Forge status",
@@ -74,7 +78,7 @@ export function registerTools(server: McpServer, bridge: Bridge, log?: (line: st
       }),
   );
 
-  server.registerTool(
+  tool(
     "forge_connect",
     {
       title: "Join a Forge host",
@@ -96,7 +100,7 @@ export function registerTools(server: McpServer, bridge: Bridge, log?: (line: st
       }),
   );
 
-  server.registerTool(
+  tool(
     "forge_disconnect",
     {
       title: "Leave the Forge host",
@@ -108,7 +112,7 @@ export function registerTools(server: McpServer, bridge: Bridge, log?: (line: st
     async () => run(() => bridge.post("/disconnect")),
   );
 
-  server.registerTool(
+  tool(
     "forge_lobby_ready",
     {
       title: "Set lobby ready",
@@ -121,7 +125,7 @@ export function registerTools(server: McpServer, bridge: Bridge, log?: (line: st
     async ({ ready }) => run(() => lobbyChange(bridge, "/lobby/ready", { ready })),
   );
 
-  server.registerTool(
+  tool(
     "forge_lobby_avatars",
     {
       title: "Show lobby avatars",
@@ -150,7 +154,7 @@ export function registerTools(server: McpServer, bridge: Bridge, log?: (line: st
     },
   );
 
-  server.registerTool(
+  tool(
     "forge_lobby_avatar",
     {
       title: "Set lobby avatar",
@@ -164,7 +168,7 @@ export function registerTools(server: McpServer, bridge: Bridge, log?: (line: st
     async ({ index }) => run(() => lobbyChange(bridge, "/lobby/avatar", { index })),
   );
 
-  server.registerTool(
+  tool(
     "forge_lobby_deck",
     {
       title: "Set lobby deck",
@@ -181,7 +185,7 @@ export function registerTools(server: McpServer, bridge: Bridge, log?: (line: st
     async ({ name, dck }) => run(() => bridge.post("/lobby/deck", { name, dck })),
   );
 
-  server.registerTool(
+  tool(
     "forge_chat",
     {
       title: "Send lobby chat",
@@ -193,7 +197,7 @@ export function registerTools(server: McpServer, bridge: Bridge, log?: (line: st
     async ({ text }) => run(() => bridge.post("/chat", { text })),
   );
 
-  server.registerTool(
+  tool(
     "forge_draft_pack",
     {
       title: "Current draft pack",
@@ -207,7 +211,7 @@ export function registerTools(server: McpServer, bridge: Bridge, log?: (line: st
     async () => run(() => bridge.get("/draft/pack")),
   );
 
-  server.registerTool(
+  tool(
     "forge_draft_pick",
     {
       title: "Draft pick",
@@ -219,7 +223,7 @@ export function registerTools(server: McpServer, bridge: Bridge, log?: (line: st
     async ({ card }) => run(() => bridge.post("/draft/pick", { card })),
   );
 
-  server.registerTool(
+  tool(
     "forge_draft_pool",
     {
       title: "Drafted pool",
@@ -231,7 +235,7 @@ export function registerTools(server: McpServer, bridge: Bridge, log?: (line: st
     async () => run(() => bridge.get("/draft/pool")),
   );
 
-  server.registerTool(
+  tool(
     "forge_game_state",
     {
       title: "Game state",
@@ -246,7 +250,7 @@ export function registerTools(server: McpServer, bridge: Bridge, log?: (line: st
     async () => run(() => bridge.get("/game")),
   );
 
-  server.registerTool(
+  tool(
     "forge_game_log",
     {
       title: "Game log",
@@ -258,7 +262,7 @@ export function registerTools(server: McpServer, bridge: Bridge, log?: (line: st
     async ({ since }) => run(() => bridge.get("/game/log", { since })),
   );
 
-  server.registerTool(
+  tool(
     "forge_game_act",
     {
       title: "Game action",
@@ -280,7 +284,7 @@ export function registerTools(server: McpServer, bridge: Bridge, log?: (line: st
     async ({ action, id, color }) => run(() => bridge.post("/game/act", { action, id, color })),
   );
 
-  server.registerTool(
+  tool(
     "forge_game_decide",
     {
       title: "Answer a decision",
@@ -299,7 +303,7 @@ export function registerTools(server: McpServer, bridge: Bridge, log?: (line: st
     async ({ id, choices, text }) => run(() => bridge.post("/game/decide", { id, choices, text })),
   );
 
-  server.registerTool(
+  tool(
     "forge_wait",
     {
       title: "Wait for a change",

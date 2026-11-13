@@ -2,30 +2,21 @@ import { spawn, type ChildProcess } from "node:child_process";
 import { delimiter } from "node:path";
 
 /**
- * HTTP client for the Forge agent bridge (`java -jar forge...jar agent`), which is a headless
- * Forge network client with a loopback JSON API. One bridge equals one seat.
+ * HTTP client for the Forge agent bridge (forge-agent-bridge), a headless Forge network client
+ * with a loopback JSON API. One bridge is one seat.
  */
 export interface BridgeOptions {
   /** Base URL of a running bridge. Default http://127.0.0.1:36744 */
   baseUrl?: string;
-  /** Path to the Forge desktop jar-with-dependencies; when set and the bridge is down, it is spawned. */
+  /** Path to the Forge desktop jar-with-dependencies. Default: FORGE_JAR. */
   jar?: string;
-  /** Path to the forge-agent-bridge jar. When set, `jar` can be an unmodified Forge jar. Default: FORGE_BRIDGE_JAR. */
+  /** Path to the forge-agent-bridge jar. Default: FORGE_BRIDGE_JAR. With both jars set, the bridge is spawned when it is down. */
   bridgeJar?: string;
-  /** Working directory for the spawned bridge; must contain `res/` (normally the `forge-gui` folder). */
+  /** Working directory for the spawned bridge. It must contain `res/` (normally the `forge-gui` folder). Default: FORGE_HOME. */
   cwd?: string;
-  /** Extra JVM args for the spawned bridge. */
+  /** JVM args for the spawned bridge. Default: `-Xmx2048m`. */
   javaArgs?: string[];
   fetch?: typeof fetch;
-}
-
-/**
- * How to start the bridge. With a separate bridge jar (forge-agent-bridge) it runs beside an unmodified
- * Forge jar on the classpath. Without one, the Forge jar is a build of the fork that has the `agent` mode.
- */
-export function launch(forgeJar: string, bridgeJar?: string): string[] {
-  if (!bridgeJar) return ["-jar", forgeJar, "agent"];
-  return ["-cp", [bridgeJar, forgeJar].join(delimiter), "forge.agent.AgentMain"];
 }
 
 export class BridgeError extends Error {
@@ -71,12 +62,12 @@ export class Bridge {
     } catch (e) {
       throw new BridgeError(
         `Forge bridge not reachable at ${this.baseUrl} (${(e as Error).message}). ` +
-          `Start it with: java -Djava.awt.headless=true -jar <forge-gui-desktop jar-with-dependencies> agent --port 36744 ` +
-          `from the forge-gui folder, or set FORGE_JAR and FORGE_HOME so this server can start it.`,
+          `Set FORGE_JAR, FORGE_BRIDGE_JAR and FORGE_HOME so this server can start it, ` +
+          `or start it yourself as the forge-agent-bridge README describes.`,
       );
     }
     const text = await res.text();
-    let json: unknown = undefined;
+    let json: unknown;
     try {
       json = text ? JSON.parse(text) : undefined;
     } catch {
@@ -98,11 +89,12 @@ export class Bridge {
     }
   }
 
-  /** Starts the Java bridge if a jar is configured and nothing answers yet. Resolves when /status answers. */
+  /** Starts the Java bridge if both jars are configured and nothing answers yet. Resolves when /status answers. */
   async ensureStarted(timeoutMs = 180_000): Promise<"already-running" | "started" | "not-configured"> {
     if (await this.isUp()) return "already-running";
     const jar = this.opts.jar ?? process.env.FORGE_JAR;
-    if (!jar) return "not-configured";
+    const bridgeJar = this.opts.bridgeJar ?? process.env.FORGE_BRIDGE_JAR;
+    if (!jar || !bridgeJar) return "not-configured";
     const cwd = this.opts.cwd ?? process.env.FORGE_HOME ?? process.cwd();
     const port = new URL(this.baseUrl).port || "36744";
     const args = [
@@ -110,7 +102,9 @@ export class Bridge {
       "-Dfile.encoding=UTF-8",
       "-Dio.netty.tryReflectionSetAccessible=true",
       ...(this.opts.javaArgs ?? ["-Xmx2048m"]),
-      ...launch(jar, this.opts.bridgeJar ?? process.env.FORGE_BRIDGE_JAR),
+      "-cp",
+      [bridgeJar, jar].join(delimiter),
+      "forge.agent.AgentMain",
       "--port",
       port,
     ];
