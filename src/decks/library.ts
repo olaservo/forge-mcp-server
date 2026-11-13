@@ -139,12 +139,22 @@ export function folderFor(deck: Decklist): string {
   return "constructed";
 }
 
-/** A file name Forge and Windows both accept. */
-export function fileName(name: string): string {
+/** A deck name as Forge stores it (`/` becomes `_`), without what a Windows file name cannot end in or hold. */
+export function deckName(name: string): string {
   return name
-    .replace(/[\\/:*?"<>|\u0000-\u001f]/g, " ")
-    .replace(/\s+/g, " ")
-    .replace(/^[.\s]+|[.\s]+$/g, "");
+    .replace(/[\\\u0000-\u001f]/g, "")
+    .replace(/\//g, "_")
+    .replace(/[.\s]+$/, "")
+    .trimStart();
+}
+
+/**
+ * The file name Forge gives a deck: `DeckBase.getBestFileName`. It has to match. When Forge starts, it
+ * moves a file in the top of `constructed` that is named otherwise up into the decks folder, where no
+ * deck screen reads it.
+ */
+export function fileName(name: string): string {
+  return deckName(name).replace(/[/:*?"<>|]/g, "");
 }
 
 interface Cached {
@@ -248,7 +258,14 @@ export class DeckLibrary {
     for (const spec of FOLDERS) {
       const files = this.files(spec.key);
       folders.push({ folder: spec.key, decks: files.length, writable: spec.writable, about: spec.about });
-      if (!opts.folder || opts.folder === spec.key) for (const path of files) scope.push([spec.key, path]);
+      // `net` can hold tens of thousands of decks. It is searched only when asked for, and words are
+      // matched against the category and file name so that only the matching files are read.
+      if (spec.key === "net" ? opts.folder !== "net" : opts.folder && opts.folder !== spec.key) continue;
+      const root = this.folderPath(spec.key)!;
+      for (const path of files) {
+        if (spec.key === "net" && !words.every((w) => relative(root, path).toLowerCase().includes(w))) continue;
+        scope.push([spec.key, path]);
+      }
     }
     const offset = opts.offset ?? 0;
     const page = <T>(all: T[]): T[] => all.slice(offset, offset + (opts.limit ?? 40));
@@ -257,7 +274,7 @@ export class DeckLibrary {
       return { folders, total: scope.length, decks: await this.summaries(page(scope)) };
     }
     const matches = (await this.summaries(scope)).filter((s) => {
-        const text = `${s.id} ${s.name} ${s.commander.join(" ")}`.toLowerCase();
+      const text = `${s.id} ${s.name} ${s.commander.join(" ")}`.toLowerCase();
       return words.every((w) => text.includes(w)) && (colors === undefined || [...(s.colors ?? "?")].sort().join("") === colors);
     });
     return { folders, total: matches.length, decks: page(matches) };
@@ -296,9 +313,9 @@ export class DeckLibrary {
     const notes: string[] = [];
     const { deck, unknown } = this.resolve({ ...input, name: opts.name ?? input.name, format: opts.format ?? input.format });
     if (!this.cards()) notes.push("Card names were not checked: FORGE_HOME is not set, so Forge's card list could not be read.");
-    const name = fileName(deck.name ?? "");
+    deck.name = deckName(deck.name ?? "");
+    const name = fileName(deck.name);
     if (!name) throw new Error("The deck has no name. Pass `name`.");
-    deck.name = deck.name!.trim();
 
     const key = opts.folder ?? folderFor(deck);
     const spec = FOLDERS.find((f) => f.key === key);

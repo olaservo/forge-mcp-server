@@ -4,7 +4,7 @@ import { deflateRawSync } from "node:zlib";
 import { describe, expect, it } from "vitest";
 import { CardIndex, loadCardIndex, zipEntries } from "../src/decks/cards.js";
 import { countCards, parseAny, parseDck, parseText, toDck } from "../src/decks/decklist.js";
-import { DeckLibrary, fileName, folderFor } from "../src/decks/library.js";
+import { DeckLibrary, deckName, fileName, folderFor } from "../src/decks/library.js";
 import { fetchDeck, fetchText, type FetchText } from "../src/decks/sites.js";
 import { connect, fakeBridge, forgeHome } from "./helpers.js";
 
@@ -149,6 +149,15 @@ describe("deck library", () => {
     await expect(library.list({ folder: "nope" })).rejects.toThrow(/No deck folder/);
   });
 
+  it("searches net decks only when asked, by category and file name", async () => {
+    const library = new DeckLibrary(forgeHome());
+    expect((await library.list()).folders.find((f) => f.folder === "net")?.decks).toBe(1);
+    expect((await library.list({ query: "burn" })).decks.map((d) => d.folder)).not.toContain("net");
+    expect((await library.list({ folder: "net", query: "budget red" })).decks.map((d) => d.id)).toEqual(["net/Budget Magic/Mono Red Burn"]);
+    expect((await library.list({ folder: "net", query: "dollars" })).total).toBe(0);
+    expect((await library.list({ folder: "net", colors: "R" })).decks[0].name).toBe("Burn for Ten Dollars");
+  });
+
   it("reads one deck and refuses an id that leaves its folder", () => {
     const library = new DeckLibrary(forgeHome());
     const deck = library.read("precons/Bolt Precon");
@@ -164,7 +173,19 @@ describe("deck library", () => {
     expect(folderFor({ ...parseText("Commander\n1 Sol Ring"), format: "historicBrawl" })).toBe("brawl");
     expect(folderFor({ ...parseText("1 Sol Ring"), format: "cube" })).toBe("cube");
     expect(folderFor(parseDck("[metadata]\nName=Pool\nTags=eventId:1ca8e45b,eventFormat:BOOSTER_DRAFT\n[Sideboard]\n1 Sol Ring"))).toBe("network-events");
-    expect(fileName('Who? Me: "Burn" / v2. ')).toBe("Who Me Burn v2");
+  });
+
+  it("names the file the way Forge does, so Forge does not move it on its next start", () => {
+    // DeckBase: the name keeps everything but `/`, which becomes `_`; the file name drops / : * ? " < > |
+    expect(deckName("Esper Goryo's V2")).toBe("Esper Goryo's V2");
+    expect(fileName("Esper Goryo's V2")).toBe("Esper Goryo's V2");
+    expect(deckName(' Who? Me: "Burn" / v2. ')).toBe('Who? Me: "Burn" _ v2');
+    expect(fileName(' Who? Me: "Burn" / v2. ')).toBe("Who Me Burn _ v2");
+    expect(fileName("a\\b")).toBe("ab");
+    const library = new DeckLibrary(forgeHome());
+    const saved = library.save(parseText("4 Lightning Bolt"), { name: "UR/Burn: v2?" });
+    expect(saved).toMatchObject({ saved: true, id: "constructed/UR_Burn v2", name: "UR_Burn: v2?" });
+    expect(readFileSync(saved.path, "utf8")).toContain("Name=UR_Burn: v2?\n");
   });
 
   it("saves with Forge's card names and set codes, merging repeated lines", () => {

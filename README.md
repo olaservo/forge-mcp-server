@@ -67,7 +67,9 @@ Sites, each checked on 2026-11-13 by fetching one public deck, converting it and
 
 MTGGoldfish and TappedOut answered 403 with a Cloudflare challenge to every request tried, so the tool asks for the deck's text export instead. Moxfield, AetherHub and MTGDecks answered 403 to Node's `fetch` and 200 to `node:https` with the same headers, so the fetcher uses `node:https`. None of these endpoints is a documented API. The fetcher sends one or two requests per deck, to these hosts only, over HTTPS.
 
-`FORGE_HOME=<forge folder> npm run check:decks` repeats the check against the live sites: it fetches a sample deck from each and reports any card Forge does not have. `--out <dir>` also writes the converted `.dck` files. The first listing that filters by `query` or `colors` reads every deck file once; with 27,000 files that took 11 s here, and later calls about 1 s.
+`FORGE_HOME=<forge folder> npm run check:decks` repeats the check against the live sites: it fetches a sample deck from each and reports any card Forge does not have. `--out <dir>` also writes the converted `.dck` files. `net` can hold tens of thousands of decks (35,830 here after downloading every category Forge lists), so it is listed only with `folder: "net"`, and a `query` there matches the category and file name so that only matching files are read. A `colors` filter on `net` without a `query` reads every net deck once.
+
+A saved deck's file is named the way Forge names it (`DeckBase.getBestFileName`: the deck name without `/ : * ? " < > |`). When Forge starts, it moves any file in the top of `constructed` that is named otherwise up into the decks folder, where no deck screen reads it, and deletes one it cannot parse (`DeckStorage.adjustFileLocation`, read at `bdcce440b7c`; the move was observed here on 2026-11-13).
 
 ## ChatGPT
 

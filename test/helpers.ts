@@ -43,7 +43,7 @@ const CARD_SCRIPTS: Record<string, string> = {
 
 /**
  * A small Forge install and user deck folder in a temp directory: ten card scripts, two editions,
- * one deck in constructed, one in commander and one precon.
+ * one deck in constructed, one in commander, one net deck and one precon.
  */
 export function forgeHome(): ForgeDirs {
   const root = mkdtempSync(join(tmpdir(), "forge-home-"));
@@ -62,6 +62,7 @@ export function forgeHome(): ForgeDirs {
   mkdirSync(join(root, "res/draft"), { recursive: true });
   put("user/decks/constructed/Izzet Tempo.dck", "[metadata]\nName=Izzet Tempo\n[Main]\n4 Delver of Secrets|ISD|1\n4 Lightning Bolt\n4 Fire // Ice\n10 Island\n10 Mountain\n[Sideboard]\n2 Bonecrusher Giant\n");
   put("user/decks/commander/Atraxa Vault.dck", "[metadata]\nName=Atraxa Vault\n[Commander]\n1 Atraxa, Praetors' Voice\n[Main]\n1 Sol Ring\n1 Lim-Dûl's Vault\n30 Island\n");
+  put("user/decks/net/Budget Magic/Mono Red Burn.dck", "[metadata]\nName=Burn for Ten Dollars\n[Main]\n4 Lightning Bolt\n20 Mountain\n");
   return { res: join(root, "res"), decks: join(root, "user/decks"), customCards: join(root, "user/custom/cards") };
 }
 

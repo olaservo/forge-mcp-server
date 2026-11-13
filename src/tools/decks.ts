@@ -19,6 +19,7 @@ export function registerDeckTools(tool: RegisterTool, decks: DeckLibrary): void 
         "The decks this seat can use, read from Forge's deck folders on the server's machine: your own decks, net decks, draft pools, " +
         "and the preconstructed and quest decks that ship with Forge. `folders` counts every folder. Narrow `decks` with `folder`, " +
         "`query` (words from the deck name, its path or its commander) and `colors` (the exact colours, such as `WU`; empty for colourless). " +
+        "Net decks are listed only with `folder: \"net\"`, where `query` matches the category and file name. " +
         "Give a deck's `id` to forge_lobby_deck to play it. Pass `id` here to read that one deck's card list.",
       inputSchema: z.object({
         folder: z.enum(folderKeys).optional(),
