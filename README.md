@@ -8,7 +8,7 @@ This project is independent. It is not affiliated with, endorsed by or sponsored
 
 This repo is one of three parts. Cloning it alone is not enough to play.
 
-- **Forge and the agent bridge.** The server talks to a headless Forge client, the agent bridge, which is not part of Forge. It is a small jar from [forge-agent-bridge](https://github.com/olaservo/forge-agent-bridge) (GPL-3.0) that runs beside a Forge desktop jar, built against the Forge version you run. Set `FORGE_JAR`, `FORGE_HOME` and `FORGE_BRIDGE_JAR` and the server starts it.
+- **Forge and the agent bridge.** The server talks to a headless Forge client, the agent bridge, which is not part of Forge. It is a small jar from [forge-agent-bridge](https://github.com/olaservo/forge-agent-bridge) (GPL-3.0) that runs beside a Forge desktop jar, built against the Forge version you run. Its [releases](https://github.com/olaservo/forge-agent-bridge/releases) have a jar for the Forge 2.0.16 desktop release. Set `FORGE_JAR`, `FORGE_HOME` and `FORGE_BRIDGE_JAR` and the server starts it.
 - **A Forge host.** Someone hosts an online lobby in a Forge desktop client and the agent joins it as an ordinary remote player. Tested with a host running the same build. An upstream build of the same version should work as the host, since the network protocol is upstream's, but that has not been tried.
 - **Node 22 or newer** for this server, and an MCP client that speaks protocol revision 2026-07-28. The skills are served through the MCP skills extension, so a client without it will not load them by itself.
 
@@ -22,11 +22,11 @@ To have the agent woken on its turn in Claude Code, also install the `mcp-events
 
 ## Run
 
-Build Forge once (`mvn -U -B clean -P windows-linux install -DskipTests` in a Forge checkout) and build the bridge jar against it, as the [forge-agent-bridge](https://github.com/olaservo/forge-agent-bridge) README describes. Then set three variables and the server starts the bridge on first use:
+Download the [Forge 2.0.16 desktop release](https://github.com/Card-Forge/forge/releases/tag/forge-2.0.16) and `forge-agent-bridge-0.1.0-forge-2.0.16.jar` from the [forge-agent-bridge releases](https://github.com/olaservo/forge-agent-bridge/releases). For another Forge version, build the bridge jar against that version's jar, as the forge-agent-bridge README describes. Then set three variables and the server starts the bridge on first use:
 
 - `FORGE_JAR`: the Forge `forge-gui-desktop-<version>-jar-with-dependencies.jar`.
 - `FORGE_BRIDGE_JAR`: the bridge jar.
-- `FORGE_HOME`: the folder that holds Forge's `res/`, which is `forge-gui` in a checkout.
+- `FORGE_HOME`: the folder that holds Forge's `res/`. That is the unpacked folder for a release download and `forge-gui` in a checkout.
 
 Loading cards takes about 40 s. To start the bridge yourself, follow its README. The server looks for it at `FORGE_BRIDGE_URL` (default `http://127.0.0.1:36744`).
 
