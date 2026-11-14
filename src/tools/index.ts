@@ -221,7 +221,7 @@ export function registerTools(server: McpServer, bridge: Bridge, log?: (line: st
         "Full view of the current game: turn, phase, active player, each player's life and zones (our hand, both battlefields, graveyards), " +
         "the stack, combat, the current prompt text, the OK/Cancel buttons, and any pending decision that must be answered with forge_game_decide. " +
         "`selection` lists the cards and `players` the prompt offers, including cards in a zone the state does not show, such as the library during a search, and what is `chosen` so far. " +
-        "`actionable`, when the bridge reports it, lists the cards the host will accept now: playable cards with priority, creatures that can attack or block while declaring, mana sources while paying. " +
+        "`actionable`, when the bridge reports it, lists the cards the host marks as able to act now: playable cards with priority, creatures that can attack or block while declaring, mana sources while paying. It is a hint, so a card missing from it may still be usable. " +
         "A battlefield card with `phasedOut: true` is phased out and is treated as though it does not exist until it phases in.",
       inputSchema: z.object({}),
       outputSchema: out.Game,
