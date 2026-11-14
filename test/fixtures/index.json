@@ -32,5 +32,7 @@
   "nextgame GET /game#chosen": "nextgame-GET_game_chosen.json",
   "surveil1 GET /game#surveil1": "surveil1-GET_game_surveil1.json",
   "target GET /game#targets": "target-GET_game_targets.json",
-  "combat GET /game#blockers": "combat-GET_game_blockers.json"
+  "combat GET /game#blockers": "combat-GET_game_blockers.json",
+  "choosecards GET /game#required": "choosecards-GET_game_required.json",
+  "choosecards GET /game#requiredTwoChosen": "choosecards-GET_game_requiredTwoChosen.json"
 }
