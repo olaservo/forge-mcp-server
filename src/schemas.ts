@@ -170,6 +170,7 @@ export const Game = z.looseObject({
   selection: z
     .looseObject({ min: num, max: num, cards: z.array(BoardCard).nullish(), players: z.array(Chosen).nullish(), chosen: z.array(Chosen).nullish() })
     .nullish(),
+  actionable: z.array(z.looseObject({ id: num, name: str })).nullish(),
 });
 
 export const Status = z.looseObject({
