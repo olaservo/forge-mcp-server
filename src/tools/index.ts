@@ -220,7 +220,8 @@ export function registerTools(server: McpServer, bridge: Bridge, log?: (line: st
       description:
         "Full view of the current game: turn, phase, active player, each player's life and zones (our hand, both battlefields, graveyards), " +
         "the stack, combat, the current prompt text, the OK/Cancel buttons, and any pending decision that must be answered with forge_game_decide. " +
-        "`selection` lists the cards the prompt offers, including cards in a zone the state does not show, such as the library during a search.",
+        "`selection` lists the cards and `players` the prompt offers, including cards in a zone the state does not show, such as the library during a search, and what is `chosen` so far. " +
+        "A battlefield card with `phasedOut: true` is phased out and is treated as though it does not exist until it phases in.",
       inputSchema: z.object({}),
       outputSchema: out.Game,
       annotations: readOnly,
@@ -269,16 +270,17 @@ export function registerTools(server: McpServer, bridge: Bridge, log?: (line: st
       description:
         "Answer the pending decision shown by forge_game_state (a choice dialog: which cards to discard, a mode, yes/no, an ordering, a number or text). " +
         "`choices` are 0-based indices into the decision's options, between its min and max in count; for `order` kinds give all indices in the desired order. " +
-        "`text` answers text or number prompts.",
+        "`text` answers text or number prompts. For kind `assign`, which splits combat damage or a divided amount, give one number per option in `amounts`, adding up to the decision's `amount`.",
       inputSchema: z.object({
         id: z.number().int().describe("The pendingDecision.id from forge_game_state"),
         choices: z.array(z.number().int().min(0)).default([]),
         text: z.string().optional(),
+        amounts: z.array(z.number().int().min(0)).optional().describe("For kind assign: the amount for each option, in option order"),
       }),
       outputSchema: out.Game,
       annotations: acting,
     },
-    async ({ id, choices, text }) => run(() => bridge.post("/game/decide", { id, choices, text })),
+    async ({ id, choices, text, amounts }) => run(() => bridge.post("/game/decide", { id, choices, text, amounts })),
   );
 
   tool(

@@ -37,6 +37,7 @@ export const BoardCard = z.looseObject({
   damage: num,
   token: bool,
   faceDown: bool,
+  phasedOut: bool,
   type: str,
   manaCost: str,
   power: num,
@@ -122,6 +123,7 @@ export const PendingDecision = z.looseObject({
   min: num,
   max: num,
   default: str,
+  amount: num,
 });
 
 export const Player = z.looseObject({
@@ -138,6 +140,9 @@ export const Player = z.looseObject({
   graveyard: z.array(BoardCard).nullish(),
   hand: z.array(BoardCard).nullish(),
 });
+
+/** A card or player in a selection: `type` is `card` or `player`. */
+const Chosen = z.looseObject({ type: str, id: num, name: str });
 
 export const Game = z.looseObject({
   inGame: bool,
@@ -160,9 +165,11 @@ export const Game = z.looseObject({
   players: z.array(Player).nullish(),
   stack: z.array(z.looseObject({ id: num, source: str, by: str, text: str })).nullish(),
   combat: z
-    .array(z.looseObject({ attacker: str, attackerId: num, defender: str, blockers: strings }))
+    .array(z.looseObject({ attacker: str, attackerId: num, defender: str, blockers: strings, blocked: bool }))
     .nullish(),
-  selection: z.looseObject({ min: num, max: num, cards: z.array(BoardCard).nullish() }).nullish(),
+  selection: z
+    .looseObject({ min: num, max: num, cards: z.array(BoardCard).nullish(), players: z.array(Chosen).nullish(), chosen: z.array(Chosen).nullish() })
+    .nullish(),
 });
 
 export const Status = z.looseObject({

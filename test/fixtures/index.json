@@ -25,5 +25,11 @@
   "rigged POST /lobby/avatar": "rigged-POST_lobby_avatar.json",
   "scry GET /game#order": "scry-GET_game_order.json",
   "surveil GET /game#order": "surveil-GET_game_order.json",
-  "reveal GET /game#revealed": "reveal-GET_game_revealed.json"
+  "reveal GET /game#revealed": "reveal-GET_game_revealed.json",
+  "combat GET /game#assign": "combat-GET_game_assign.json",
+  "combat GET /game#plannedBlock": "combat-GET_game_plannedBlock.json",
+  "phasing GET /game#phasedOut": "phasing-GET_game_phasedOut.json",
+  "nextgame GET /game#chosen": "nextgame-GET_game_chosen.json",
+  "surveil1 GET /game#surveil1": "surveil1-GET_game_surveil1.json",
+  "target GET /game#targets": "target-GET_game_targets.json"
 }

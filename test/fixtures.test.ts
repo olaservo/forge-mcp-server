@@ -4,7 +4,7 @@ import type { z } from "zod";
 import * as out from "../src/schemas.js";
 import { avatarSheet, connect, fakeBridge } from "./helpers.js";
 
-/** Real bridge payloads, recorded by forge-agent-bridge's tests (`BridgeHttp.saveFixtures`) while a draft and a match ran in-process. The rigged, scry, surveil and reveal recordings come from its one-situation tests. */
+/** Real bridge payloads, recorded by forge-agent-bridge's tests (`BridgeHttp.saveFixtures`) while a draft and a match ran in-process. The rigged, scry, surveil, reveal, combat, phasing, target and nextgame recordings come from its one-situation tests. */
 const dir = new URL("./fixtures/", import.meta.url);
 const index = JSON.parse(readFileSync(new URL("index.json", dir), "utf8")) as Record<string, string>;
 const fixture = (file: string) => JSON.parse(readFileSync(new URL(file, dir), "utf8")) as Record<string, unknown>;
@@ -84,6 +84,17 @@ describe("bridge fixtures", () => {
     }
     // forge_lobby_avatars, forge_decks and forge_deck_save read files and do not call the bridge.
     expect(calls.length).toBeGreaterThanOrEqual(tools.length - 3);
+    await client.close();
+  });
+
+  it("sends a damage split as amounts", async () => {
+    const assign = fixture(index["combat GET /game#assign"]) as { pendingDecision: { id: number; kind: string; amount: number } };
+    expect(assign.pendingDecision).toMatchObject({ kind: "assign", amount: 3 });
+    const { bridge, calls } = fakeBridge({ "POST /game/decide": fixture(index["combat POST /game/decide"] ?? index["game POST /game/decide"]) });
+    const client = await connect(bridge);
+    const res = await client.callTool({ name: "forge_game_decide", arguments: { id: assign.pendingDecision.id, amounts: [2, 1] } });
+    expect(res.isError, JSON.stringify(res.content)).toBeFalsy();
+    expect(calls.find((c) => c.path === "/game/decide")?.body).toEqual({ id: assign.pendingDecision.id, choices: [], amounts: [2, 1] });
     await client.close();
   });
 });

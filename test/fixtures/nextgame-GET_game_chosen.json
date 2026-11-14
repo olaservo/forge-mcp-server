@@ -1,0 +1,170 @@
+{
+  "inGame": true,
+  "finished": false,
+  "prompt": "Forked Bolt (19) - Forked Bolt deals 2 damage divided as you choose among one or two targets.\n\nSelect any target to distribute damage to\nTargeted: \nHostAI\n(1 more can be targeted)",
+  "promptCard": "Forked Bolt",
+  "buttons": {
+    "ok": "OK",
+    "okEnabled": true,
+    "cancel": "Cancel",
+    "cancelEnabled": true
+  },
+  "incorrectActions": 0,
+  "messages": [],
+  "turn": 1,
+  "phase": "MAIN1",
+  "activePlayer": "AgentBot",
+  "gameOver": false,
+  "winner": "",
+  "me": "AgentBot",
+  "hasPriority": true,
+  "autoPass": "opponent-turns",
+  "autoPassNow": false,
+  "players": [
+    {
+      "id": 0,
+      "name": "AgentBot",
+      "life": 20,
+      "hasPriority": true,
+      "isMe": true,
+      "handSize": 5,
+      "librarySize": 33,
+      "graveyardSize": 0,
+      "exileSize": 0,
+      "battlefield": [
+        {
+          "id": 35,
+          "name": "Mountain",
+          "zone": "Battlefield",
+          "controller": "AgentBot",
+          "tapped": false,
+          "sick": false,
+          "attacking": false,
+          "blocking": false,
+          "damage": 0,
+          "token": false,
+          "faceDown": false,
+          "type": "Basic Land - Mountain",
+          "manaCost": "no cost",
+          "text": ""
+        }
+      ],
+      "graveyard": [],
+      "hand": [
+        {
+          "id": 23,
+          "name": "Mountain",
+          "zone": "Hand",
+          "controller": "AgentBot",
+          "tapped": false,
+          "sick": false,
+          "attacking": false,
+          "blocking": false,
+          "damage": 0,
+          "token": false,
+          "faceDown": false,
+          "type": "Basic Land - Mountain",
+          "manaCost": "no cost",
+          "text": ""
+        },
+        {
+          "id": 38,
+          "name": "Mountain",
+          "zone": "Hand",
+          "controller": "AgentBot",
+          "tapped": false,
+          "sick": false,
+          "attacking": false,
+          "blocking": false,
+          "damage": 0,
+          "token": false,
+          "faceDown": false,
+          "type": "Basic Land - Mountain",
+          "manaCost": "no cost",
+          "text": ""
+        },
+        {
+          "id": 34,
+          "name": "Mountain",
+          "zone": "Hand",
+          "controller": "AgentBot",
+          "tapped": false,
+          "sick": false,
+          "attacking": false,
+          "blocking": false,
+          "damage": 0,
+          "token": false,
+          "faceDown": false,
+          "type": "Basic Land - Mountain",
+          "manaCost": "no cost",
+          "text": ""
+        },
+        {
+          "id": 7,
+          "name": "Forked Bolt",
+          "zone": "Hand",
+          "controller": "AgentBot",
+          "tapped": false,
+          "sick": false,
+          "attacking": false,
+          "blocking": false,
+          "damage": 0,
+          "token": false,
+          "faceDown": false,
+          "type": "Sorcery",
+          "manaCost": "{R}",
+          "text": "Forked Bolt deals 2 damage divided as you choose among one or two targets."
+        },
+        {
+          "id": 6,
+          "name": "Forked Bolt",
+          "zone": "Hand",
+          "controller": "AgentBot",
+          "tapped": false,
+          "sick": false,
+          "attacking": false,
+          "blocking": false,
+          "damage": 0,
+          "token": false,
+          "faceDown": false,
+          "type": "Sorcery",
+          "manaCost": "{R}",
+          "text": "Forked Bolt deals 2 damage divided as you choose among one or two targets."
+        }
+      ]
+    },
+    {
+      "id": 1,
+      "name": "HostAI",
+      "life": 20,
+      "hasPriority": false,
+      "isMe": false,
+      "handSize": 7,
+      "librarySize": 33,
+      "graveyardSize": 0,
+      "exileSize": 0,
+      "battlefield": [],
+      "graveyard": []
+    }
+  ],
+  "stack": [],
+  "selection": {
+    "min": 1,
+    "max": 2,
+    "cards": [],
+    "players": [
+      {
+        "type": "player",
+        "id": 0,
+        "name": "AgentBot"
+      }
+    ],
+    "chosen": [
+      {
+        "type": "player",
+        "id": 1,
+        "name": "HostAI"
+      }
+    ]
+  }
+}

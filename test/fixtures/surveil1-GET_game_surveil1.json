@@ -1,0 +1,191 @@
+{
+  "inGame": true,
+  "finished": false,
+  "prompt": "Consider (31)\n\nPut Consider on the top of library or graveyard?",
+  "promptCard": "Consider",
+  "buttons": {
+    "ok": "Library",
+    "okEnabled": true,
+    "cancel": "Graveyard",
+    "cancelEnabled": true
+  },
+  "incorrectActions": 0,
+  "messages": [],
+  "turn": 2,
+  "phase": "MAIN1",
+  "activePlayer": "AgentBot",
+  "gameOver": false,
+  "winner": "",
+  "me": "AgentBot",
+  "hasPriority": false,
+  "autoPass": "opponent-turns",
+  "autoPassNow": false,
+  "players": [
+    {
+      "id": 0,
+      "name": "AgentBot",
+      "life": 20,
+      "hasPriority": false,
+      "isMe": true,
+      "handSize": 6,
+      "librarySize": 32,
+      "graveyardSize": 0,
+      "exileSize": 0,
+      "battlefield": [
+        {
+          "id": 16,
+          "name": "Island",
+          "zone": "Battlefield",
+          "controller": "AgentBot",
+          "tapped": true,
+          "sick": false,
+          "attacking": false,
+          "blocking": false,
+          "damage": 0,
+          "token": false,
+          "faceDown": false,
+          "type": "Basic Land - Island",
+          "manaCost": "no cost",
+          "text": ""
+        }
+      ],
+      "graveyard": [],
+      "hand": [
+        {
+          "id": 21,
+          "name": "Consider",
+          "zone": "Hand",
+          "controller": "AgentBot",
+          "tapped": false,
+          "sick": false,
+          "attacking": false,
+          "blocking": false,
+          "damage": 0,
+          "token": false,
+          "faceDown": false,
+          "type": "Instant",
+          "manaCost": "{U}",
+          "text": "Surveil 1. (Look at the top card of your library. You may put that card into your graveyard.) Draw a card."
+        },
+        {
+          "id": 26,
+          "name": "Consider",
+          "zone": "Hand",
+          "controller": "AgentBot",
+          "tapped": false,
+          "sick": false,
+          "attacking": false,
+          "blocking": false,
+          "damage": 0,
+          "token": false,
+          "faceDown": false,
+          "type": "Instant",
+          "manaCost": "{U}",
+          "text": "Surveil 1. (Look at the top card of your library. You may put that card into your graveyard.) Draw a card."
+        },
+        {
+          "id": 33,
+          "name": "Consider",
+          "zone": "Hand",
+          "controller": "AgentBot",
+          "tapped": false,
+          "sick": false,
+          "attacking": false,
+          "blocking": false,
+          "damage": 0,
+          "token": false,
+          "faceDown": false,
+          "type": "Instant",
+          "manaCost": "{U}",
+          "text": "Surveil 1. (Look at the top card of your library. You may put that card into your graveyard.) Draw a card."
+        },
+        {
+          "id": 38,
+          "name": "Consider",
+          "zone": "Hand",
+          "controller": "AgentBot",
+          "tapped": false,
+          "sick": false,
+          "attacking": false,
+          "blocking": false,
+          "damage": 0,
+          "token": false,
+          "faceDown": false,
+          "type": "Instant",
+          "manaCost": "{U}",
+          "text": "Surveil 1. (Look at the top card of your library. You may put that card into your graveyard.) Draw a card."
+        },
+        {
+          "id": 10,
+          "name": "Island",
+          "zone": "Hand",
+          "controller": "AgentBot",
+          "tapped": false,
+          "sick": false,
+          "attacking": false,
+          "blocking": false,
+          "damage": 0,
+          "token": false,
+          "faceDown": false,
+          "type": "Basic Land - Island",
+          "manaCost": "no cost",
+          "text": ""
+        },
+        {
+          "id": 13,
+          "name": "Island",
+          "zone": "Hand",
+          "controller": "AgentBot",
+          "tapped": false,
+          "sick": false,
+          "attacking": false,
+          "blocking": false,
+          "damage": 0,
+          "token": false,
+          "faceDown": false,
+          "type": "Basic Land - Island",
+          "manaCost": "no cost",
+          "text": ""
+        }
+      ]
+    },
+    {
+      "id": 1,
+      "name": "HostAI",
+      "life": 20,
+      "hasPriority": true,
+      "isMe": false,
+      "handSize": 6,
+      "librarySize": 53,
+      "graveyardSize": 0,
+      "exileSize": 0,
+      "battlefield": [
+        {
+          "id": 71,
+          "name": "Mountain",
+          "zone": "Battlefield",
+          "controller": "HostAI",
+          "tapped": false,
+          "sick": false,
+          "attacking": false,
+          "blocking": false,
+          "damage": 0,
+          "token": false,
+          "faceDown": false,
+          "type": "Basic Land - Mountain",
+          "manaCost": "no cost",
+          "text": ""
+        }
+      ],
+      "graveyard": []
+    }
+  ],
+  "stack": [
+    {
+      "id": 29,
+      "source": "Consider",
+      "by": "AgentBot",
+      "text": "Consider (24) - AgentBot surveils (1). AgentBot draws a card."
+    }
+  ]
+}

@@ -26,10 +26,10 @@ A `forge.chat` event means another player said something. Answer with `forge_cha
 
 - `prompt` is the text Forge shows above the buttons, for example "Play spells and abilities, or pass priority" or "Declare attackers". It tells you what the current input wants.
 - `buttons.ok` / `buttons.cancel` carry the current labels (OK, Cancel, Done, Pass, Yes, No) and whether each is enabled.
-- `players[]` has life, zone sizes, `battlefield`, `graveyard`, and `hand` for your own seat only. Every card has an `id`; actions use it.
+- `players[]` has life, zone sizes, `battlefield`, `graveyard`, and `hand` for your own seat only. Every card has an `id`; actions use it. A battlefield card with `phasedOut: true` is phased out: treat it as though it does not exist until it phases in.
 - `stack[]` lists what is waiting to resolve, newest last. If the stack is non-empty and you have priority, Forge is asking whether you respond.
-- `combat[]` lists attackers, defenders and blockers while combat is being declared or resolved.
-- `selection`, when present, lists the cards the current prompt lets you pick, with `min` and `max`. It includes cards in zones the state does not otherwise show, such as your library during a search. Pick with `selectCard` and the card's `id`.
+- `combat[]` lists attackers, defenders and blockers while combat is being declared or resolved. When the bridge reports it, `blocked` says whether the attacker is blocked, and a blocker you have chosen shows here before you press OK.
+- `selection`, when present, lists the cards the current prompt lets you pick, with `min` and `max`. It includes cards in zones the state does not otherwise show, such as your library during a search. Pick with `selectCard` and the card's `id`. When the prompt can target a player, `selection.players` lists them: pick with `selectPlayer` and the player's `id`. `selection.chosen` lists what you have picked so far.
 - `pendingDecision`, when present, must be answered with `forge_game_decide` before anything else happens. It carries `kind`, `prompt`, `options`, `min`, `max` and sometimes a `default`.
 
 ## Taking actions
@@ -40,7 +40,7 @@ A `forge.chat` event means another player said something. Answer with `forge_cha
 - Activate an ability: `selectCard` on the permanent. If it has several abilities a decision dialog lists them.
 - Attack: when the prompt says declare attackers, `selectCard` each attacker, then `ok`. `alphaStrike` selects every creature that can attack.
 - Block: when the prompt says declare blockers, `selectCard` the blocker then `selectCard` the attacker it blocks; `ok` when done.
-- Mulligan, scry, discard, mode choice, ordering triggers: these arrive as `pendingDecision`. Answer with option indices; for `order` kinds give every index in the order you want; for `text`/`number` kinds set `text`.
+- Mulligan, scry, discard, mode choice, ordering triggers: these arrive as `pendingDecision`. Answer with option indices; for `order` kinds give every index in the order you want; for `text`/`number` kinds set `text`. For kind `assign` (combat damage among blockers and the defender, or a divided amount) set `amounts` to one number per option, adding up to the decision's `amount`; `default` shows a legal split.
 - Concede: `forge_game_act {action: "concede"}`.
 - After an action, `forge_wait` with the last `revision` returns when the host has reacted. Act once per change: resending `ok` or `selectCard` while the prompt still reads "Waiting for ..." does nothing useful and floods the host.
 
