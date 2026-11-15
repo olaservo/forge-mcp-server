@@ -4,7 +4,8 @@ import { Bridge } from "./bridge.js";
  * Long-polls the bridge's `/wait` and reports every revision change, so a transport can push
  * `notifications/resources/updated` for `forge://status` to `subscriptions/listen` subscribers
  * instead of the agent polling forge_wait. One watcher per process; it idles with one open
- * request to the bridge and backs off while the bridge is down.
+ * request to the bridge and backs off while the bridge is down. The first status it reads is not a
+ * change; `onSeed` receives it.
  */
 export class StatusWatcher {
   private running = false;
@@ -13,7 +14,12 @@ export class StatusWatcher {
   constructor(
     private readonly bridge: Bridge,
     private readonly onChange: (revision: number, status: Record<string, unknown>) => void | Promise<void>,
-    private readonly opts: { timeoutSeconds?: number; retryMs?: number; sleep?: (ms: number) => Promise<void> } = {},
+    private readonly opts: {
+      timeoutSeconds?: number;
+      retryMs?: number;
+      sleep?: (ms: number) => Promise<void>;
+      onSeed?: (status: Record<string, unknown>) => void | Promise<void>;
+    } = {},
   ) {}
 
   start(): void {
@@ -39,6 +45,7 @@ export class StatusWatcher {
         if (status.revision !== this.since) {
           this.since = status.revision;
           if (seeded) await this.onChange(status.revision, status);
+          else await this.opts.onSeed?.(status);
         }
       } catch {
         if (!this.running) return;

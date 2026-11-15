@@ -93,15 +93,17 @@ describe("forge-mcp-server", () => {
       return new Response(JSON.stringify({ revision: next ?? 5 }), { status: 200 });
     };
     const seen: number[] = [];
+    const seeds: unknown[] = [];
     const watcher = new StatusWatcher(new Bridge({ baseUrl: "http://bridge.test", fetch: fetchImpl }), (r) => {
       seen.push(r);
-    }, { sleep: async () => {} });
+    }, { sleep: async () => {}, onSeed: (status) => void seeds.push(status.revision) });
     watcher.start();
     while (revisions.length > 0) await new Promise((r) => setTimeout(r, 5));
     await new Promise((r) => setTimeout(r, 20));
     watcher.stop();
     pending?.();
     expect(seen).toEqual([4, 5]);
+    expect(seeds).toEqual([3]);
   });
 
   it("reports bridge errors as tool errors, not protocol errors", async () => {

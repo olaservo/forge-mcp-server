@@ -29,6 +29,12 @@ const watcher = new StatusWatcher(bridge, (_revision, status) => {
   http?.statusChanged();
   moves.observe(status);
   chat.observe(status);
+}, {
+  // The seat can already be seated and waiting when the bridge first answers
+  onSeed: (status) => {
+    moves.observe(status);
+    chat.observe(status);
+  },
 });
 watcher.start();
 // An auto-join seat has to exist before the agent's first tool call
