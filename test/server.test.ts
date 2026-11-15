@@ -39,6 +39,17 @@ describe("forge-mcp-server", () => {
     await client.close();
   });
 
+  it("returns generated names and says which types work when there are none", async () => {
+    const { bridge } = fakeBridge({});
+    const client = await connect(bridge);
+    const names = await client.callTool({ name: "forge_name_ideas", arguments: { type: "Wizard", count: 3 } });
+    expect(names.structuredContent).toEqual({ type: "Wizard", names: ["Aporphus", "Kyria", "Tosiasat"], source: "donjon.bin.sh" });
+    const none = await client.callTool({ name: "forge_name_ideas", arguments: { type: "Goblin Female" } });
+    expect(none.isError).toBe(true);
+    expect(JSON.stringify(none.content)).toContain("Elvish Female");
+    await client.close();
+  });
+
   it("routes forge_status and forge_draft_pick to the bridge", async () => {
     const { bridge, calls } = fakeBridge({
       "GET /status": status,

@@ -63,6 +63,7 @@ describe("bridge fixtures", () => {
       forge_lobby_ready: { ready: true },
       forge_lobby_avatar: { index: 3 },
       forge_lobby_name: { name: "Sarge" },
+      forge_name_ideas: { type: "Wizard", count: 3 },
       forge_lobby_avatars: { page: 0 },
       forge_lobby_deck: { dck: "[Main]\n40 Plains" },
       forge_decks: {},
@@ -84,8 +85,8 @@ describe("bridge fixtures", () => {
       expect(res.isError, `${tool.name}: ${JSON.stringify(res.content)}`).toBeFalsy();
       expect(res.structuredContent, `${tool.name} returned structuredContent`).toBeDefined();
     }
-    // forge_lobby_avatars, forge_decks and forge_deck_save read files and do not call the bridge.
-    expect(calls.length).toBeGreaterThanOrEqual(tools.length - 3);
+    // forge_lobby_avatars, forge_decks, forge_deck_save and forge_name_ideas do not call the bridge.
+    expect(calls.length).toBeGreaterThanOrEqual(tools.length - 4);
     await client.close();
   });
 

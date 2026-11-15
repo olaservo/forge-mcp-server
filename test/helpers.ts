@@ -10,6 +10,10 @@ import type { EventLog } from "../src/events.js";
 import { createServer, skillCatalog } from "../src/server.js";
 import type { WebhookHub } from "../src/webhooks.js";
 
+/** Stands in for the name generator: three names for a known type, blank lines for any other. */
+export const generatedNames = async (url: string): Promise<string> =>
+  new URL(url).searchParams.get("type") === "Goblin Female" ? "\n\n\n" : "Aporphus\nKyria\nTosiasat\n";
+
 /** A fake Forge bridge: records calls and answers with canned JSON keyed by `METHOD /path`. */
 export function fakeBridge(responses: Record<string, unknown>) {
   const calls: { method: string; path: string; body?: unknown }[] = [];
@@ -76,7 +80,7 @@ export async function connect(
 ) {
   const skills = await skillCatalog();
   const factory = (ctx: { authInfo?: { clientId: string } }) =>
-    createServer({ bridge, skills, events, webhooks: webhooks?.hub, principal: ctx.authInfo?.clientId, decks });
+    createServer({ bridge, skills, events, webhooks: webhooks?.hub, principal: ctx.authInfo?.clientId, decks, names: generatedNames });
   const handler = createMcpHandler(factory, bus ? { bus } : {});
   const authInfo = webhooks?.principal ? { token: "test", clientId: webhooks.principal, scopes: [] } : undefined;
   const transport = new StreamableHTTPClientTransport(new URL("http://test.local/mcp"), {

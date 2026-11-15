@@ -202,6 +202,8 @@ export const DeckSummary = z.looseObject({
   description: str,
   tags: str,
 });
+export const Names = z.looseObject({ type: z.string(), names: z.array(z.string()), source: z.string() });
+
 export const DeckList = z.looseObject({
   folders: z.array(z.looseObject({ folder: str, decks: num, writable: bool, about: str })).nullish(),
   total: num,

@@ -7,6 +7,7 @@ import type { DeckLibrary } from "./decks/library.js";
 import { EventLog, registerEvents } from "./events.js";
 import type { WebhookHub } from "./webhooks.js";
 import { registerTools } from "./tools/index.js";
+import type { GetText } from "./names.js";
 
 export const SERVER_INFO = { name: "forge-mcp-server", version: "0.1.0" } as const;
 
@@ -34,6 +35,8 @@ export interface CreateServerOptions {
   log?: (line: string) => void;
   /** Forge's deck folders. Default: the ones FORGE_HOME and the user's Forge folder point to. */
   decks?: DeckLibrary;
+  /** Fetches the name generator's answer. Default: an HTTP GET. */
+  names?: GetText;
 }
 
 export function createServer(opts: CreateServerOptions = {}): McpServer {
@@ -57,7 +60,7 @@ export function createServer(opts: CreateServerOptions = {}): McpServer {
       "Otherwise call forge_wait instead of polling, or subscribe to forge://status through subscriptions/listen.",
   });
 
-  registerTools(server, bridge, opts.log, opts.decks);
+  registerTools(server, bridge, opts.log, opts.decks, opts.names);
   registerEvents(server, opts.events ?? new EventLog(), opts.webhooks && { hub: opts.webhooks, principal: opts.principal }, opts.log);
 
   server.registerResource(

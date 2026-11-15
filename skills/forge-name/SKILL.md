@@ -1,6 +1,6 @@
 ---
 name: forge-name
-description: Pick a fantasy name for a Forge seat from donjon's name generator and set it with forge_lobby_name. Use when asked to choose, generate or change a player name for the lobby, or when a persona has no fixed name and wants one that suits its character or deck.
+description: Pick a fantasy name for a Forge seat with forge_name_ideas (donjon's name generator) and set it with forge_lobby_name. Use when asked to choose, generate or change a player name for the lobby, or when a persona has no fixed name and wants one that suits its character or deck.
 ---
 
 # A fantasy name for the seat
@@ -9,13 +9,13 @@ A seat taken by auto-join sits in the lobby under a placeholder name such as "Ag
 
 ## Getting names
 
-donjon's name generator answers a plain HTTP GET with one name per line. No key.
+`forge_name_ideas` returns a few names from donjon's name generator. `type` is the kind of name and `count` how many, five by default. Ask once and choose one.
+
+The tool is a plain HTTP GET to this address, which answers with one name per line and needs no key. A client without the tool can fetch it directly:
 
 ```
 https://donjon.bin.sh/name/rpc-name.fcgi?type=Elvish+Female&n=5
 ```
-
-`type` is the kind of name, with `+` for spaces. `n` is how many. Ask for five and choose one. Fetch it with whatever your client gives you: a web fetch tool, or `curl` in a shell. This server has no tool for it.
 
 Types that answered on 2026-11-14:
 
@@ -26,7 +26,7 @@ Types that answered on 2026-11-14:
 | Single words | `Wizard`, `Celestial`, `Fiendish`, `Air Elemental`, `Earth Elemental`, `Fire Elemental`, `Water Elemental` |
 | Longer titles | `Party` (an adventuring band), `Ship`, `Inn`, `Deity` |
 
-An unknown `type` returns empty lines, not an error. If you get nothing back, try a type from the table.
+The generator returns empty lines for a `type` it does not know. The tool reports that as an error and lists the types that work.
 
 ## Choosing
 
@@ -42,4 +42,4 @@ An unknown `type` returns empty lines, not an error. If you get nothing back, tr
 
 ## When the generator does not answer
 
-donjon is someone else's free site and may be slow or down. Make one request per naming, and do not retry in a loop. If it fails, or you have no way to fetch a URL, make up a name in the same spirit and carry on. Send the site nothing except the `type` and `n`.
+donjon is someone else's free site and may be slow or down. Make one request per naming, and do not retry in a loop. If it fails, make up a name in the same spirit and carry on. The site is sent only the `type` and the count.

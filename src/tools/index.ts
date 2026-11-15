@@ -6,6 +6,8 @@ import { sharedLibrary, type DeckLibrary } from "../decks/library.js";
 import * as out from "../schemas.js";
 import { acting, failure, readOnly, run, type RegisterTool, type ToolConfig } from "./common.js";
 import { registerDeckTools } from "./decks.js";
+import { registerNameTools } from "./names.js";
+import type { GetText } from "../names.js";
 
 /**
  * A lobby change. The bridge answers before the host has applied it, so this waits for the
@@ -18,7 +20,13 @@ async function lobbyChange(bridge: Bridge, path: string, body: unknown): Promise
   return (await bridge.get<{ lobby?: unknown }>("/status")).lobby ?? answer;
 }
 
-export function registerTools(server: McpServer, bridge: Bridge, log?: (line: string) => void, decks: DeckLibrary = sharedLibrary()): void {
+export function registerTools(
+  server: McpServer,
+  bridge: Bridge,
+  log?: (line: string) => void,
+  decks: DeckLibrary = sharedLibrary(),
+  names?: GetText,
+): void {
   /** Registers a tool and logs each call. */
   const tool: RegisterTool = <In extends z.ZodType>(name: string, config: ToolConfig<In>, handler: (args: z.output<In>) => Promise<CallToolResult>) => {
     const timed = async (args: z.output<In>) => {
@@ -176,6 +184,7 @@ export function registerTools(server: McpServer, bridge: Bridge, log?: (line: st
   );
 
   registerDeckTools(tool, decks);
+  registerNameTools(tool, names);
 
   tool(
     "forge_chat",
