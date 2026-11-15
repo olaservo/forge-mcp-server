@@ -56,6 +56,11 @@ describe("events", () => {
     expect(first.events).toEqual([]);
     await Promise.resolve();
     expect(log.poll(YOUR_MOVE, first.cursor).events.map((e) => e.data.kind)).toEqual(["lobby"]);
+    // A second poll without a cursor a moment later is the same client opening another subscription
+    const second = log.poll(YOUR_MOVE, null);
+    await Promise.resolve();
+    expect(log.poll(YOUR_MOVE, second.cursor).events).toEqual([]);
+    expect(moves.replay(seat, 0)?.data).toMatchObject({ kind: "lobby" });
     expect(moves.observe(seat)).toBeUndefined();
     expect(moves.replay({ revision: 3, game: { inGame: true, prompt: "Waiting for Ola..." } })).toBeUndefined();
   });

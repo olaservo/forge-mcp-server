@@ -166,6 +166,7 @@ export class MoveTracker {
   private last: string | undefined;
   /** The finished game already reported. Its result stays in the status under later asks. */
   private reported: string | undefined;
+  private replayed: { key: string; at: number } | undefined;
 
   constructor(private readonly log: EventLog) {}
 
@@ -181,10 +182,17 @@ export class MoveTracker {
     return changed ? this.log.emit(YOUR_MOVE, move.data) : undefined;
   }
 
-  /** Emits the ask that is pending now, for a client that started following after it was first reported. */
-  replay(status: SeatStatus): EventOccurrence | undefined {
+  /**
+   * Emits the ask that is pending now, for a client that started following after it was first reported.
+   * One client can open several polls as it starts (fast-agent opened five within four seconds on 2026-11-15),
+   * so the same ask is replayed once per `quietMs`.
+   */
+  replay(status: SeatStatus, quietMs = 15_000): EventOccurrence | undefined {
     const move = pendingMove(status);
     if (!move || (move.data.kind === "game_over" && move.key === this.reported)) return undefined;
+    const now = Date.now();
+    if (this.replayed?.key === move.key && now - this.replayed.at < quietMs) return undefined;
+    this.replayed = { key: move.key, at: now };
     this.last = move.key;
     if (move.data.kind === "game_over") this.reported = move.key;
     return this.log.emit(YOUR_MOVE, move.data);
