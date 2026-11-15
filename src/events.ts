@@ -35,6 +35,7 @@ export class EventLog {
   private readonly epoch = randomUUID().slice(0, 8);
   private readonly entries: { seq: number; event: EventOccurrence }[] = [];
   private readonly listeners: ((event: EventOccurrence) => void)[] = [];
+  private readonly firstPollListeners: ((name: string) => void)[] = [];
   private seq = 0;
 
   constructor(private readonly capacity = 1000) {}
@@ -42,6 +43,11 @@ export class EventLog {
   /** Calls `listener` with each event as it is emitted. */
   onEmit(listener: (event: EventOccurrence) => void): void {
     this.listeners.push(listener);
+  }
+
+  /** Calls `listener` after a poll without a cursor, which is a client starting to follow `name`. */
+  onFirstPoll(listener: (name: string) => void): void {
+    this.firstPollListeners.push(listener);
   }
 
   emit(name: string, data: Record<string, unknown>): EventOccurrence {
@@ -57,7 +63,11 @@ export class EventLog {
     const head = `${this.epoch}:${this.seq}`;
     const floor = maxAgeMs === undefined ? "" : new Date(Date.now() - maxAgeMs).toISOString();
     const fresh = { events: [], cursor: head, hasMore: false, nextPollMs: POLL_MS };
-    if (cursor == null) return { ...fresh, truncated: false };
+    if (cursor == null) {
+      // After this poll's cursor is taken, so an event a listener emits reaches the new client
+      queueMicrotask(() => this.firstPollListeners.forEach((listener) => listener(name)));
+      return { ...fresh, truncated: false };
+    }
 
     const [epoch, raw] = cursor.split(":");
     const from = Number(raw);
@@ -169,6 +179,15 @@ export class MoveTracker {
     this.last = move?.key;
     if (changed && move.data.kind === "game_over") this.reported = move.key;
     return changed ? this.log.emit(YOUR_MOVE, move.data) : undefined;
+  }
+
+  /** Emits the ask that is pending now, for a client that started following after it was first reported. */
+  replay(status: SeatStatus): EventOccurrence | undefined {
+    const move = pendingMove(status);
+    if (!move || (move.data.kind === "game_over" && move.key === this.reported)) return undefined;
+    this.last = move.key;
+    if (move.data.kind === "game_over") this.reported = move.key;
+    return this.log.emit(YOUR_MOVE, move.data);
   }
 }
 

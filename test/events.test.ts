@@ -46,6 +46,20 @@ describe("events", () => {
     expect(new MoveTracker(new EventLog()).observe(drafting)).toBeUndefined();
   });
 
+  it("replays the pending ask to a client that polls without a cursor", async () => {
+    const log = new EventLog();
+    const moves = new MoveTracker(log);
+    const seat = { revision: 2, game: { inGame: false }, lobby: { mySlot: 1, slots: [{ index: 0, ready: true }, { index: 1, ready: false }] } };
+    log.onFirstPoll((name) => name === YOUR_MOVE && moves.replay(seat));
+    expect(moves.observe(seat)?.data).toMatchObject({ kind: "lobby" });
+    const first = log.poll(YOUR_MOVE, null);
+    expect(first.events).toEqual([]);
+    await Promise.resolve();
+    expect(log.poll(YOUR_MOVE, first.cursor).events.map((e) => e.data.kind)).toEqual(["lobby"]);
+    expect(moves.observe(seat)).toBeUndefined();
+    expect(moves.replay({ revision: 3, game: { inGame: true, prompt: "Waiting for Ola..." } })).toBeUndefined();
+  });
+
   it("emits game_over once when the seat is already back in the lobby", () => {
     const moves = new MoveTracker(new EventLog());
     const over = { revision: 9, game: { inGame: false, finished: true, gameOver: true, winner: "Agent", turn: 14 } };
