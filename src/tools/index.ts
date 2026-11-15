@@ -100,6 +100,20 @@ export function registerTools(server: McpServer, bridge: Bridge, log?: (line: st
   );
 
   tool(
+    "forge_lobby_name",
+    {
+      title: "Set lobby name",
+      description:
+        "Rename our seat in the lobby. Use it when the seat was taken for you under a placeholder name (auto-join) " +
+        "and you want the other players to see your own. Works in the lobby, before the game starts.",
+      inputSchema: z.object({ name: z.string().trim().min(1).max(40) }),
+      outputSchema: out.Lobby,
+      annotations: acting,
+    },
+    async ({ name }) => run(() => lobbyChange(bridge, "/lobby/name", { name })),
+  );
+
+  tool(
     "forge_lobby_avatars",
     {
       title: "Show lobby avatars",

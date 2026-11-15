@@ -83,8 +83,13 @@ interface SeatStatus {
   revision?: number;
   chat?: string[] | null;
   connection?: { name?: string | null } | null;
-  lobby?: { slots?: { name?: string | null }[] | null } | null;
-  draft?: { pickPending?: boolean | null; packNumber?: number | null; pickNumber?: number | null } | null;
+  lobby?: { mySlot?: number | null; slots?: { index?: number | null; name?: string | null; ready?: boolean | null }[] | null } | null;
+  draft?: {
+    pickPending?: boolean | null;
+    packNumber?: number | null;
+    pickNumber?: number | null;
+    poolReceived?: boolean | null;
+  } | null;
   game?: {
     inGame?: boolean | null;
     finished?: boolean | null;
@@ -135,6 +140,14 @@ export function pendingMove(status: SeatStatus): Move | undefined {
   // The host can return the seat to the lobby as the game ends, so the result arrives with inGame false.
   // It stays in the status afterwards. The key does not change, so it fires once.
   if (game?.gameOver || game?.finished) return gameOver(game, revision);
+  // A seat that sits unready has its name, portrait and deck still to set, for example after auto-join without a deck.
+  const mySlot = status.lobby?.mySlot ?? -1;
+  const seat = status.lobby?.slots?.find((s, i) => (s.index ?? i) === mySlot);
+  const drafting = (draft?.packNumber ?? 0) > 0 && !draft?.poolReceived;
+  if (seat && seat.ready === false && !drafting) {
+    const prompt = "You are seated in the lobby and not ready. Set your name, portrait and deck, then ready up.";
+    return { key: "lobby", data: { kind: "lobby", prompt, revision } };
+  }
   return undefined;
 }
 
@@ -195,13 +208,13 @@ const EVENT_TYPES = [
   {
     name: YOUR_MOVE,
     description:
-      "Fires when the Forge seat is asked to act: a draft pick, a priority prompt, a choice dialog, or the end of a game. " +
+      "Fires when the Forge seat is asked to act: a seat in the lobby that is not ready yet, a draft pick, a priority prompt, a choice dialog, or the end of a game. " +
       "The payload is a summary. Read the full state with forge_status before acting.",
     inputSchema: NO_ARGUMENTS,
     payloadSchema: {
       type: "object",
       properties: {
-        kind: { type: "string", enum: ["draft_pick", "priority", "decision", "game_over"] },
+        kind: { type: "string", enum: ["lobby", "draft_pick", "priority", "decision", "game_over"] },
         prompt: { type: "string" },
         decisionKind: { type: "string" },
         revision: { type: "integer", description: "Bridge revision the ask was seen at" },

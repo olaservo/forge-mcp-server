@@ -30,6 +30,22 @@ describe("events", () => {
     expect(moves.observe(pick)?.data).toMatchObject({ kind: "draft_pick" });
   });
 
+  it("emits a lobby ask once while the seat sits unready", () => {
+    const moves = new MoveTracker(new EventLog());
+    const lobby = (ready: boolean, name = "Agent") => ({
+      revision: 2,
+      game: { inGame: false },
+      lobby: { mySlot: 1, slots: [{ index: 0, name: "Ola", ready: true }, { index: 1, name, ready }] },
+    });
+    expect(moves.observe({ revision: 1, game: { inGame: false }, lobby: { mySlot: -1 } })).toBeUndefined();
+    expect(moves.observe(lobby(false))?.data).toMatchObject({ kind: "lobby" });
+    expect(moves.observe(lobby(false, "Sarge"))).toBeUndefined();
+    expect(moves.observe(lobby(true, "Sarge"))).toBeUndefined();
+    expect(moves.observe(lobby(false, "Sarge"))?.data).toMatchObject({ kind: "lobby" });
+    const drafting = { ...lobby(false), draft: { packNumber: 1, pickNumber: 3, pickPending: false, poolReceived: false } };
+    expect(new MoveTracker(new EventLog()).observe(drafting)).toBeUndefined();
+  });
+
   it("emits game_over once when the seat is already back in the lobby", () => {
     const moves = new MoveTracker(new EventLog());
     const over = { revision: 9, game: { inGame: false, finished: true, gameOver: true, winner: "Agent", turn: 14 } };
