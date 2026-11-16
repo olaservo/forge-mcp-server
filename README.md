@@ -10,7 +10,7 @@ This repo is one of three parts. Cloning it alone is not enough to play.
 
 - **Forge and the agent bridge.** The server talks to a headless Forge client, the agent bridge, which is not part of Forge. It is a small jar from [forge-agent-bridge](https://github.com/olaservo/forge-agent-bridge) (GPL-3.0) that runs beside a Forge desktop jar, built against the Forge version you run. Its [releases](https://github.com/olaservo/forge-agent-bridge/releases) have a jar for the Forge 2.0.16 desktop release. Set `FORGE_JAR`, `FORGE_HOME` and `FORGE_BRIDGE_JAR` and the server starts it.
 - **A Forge host.** Someone hosts an online lobby in a Forge desktop client and the agent joins it as an ordinary remote player. Tested with a host running the same build. An upstream build of the same version should work as the host, since the network protocol is upstream's, but that has not been tried.
-- **Node 22 or newer** for this server, and an MCP client that speaks protocol revision 2026-07-28. The skills are served through the MCP skills extension, so a client without it will not load them by itself.
+- **Node 24 or newer** for this server, and an MCP client that speaks protocol revision 2026-07-28. The skills are served through the MCP skills extension, so a client without it will not load them by itself.
 
 To have the agent woken on its turn in Claude Code, also install the `mcp-events` mod from `claude-code-mod/mcp-events` and set `FORGE_MCP_PORT` (see Run). It has been run on Claude Code 2.1.322. While it is polling, the mod tells the agent in its system prompt to end its turn when the seat has nothing to do and not to call `forge_wait`. Without the mod the tools still work, and the agent waits with `forge_wait`.
 
