@@ -1,6 +1,7 @@
 import { randomUUID } from "node:crypto";
 import { type McpServer, ProtocolError } from "@modelcontextprotocol/server";
 import { z } from "zod";
+import type { ActivityLog } from "./log.js";
 import { FORBIDDEN, INVALID_PARAMS, NOT_FOUND, UNSUPPORTED, type WebhookHub } from "./webhooks.js";
 
 /**
@@ -301,7 +302,7 @@ function webhookCaller(webhooks: WebhookAccess | undefined): { hub: WebhookHub; 
   return { hub: webhooks.hub, principal: webhooks.principal };
 }
 
-export function registerEvents(server: McpServer, log: EventLog, webhooks?: WebhookAccess, activity?: (line: string) => void): void {
+export function registerEvents(server: McpServer, log: EventLog, webhooks?: WebhookAccess, activity?: ActivityLog): void {
   const delivery = webhooks ? ["poll", "webhook"] : ["poll"];
   const events = EVENT_TYPES.map((e) => ({ ...e, delivery }));
   server.server.setRequestHandler("events/list", { params: z.looseObject({}).optional() }, async () => ({ resultType: "complete", events }));

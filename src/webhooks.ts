@@ -5,6 +5,8 @@ import { request as httpRequest } from "node:http";
 import { request as httpsRequest } from "node:https";
 import { BlockList, isIP, type LookupFunction } from "node:net";
 import { ProtocolError } from "@modelcontextprotocol/server";
+import type { EventLog, EventOccurrence } from "./events.js";
+import type { ActivityLog } from "./log.js";
 
 /**
  * Webhook delivery for MCP Events (SEP-3415 at f77a5fe, "Webhook-Based Delivery"), written against what the
@@ -186,18 +188,7 @@ export interface WebhookOptions {
   retryDelaysMs?: number[];
   now?: () => number;
   /** Receives one line per subscribe, unsubscribe and delivery attempt. Nothing is logged without it. */
-  log?: (line: string) => void;
-}
-
-interface EmittedEvent {
-  eventId: string;
-  name: string;
-  timestamp: string;
-  data: Record<string, unknown>;
-}
-
-interface EventSource {
-  onEmit(listener: (event: EmittedEvent) => void): void;
+  log?: ActivityLog;
 }
 
 /**
@@ -215,9 +206,9 @@ export class WebhookHub {
   private readonly file: string | undefined;
   private readonly retryDelaysMs: number[];
   private readonly now: () => number;
-  private readonly log: (line: string) => void;
+  private readonly log: ActivityLog;
 
-  constructor(source: EventSource, opts: WebhookOptions = {}) {
+  constructor(source: Pick<EventLog, "onEmit">, opts: WebhookOptions = {}) {
     this.insecure = opts.insecure ?? false;
     this.post = opts.post ?? webhookPost({ insecure: this.insecure });
     this.file = opts.file;
@@ -330,7 +321,7 @@ export class WebhookHub {
     };
   }
 
-  private dispatch(event: EmittedEvent): void {
+  private dispatch(event: EventOccurrence): void {
     this.dropExpired(this.now());
     const body = JSON.stringify({ ...event, cursor: null });
     if (Buffer.byteLength(body) > MAX_BODY_BYTES) {

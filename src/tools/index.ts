@@ -3,11 +3,12 @@ import { z } from "zod";
 import { avatarPage, avatarSheetPath, AVATARS_PER_PAGE } from "../avatars.js";
 import { Bridge } from "../bridge.js";
 import { sharedLibrary, type DeckLibrary } from "../decks/library.js";
+import type { ActivityLog } from "../log.js";
+import type { GetText } from "../names.js";
 import * as out from "../schemas.js";
 import { acting, failure, readOnly, run, type RegisterTool, type ToolConfig } from "./common.js";
 import { registerDeckTools } from "./decks.js";
 import { registerNameTools } from "./names.js";
-import type { GetText } from "../names.js";
 
 /**
  * A lobby change. The bridge answers before the host has applied it, so this waits for the
@@ -23,7 +24,7 @@ async function lobbyChange(bridge: Bridge, path: string, body: unknown): Promise
 export function registerTools(
   server: McpServer,
   bridge: Bridge,
-  log?: (line: string) => void,
+  log?: ActivityLog,
   decks: DeckLibrary = sharedLibrary(),
   names?: GetText,
 ): void {

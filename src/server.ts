@@ -5,9 +5,10 @@ import { loadSkills } from "@modelcontextprotocol/server/ext/skills/node";
 import { Bridge } from "./bridge.js";
 import type { DeckLibrary } from "./decks/library.js";
 import { EventLog, registerEvents } from "./events.js";
-import type { WebhookHub } from "./webhooks.js";
-import { registerTools } from "./tools/index.js";
+import type { ActivityLog } from "./log.js";
 import type { GetText } from "./names.js";
+import { registerTools } from "./tools/index.js";
+import type { WebhookHub } from "./webhooks.js";
 
 export const SERVER_INFO = { name: "forge-mcp-server", version: "0.1.0" } as const;
 
@@ -32,7 +33,7 @@ export interface CreateServerOptions {
   /** The authenticated caller of the request this instance serves. */
   principal?: string;
   /** Receives one line per finished tool call and per poll that returns events. */
-  log?: (line: string) => void;
+  log?: ActivityLog;
   /** Forge's deck folders. Default: the ones FORGE_HOME and the user's Forge folder point to. */
   decks?: DeckLibrary;
   /** Fetches the name generator's answer. Default: an HTTP GET. */

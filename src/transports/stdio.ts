@@ -1,49 +1,28 @@
 import type { McpServer } from "@modelcontextprotocol/server";
 import { serveStdio } from "@modelcontextprotocol/server/stdio";
 import { STATUS_URI, createServer, skillCatalog } from "../server.js";
-import { Bridge } from "../bridge.js";
-import { ChatTracker, EventLog, MoveTracker, YOUR_MOVE } from "../events.js";
-import { fileLog, logEmitted } from "../log.js";
-import { StatusWatcher } from "../watcher.js";
+import { fileLog } from "../log.js";
+import { createSeat } from "../seat.js";
 import { listenHttp } from "./http.js";
 
-const bridge = new Bridge();
-const skills = await skillCatalog();
-const events = new EventLog();
 const log = fileLog();
-logEmitted(events, log);
-const moves = new MoveTracker(events);
-const chat = new ChatTracker(events);
-// A client that starts following mid-ask is told the ask that is pending
-events.onFirstPoll((name) => {
-  if (name === YOUR_MOVE) void bridge.get<Record<string, unknown>>("/status").then((status) => moves.replay(status), () => undefined);
-});
+const seat = createSeat(log);
+const { bridge, events } = seat;
+const skills = await skillCatalog();
 
 let server: McpServer | undefined;
 void serveStdio(() => (server = createServer({ bridge, skills, events, log })));
 // FORGE_MCP_PORT also serves /mcp over HTTP, for a client that polls events outside the stdio connection
 const http = process.env.FORGE_MCP_PORT ? listenHttp({ bridge, skills, events, port: Number(process.env.FORGE_MCP_PORT) }) : undefined;
 // stdio has one server; its outbound resources/updated is routed to listen subscribers by the SDK
-const watcher = new StatusWatcher(bridge, (_revision, status) => {
+seat.start(() => {
   void server?.server.sendResourceUpdated({ uri: STATUS_URI });
   http?.statusChanged();
-  moves.observe(status);
-  chat.observe(status);
-}, {
-  // The seat can already be seated and waiting when the bridge first answers
-  onSeed: (status) => {
-    moves.observe(status);
-    chat.observe(status);
-  },
 });
-watcher.start();
-// An auto-join seat has to exist before the agent's first tool call
-if (process.env.FORGE_AUTO_JOIN) void bridge.ensureStarted().catch((e: Error) => console.error(e.message));
 console.error(`forge-mcp-server on stdio; bridge at ${bridge.url}`);
 
 process.on("SIGINT", () => {
-  watcher.stop();
   http?.close();
-  bridge.stop();
+  seat.stop();
   process.exit(0);
 });
