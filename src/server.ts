@@ -1,3 +1,4 @@
+import { readFileSync } from "node:fs";
 import { fileURLToPath } from "node:url";
 import { McpServer, type ServerCapabilities } from "@modelcontextprotocol/server";
 import type { SkillCatalog } from "@modelcontextprotocol/server/ext/skills";
@@ -10,7 +11,10 @@ import type { GetText } from "./names.js";
 import { registerTools } from "./tools/index.js";
 import type { WebhookHub } from "./webhooks.js";
 
-export const SERVER_INFO = { name: "forge-mcp-server", version: "0.1.0" } as const;
+/** `package.json` sits next to `dist/` (or `src/`), like `skills/`. */
+const { version } = JSON.parse(readFileSync(new URL("../package.json", import.meta.url), "utf8")) as { version: string };
+
+export const SERVER_INFO = { name: "forge-mcp-server", version };
 
 /** Resource that changes on every bridge revision; transports push `notifications/resources/updated` for it. */
 export const STATUS_URI = "forge://status";
