@@ -1,6 +1,6 @@
 import { describe, expect, it } from "vitest";
 import { z } from "zod";
-import { CHAT, ChatTracker, EventLog, MoveTracker, YOUR_MOVE, type PollResult } from "../src/events.js";
+import { CHAT, ChatTracker, EventLog, MoveTracker, YOUR_MOVE } from "../src/events.js";
 import { connect, fakeBridge } from "./helpers.js";
 
 const priority = (prompt: string, revision: number) => ({
@@ -108,8 +108,8 @@ describe("events", () => {
     const listed = (await client.request({ method: "events/list", params: {} }, Any)) as { events: { name: string; delivery: string[] }[] };
     expect(listed.events.map((e) => [e.name, e.delivery])).toEqual([[YOUR_MOVE, ["poll"]], [CHAT, ["poll"]]]);
 
-    const poll = (cursor: string | null) =>
-      client.request({ method: "events/poll", params: { name: YOUR_MOVE, arguments: {}, cursor } }, Any) as Promise<PollResult>;
+    const Polled = z.looseObject({ events: z.array(z.looseObject({})), cursor: z.string(), truncated: z.boolean(), hasMore: z.boolean() });
+    const poll = (cursor: string | null) => client.request({ method: "events/poll", params: { name: YOUR_MOVE, arguments: {}, cursor } }, Polled);
     const start = await poll(null);
     expect(start).toMatchObject({ events: [], truncated: false, hasMore: false });
 
