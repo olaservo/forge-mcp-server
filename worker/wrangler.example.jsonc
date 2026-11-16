@@ -1,5 +1,5 @@
 // Cloudflare Workers config for the Forge seat's sign-in proxy.
-// Copy to wrangler.jsonc, which is not committed, and fill in the KV namespace id, the URLs and the VPC service id; see README.md.
+// Copy to wrangler.jsonc, which is not committed, and fill in the KV namespace id, the URLs and the VPC service id; see docs/sign-in-proxy.md.
 {
   "$schema": "node_modules/wrangler/config-schema.json",
   "name": "forge-seat",

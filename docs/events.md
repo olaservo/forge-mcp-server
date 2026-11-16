@@ -1,0 +1,32 @@
+# Events
+
+An agent can wait for the seat's next ask in three ways: by calling `forge_wait`, by subscribing to `forge://status`, or through MCP Events.
+
+A watcher long-polls the bridge and pushes `notifications/resources/updated` for `forge://status` to `subscriptions/listen` subscribers (on stdio through the server, on HTTP through the handler's event bus), so a client that subscribes does not need `forge_wait`. The same watcher emits the events below.
+
+## MCP Events
+
+`events/list` and `events/poll` from [SEP-3415](https://github.com/modelcontextprotocol/modelcontextprotocol/pull/3415) (Accepted by the Core Maintainers on 2026-11-11, not yet merged; read at `f77a5fe`), declared as `capabilities.extensions["io.modelcontextprotocol/events"]` and registered as custom methods in `src/events.ts` because SDK 2.4.0 has no events support.
+
+There are two event types:
+
+- `forge.your_move` is emitted when the seat's pending ask changes: a seat in the lobby that is not ready, a draft pick, a priority prompt, a choice dialog, or the end of a game. A client's first poll is told the ask that is pending then.
+- `forge.chat` is emitted for each chat line from another player.
+
+Both are delivered by poll, and by webhook when the HTTP endpoint has a token. Events are kept in memory (1000 entries), cursors are per process, and a cursor from before a restart polls as `truncated`. No push (`events/stream`) delivery yet.
+
+[Claude Code](claude-code.md) describes the mod that polls for Claude Code, and [ChatGPT](chatgpt.md) describes webhook delivery to ChatGPT.
+
+## Webhooks
+
+`src/webhooks.ts` implements `events/subscribe` and `events/unsubscribe` from SEP-3415: the verification handshake, Standard Webhooks signatures, retries (4 attempts, none after 410 or 413), secret rotation, and callback addresses checked when the socket connects. Events are not replayable over webhook, so every cursor is `null`. The server follows ChatGPT in the places where ChatGPT differs from the SEP, listed in [ChatGPT](chatgpt.md).
+
+Webhook subscriptions need an authenticated caller, so they are offered only when `FORGE_MCP_TOKEN` or `FORGE_MCP_PROXY_TOKEN` is set. Every request to `/mcp` must then carry `Authorization: Bearer <token>`.
+
+## Settings
+
+- The HTTP server logs one line to stderr for each subscribe, unsubscribe and delivery attempt, with the callback's status and the time it took, and one line for each tool call by an authenticated caller.
+- `FORGE_MCP_LOG`: a file that gets those lines instead of stderr, plus one line for each event emitted, each `events/poll` that returns events, and each tool call on stdio or HTTP. Use it to see when an event was emitted, when a polling client picked it up, and when the seat acted.
+- `FORGE_MCP_SUBSCRIPTIONS`: a JSON file that keeps subscriptions across restarts. It holds the signing secrets. Without it subscriptions live in memory, last an hour by default (a day at most), and a request for no expiry gets a day.
+- `FORGE_MCP_WEBHOOK_INSECURE=1`: allow `http` callbacks and non-public addresses, for a receiver on the same machine.
+- `FORGE_MCP_ALLOWED_HOSTS`: add the public host name the server is reached under.
