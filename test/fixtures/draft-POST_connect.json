@@ -31,6 +31,7 @@
     "prompt": "",
     "promptCount": 0,
     "waiting": false,
+    "priorityPrompt": false,
     "promptCard": null,
     "buttons": {
       "ok": "OK",

@@ -4,6 +4,7 @@
   "prompt": "Waiting for HostAI...",
   "promptCount": 7,
   "waiting": true,
+  "priorityPrompt": false,
   "promptCard": null,
   "buttons": {
     "ok": "OK",
@@ -17,8 +18,8 @@
     "kind": "order",
     "prompt": "Move cards to top or bottom of library / Choose the cards to keep on top, the first one topmost. The rest go to the bottom.",
     "options": [
-      "Preordain (14)",
-      "Island (28)"
+      "Island (39)",
+      "Island (38)"
     ],
     "min": 0,
     "max": 2,
@@ -47,7 +48,7 @@
       "exileSize": 0,
       "battlefield": [
         {
-          "id": 24,
+          "id": 30,
           "name": "Island",
           "zone": "Battlefield",
           "controller": "AgentBot",
@@ -66,7 +67,7 @@
       "graveyard": [],
       "hand": [
         {
-          "id": 2,
+          "id": 9,
           "name": "Preordain",
           "zone": "Hand",
           "controller": "AgentBot",
@@ -82,7 +83,23 @@
           "text": "Scry 2, then draw a card. (To scry 2, look at the top two cards of your library, then put any number of them on the bottom and the rest on top in any order.) "
         },
         {
-          "id": 12,
+          "id": 26,
+          "name": "Island",
+          "zone": "Hand",
+          "controller": "AgentBot",
+          "tapped": false,
+          "sick": false,
+          "attacking": false,
+          "blocking": false,
+          "damage": 0,
+          "token": false,
+          "faceDown": false,
+          "type": "Basic Land - Island",
+          "manaCost": "no cost",
+          "text": ""
+        },
+        {
+          "id": 18,
           "name": "Preordain",
           "zone": "Hand",
           "controller": "AgentBot",
@@ -98,7 +115,7 @@
           "text": "Scry 2, then draw a card. (To scry 2, look at the top two cards of your library, then put any number of them on the bottom and the rest on top in any order.) "
         },
         {
-          "id": 4,
+          "id": 5,
           "name": "Preordain",
           "zone": "Hand",
           "controller": "AgentBot",
@@ -114,23 +131,7 @@
           "text": "Scry 2, then draw a card. (To scry 2, look at the top two cards of your library, then put any number of them on the bottom and the rest on top in any order.) "
         },
         {
-          "id": 3,
-          "name": "Preordain",
-          "zone": "Hand",
-          "controller": "AgentBot",
-          "tapped": false,
-          "sick": false,
-          "attacking": false,
-          "blocking": false,
-          "damage": 0,
-          "token": false,
-          "faceDown": false,
-          "type": "Sorcery",
-          "manaCost": "{U}",
-          "text": "Scry 2, then draw a card. (To scry 2, look at the top two cards of your library, then put any number of them on the bottom and the rest on top in any order.) "
-        },
-        {
-          "id": 6,
+          "id": 13,
           "name": "Preordain",
           "zone": "Hand",
           "controller": "AgentBot",
@@ -153,8 +154,8 @@
       "life": 20,
       "hasPriority": true,
       "isMe": false,
-      "handSize": 6,
-      "librarySize": 54,
+      "handSize": 7,
+      "librarySize": 53,
       "graveyardSize": 0,
       "exileSize": 0,
       "battlefield": [],
@@ -163,10 +164,10 @@
   ],
   "stack": [
     {
-      "id": 532,
+      "id": 609,
       "source": "Preordain",
       "by": "AgentBot",
-      "text": "Preordain (1) - AgentBot scries 2. AgentBot draws a card."
+      "text": "Preordain (12) - AgentBot scries 2. AgentBot draws a card."
     }
   ]
 }

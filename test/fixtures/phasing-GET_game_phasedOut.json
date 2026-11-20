@@ -4,6 +4,7 @@
   "prompt": "Priority: AgentBot\nTurn: 4 (AgentBot)\nPhase: Draw step\nStack: Empty",
   "promptCount": 13,
   "waiting": false,
+  "priorityPrompt": true,
   "promptCard": null,
   "buttons": {
     "ok": "OK",
@@ -35,7 +36,7 @@
       "exileSize": 0,
       "battlefield": [
         {
-          "id": 19,
+          "id": 15,
           "name": "Teferi's Isle",
           "zone": "Battlefield",
           "controller": "AgentBot",
@@ -55,22 +56,6 @@
       "graveyard": [],
       "hand": [
         {
-          "id": 31,
-          "name": "Island",
-          "zone": "Hand",
-          "controller": "AgentBot",
-          "tapped": false,
-          "sick": false,
-          "attacking": false,
-          "blocking": false,
-          "damage": 0,
-          "token": false,
-          "faceDown": false,
-          "type": "Basic Land - Island",
-          "manaCost": "no cost",
-          "text": ""
-        },
-        {
           "id": 26,
           "name": "Island",
           "zone": "Hand",
@@ -87,7 +72,7 @@
           "text": ""
         },
         {
-          "id": 37,
+          "id": 38,
           "name": "Island",
           "zone": "Hand",
           "controller": "AgentBot",
@@ -103,7 +88,7 @@
           "text": ""
         },
         {
-          "id": 39,
+          "id": 29,
           "name": "Island",
           "zone": "Hand",
           "controller": "AgentBot",
@@ -119,8 +104,8 @@
           "text": ""
         },
         {
-          "id": 22,
-          "name": "Island",
+          "id": 18,
+          "name": "Teferi's Isle",
           "zone": "Hand",
           "controller": "AgentBot",
           "tapped": false,
@@ -130,9 +115,57 @@
           "damage": 0,
           "token": false,
           "faceDown": false,
-          "type": "Basic Land - Island",
+          "type": "Legendary Land",
           "manaCost": "no cost",
-          "text": ""
+          "text": "Phasing (This phases in or out before you untap during each of your untap steps. While it's phased out, it's treated as though it doesn't exist.)\r\n\r\nTeferi's Isle enters tapped.\r\n\r\n{T}: Add {U}{U}."
+        },
+        {
+          "id": 5,
+          "name": "Teferi's Isle",
+          "zone": "Hand",
+          "controller": "AgentBot",
+          "tapped": false,
+          "sick": false,
+          "attacking": false,
+          "blocking": false,
+          "damage": 0,
+          "token": false,
+          "faceDown": false,
+          "type": "Legendary Land",
+          "manaCost": "no cost",
+          "text": "Phasing (This phases in or out before you untap during each of your untap steps. While it's phased out, it's treated as though it doesn't exist.)\r\n\r\nTeferi's Isle enters tapped.\r\n\r\n{T}: Add {U}{U}."
+        },
+        {
+          "id": 12,
+          "name": "Teferi's Isle",
+          "zone": "Hand",
+          "controller": "AgentBot",
+          "tapped": false,
+          "sick": false,
+          "attacking": false,
+          "blocking": false,
+          "damage": 0,
+          "token": false,
+          "faceDown": false,
+          "type": "Legendary Land",
+          "manaCost": "no cost",
+          "text": "Phasing (This phases in or out before you untap during each of your untap steps. While it's phased out, it's treated as though it doesn't exist.)\r\n\r\nTeferi's Isle enters tapped.\r\n\r\n{T}: Add {U}{U}."
+        },
+        {
+          "id": 13,
+          "name": "Teferi's Isle",
+          "zone": "Hand",
+          "controller": "AgentBot",
+          "tapped": false,
+          "sick": false,
+          "attacking": false,
+          "blocking": false,
+          "damage": 0,
+          "token": false,
+          "faceDown": false,
+          "type": "Legendary Land",
+          "manaCost": "no cost",
+          "text": "Phasing (This phases in or out before you untap during each of your untap steps. While it's phased out, it's treated as though it doesn't exist.)\r\n\r\nTeferi's Isle enters tapped.\r\n\r\n{T}: Add {U}{U}."
         },
         {
           "id": 35,
@@ -149,38 +182,6 @@
           "type": "Basic Land - Island",
           "manaCost": "no cost",
           "text": ""
-        },
-        {
-          "id": 6,
-          "name": "Teferi's Isle",
-          "zone": "Hand",
-          "controller": "AgentBot",
-          "tapped": false,
-          "sick": false,
-          "attacking": false,
-          "blocking": false,
-          "damage": 0,
-          "token": false,
-          "faceDown": false,
-          "type": "Legendary Land",
-          "manaCost": "no cost",
-          "text": "Phasing (This phases in or out before you untap during each of your untap steps. While it's phased out, it's treated as though it doesn't exist.)\r\n\r\nTeferi's Isle enters tapped.\r\n\r\n{T}: Add {U}{U}."
-        },
-        {
-          "id": 11,
-          "name": "Teferi's Isle",
-          "zone": "Hand",
-          "controller": "AgentBot",
-          "tapped": false,
-          "sick": false,
-          "attacking": false,
-          "blocking": false,
-          "damage": 0,
-          "token": false,
-          "faceDown": false,
-          "type": "Legendary Land",
-          "manaCost": "no cost",
-          "text": "Phasing (This phases in or out before you untap during each of your untap steps. While it's phased out, it's treated as though it doesn't exist.)\r\n\r\nTeferi's Isle enters tapped.\r\n\r\n{T}: Add {U}{U}."
         }
       ]
     },
@@ -196,7 +197,7 @@
       "exileSize": 0,
       "battlefield": [
         {
-          "id": 43,
+          "id": 64,
           "name": "Forest",
           "zone": "Battlefield",
           "controller": "HostAI",

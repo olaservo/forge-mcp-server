@@ -1,9 +1,10 @@
 {
   "inGame": true,
   "finished": false,
-  "prompt": "Priority: AgentBot\nTurn: 1 (AgentBot)\nPhase: Declare Attackers Step\nStack: Empty",
-  "promptCount": 14,
+  "prompt": "Priority: AgentBot\nTurn: 2 (AgentBot)\nPhase: Declare Attackers Step\nStack: Empty",
+  "promptCount": 15,
   "waiting": false,
+  "priorityPrompt": true,
   "promptCard": null,
   "buttons": {
     "ok": "OK",
@@ -13,9 +14,9 @@
   },
   "incorrectActions": 0,
   "messages": [
-    "Revealed, Looking at cards in HostAI's library: Balor (99)"
+    "Revealed, Looking at cards in HostAI's library: Island (76)"
   ],
-  "turn": 1,
+  "turn": 2,
   "phase": "COMBAT_DECLARE_ATTACKERS",
   "activePlayer": "AgentBot",
   "gameOver": false,
@@ -31,13 +32,13 @@
       "life": 20,
       "hasPriority": true,
       "isMe": true,
-      "handSize": 5,
-      "librarySize": 33,
+      "handSize": 6,
+      "librarySize": 32,
       "graveyardSize": 0,
       "exileSize": 0,
       "battlefield": [
         {
-          "id": 36,
+          "id": 30,
           "name": "Mountain",
           "zone": "Battlefield",
           "controller": "AgentBot",
@@ -53,7 +54,7 @@
           "text": ""
         },
         {
-          "id": 9,
+          "id": 5,
           "name": "Goblin Guide",
           "zone": "Battlefield",
           "controller": "AgentBot",
@@ -74,7 +75,7 @@
       "graveyard": [],
       "hand": [
         {
-          "id": 12,
+          "id": 2,
           "name": "Goblin Guide",
           "zone": "Hand",
           "controller": "AgentBot",
@@ -92,7 +93,7 @@
           "text": "Haste\r\n\r\n<span style=\"color:gray;\">Whenever Goblin Guide attacks, defending player reveals the top card of their library. If it's a land card, that player puts it into their hand.</span>"
         },
         {
-          "id": 21,
+          "id": 27,
           "name": "Mountain",
           "zone": "Hand",
           "controller": "AgentBot",
@@ -108,25 +109,7 @@
           "text": ""
         },
         {
-          "id": 20,
-          "name": "Goblin Guide",
-          "zone": "Hand",
-          "controller": "AgentBot",
-          "tapped": false,
-          "sick": false,
-          "attacking": false,
-          "blocking": false,
-          "damage": 0,
-          "token": false,
-          "faceDown": false,
-          "type": "Creature - Goblin Scout",
-          "manaCost": "{R}",
-          "power": 2,
-          "toughness": 2,
-          "text": "Haste\r\n\r\n<span style=\"color:gray;\">Whenever Goblin Guide attacks, defending player reveals the top card of their library. If it's a land card, that player puts it into their hand.</span>"
-        },
-        {
-          "id": 37,
+          "id": 34,
           "name": "Mountain",
           "zone": "Hand",
           "controller": "AgentBot",
@@ -142,7 +125,7 @@
           "text": ""
         },
         {
-          "id": 10,
+          "id": 13,
           "name": "Goblin Guide",
           "zone": "Hand",
           "controller": "AgentBot",
@@ -158,6 +141,38 @@
           "power": 2,
           "toughness": 2,
           "text": "Haste\r\n\r\n<span style=\"color:gray;\">Whenever Goblin Guide attacks, defending player reveals the top card of their library. If it's a land card, that player puts it into their hand.</span>"
+        },
+        {
+          "id": 28,
+          "name": "Mountain",
+          "zone": "Hand",
+          "controller": "AgentBot",
+          "tapped": false,
+          "sick": false,
+          "attacking": false,
+          "blocking": false,
+          "damage": 0,
+          "token": false,
+          "faceDown": false,
+          "type": "Basic Land - Mountain",
+          "manaCost": "no cost",
+          "text": ""
+        },
+        {
+          "id": 22,
+          "name": "Mountain",
+          "zone": "Hand",
+          "controller": "AgentBot",
+          "tapped": false,
+          "sick": false,
+          "attacking": false,
+          "blocking": false,
+          "damage": 0,
+          "token": false,
+          "faceDown": false,
+          "type": "Basic Land - Mountain",
+          "manaCost": "no cost",
+          "text": ""
         }
       ]
     },
@@ -168,10 +183,27 @@
       "hasPriority": false,
       "isMe": false,
       "handSize": 7,
-      "librarySize": 53,
+      "librarySize": 52,
       "graveyardSize": 0,
       "exileSize": 0,
-      "battlefield": [],
+      "battlefield": [
+        {
+          "id": 45,
+          "name": "Forest",
+          "zone": "Battlefield",
+          "controller": "HostAI",
+          "tapped": false,
+          "sick": false,
+          "attacking": false,
+          "blocking": false,
+          "damage": 0,
+          "token": false,
+          "faceDown": false,
+          "type": "Basic Land - Forest",
+          "manaCost": "no cost",
+          "text": ""
+        }
+      ],
       "graveyard": []
     }
   ],
@@ -179,7 +211,7 @@
   "combat": [
     {
       "attacker": "Goblin Guide",
-      "attackerId": 9,
+      "attackerId": 5,
       "defender": "HostAI",
       "blockers": [],
       "blocked": false
