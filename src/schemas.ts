@@ -150,6 +150,7 @@ export const Game = z.looseObject({
   prompt: str,
   promptCount: num,
   waiting: bool,
+  priorityPrompt: bool,
   promptCard: str,
   buttons: z.looseObject({ ok: str, okEnabled: bool, cancel: str, cancelEnabled: bool }).nullish(),
   incorrectActions: num,

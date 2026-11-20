@@ -37,6 +37,9 @@ describe("events", () => {
     // The flag decides, whatever the text says or the language Forge runs in.
     expect(moves.observe(priority(6, { prompt: "Waiting for the stack" }))?.data).toMatchObject({ revision: 6 });
     expect(moves.observe(priority(6, { waiting: true, prompt: "En attente de HostAI..." }))).toBeUndefined();
+    // The bridge's mark is believed over the text.
+    expect(moves.observe(priority(7, { prompt: "Priorité: Agent", priorityPrompt: true, hasPriority: false }))).toBeUndefined();
+    expect(moves.observe(priority(8, { priorityPrompt: false, hasPriority: false }))?.data).toMatchObject({ revision: 8 });
     const pick = { revision: 7, game: { inGame: false }, draft: { pickPending: true, packNumber: 1, pickNumber: 2 } };
     expect(moves.observe(pick)?.data).toMatchObject({ kind: "draft_pick" });
   });
