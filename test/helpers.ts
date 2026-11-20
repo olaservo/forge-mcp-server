@@ -6,7 +6,7 @@ import { InMemoryServerEventBus, createMcpHandler } from "@modelcontextprotocol/
 import { PNG } from "pngjs";
 import { Bridge } from "../src/bridge.js";
 import { DeckLibrary, type ForgeDirs } from "../src/decks/library.js";
-import type { EventLog } from "../src/events.js";
+import type { EventLog } from "../src/event-log.js";
 import { createServer, skillCatalog } from "../src/server.js";
 import type { WebhookHub } from "../src/webhooks.js";
 

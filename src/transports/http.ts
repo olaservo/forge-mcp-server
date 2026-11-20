@@ -6,7 +6,7 @@ import { type AuthInfo, InMemoryServerEventBus, createMcpHandler } from "@modelc
 import type { SkillCatalog } from "@modelcontextprotocol/server/ext/skills";
 import { STATUS_URI, createServer } from "../server.js";
 import type { Bridge } from "../bridge.js";
-import type { EventLog } from "../events.js";
+import type { EventLog } from "../event-log.js";
 import { fileLog, stderrLog } from "../log.js";
 import { WebhookHub } from "../webhooks.js";
 

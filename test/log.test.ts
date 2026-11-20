@@ -5,7 +5,8 @@ import { Client, StreamableHTTPClientTransport } from "@modelcontextprotocol/cli
 import { createMcpHandler } from "@modelcontextprotocol/server";
 import { describe, expect, it } from "vitest";
 import { z } from "zod";
-import { EventLog, YOUR_MOVE } from "../src/events.js";
+import { EventLog } from "../src/event-log.js";
+import { YOUR_MOVE } from "../src/seat-events.js";
 import { fileLog, logEmitted } from "../src/log.js";
 import { createServer, skillCatalog } from "../src/server.js";
 import { fakeBridge } from "./helpers.js";

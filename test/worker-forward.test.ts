@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { EventLog } from "../src/events.js";
+import { EventLog } from "../src/event-log.js";
 import { skillCatalog } from "../src/server.js";
 import { listenHttp } from "../src/transports/http.js";
 import { WebhookHub } from "../src/webhooks.js";

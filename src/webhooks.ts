@@ -5,7 +5,7 @@ import { request as httpRequest } from "node:http";
 import { request as httpsRequest } from "node:https";
 import { BlockList, isIP, type LookupFunction } from "node:net";
 import { ProtocolError } from "@modelcontextprotocol/server";
-import type { EventLog, EventOccurrence } from "./events.js";
+import type { EventLog, EventOccurrence } from "./event-log.js";
 import type { ActivityLog } from "./log.js";
 
 /**

@@ -1,4 +1,5 @@
 import { Bridge } from "./bridge.js";
+import type { SeatStatus } from "./seat-events.js";
 
 /**
  * Long-polls the bridge's `/wait` and reports every revision change, so a transport can push
@@ -13,12 +14,12 @@ export class StatusWatcher {
 
   constructor(
     private readonly bridge: Bridge,
-    private readonly onChange: (revision: number, status: Record<string, unknown>) => void | Promise<void>,
+    private readonly onChange: (revision: number, status: SeatStatus) => void | Promise<void>,
     private readonly opts: {
       timeoutSeconds?: number;
       retryMs?: number;
       sleep?: (ms: number) => Promise<void>;
-      onSeed?: (status: Record<string, unknown>) => void | Promise<void>;
+      onSeed?: (status: SeatStatus) => void | Promise<void>;
     } = {},
   ) {}
 
@@ -36,7 +37,7 @@ export class StatusWatcher {
     const sleep = this.opts.sleep ?? ((ms: number) => new Promise<void>((r) => setTimeout(r, ms)));
     while (this.running) {
       try {
-        const status = await this.bridge.get<{ revision: number } & Record<string, unknown>>("/wait", {
+        const status = await this.bridge.get<SeatStatus & { revision: number }>("/wait", {
           since: this.since,
           timeout: this.opts.timeoutSeconds ?? 30,
         });

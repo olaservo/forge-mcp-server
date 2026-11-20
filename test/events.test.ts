@@ -1,6 +1,7 @@
 import { describe, expect, it } from "vitest";
 import { z } from "zod";
-import { CHAT, ChatTracker, EventLog, MoveTracker, YOUR_MOVE } from "../src/events.js";
+import { EventLog } from "../src/event-log.js";
+import { CHAT, ChatTracker, MoveTracker, YOUR_MOVE } from "../src/seat-events.js";
 import { connect, fakeBridge } from "./helpers.js";
 
 const priority = (prompt: string, revision: number) => ({

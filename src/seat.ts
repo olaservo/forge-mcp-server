@@ -1,5 +1,6 @@
 import { Bridge } from "./bridge.js";
-import { ChatTracker, EventLog, MoveTracker, YOUR_MOVE } from "./events.js";
+import { EventLog } from "./event-log.js";
+import { ChatTracker, MoveTracker, type SeatStatus, YOUR_MOVE } from "./seat-events.js";
 import { logEmitted, type ActivityLog } from "./log.js";
 import { StatusWatcher } from "./watcher.js";
 
@@ -13,13 +14,13 @@ export function createSeat(log?: ActivityLog) {
   logEmitted(events, log);
   const moves = new MoveTracker(events);
   const chat = new ChatTracker(events);
-  const observe = (status: Record<string, unknown>) => {
+  const observe = (status: SeatStatus) => {
     moves.observe(status);
     chat.observe(status);
   };
   // A client that starts following mid-ask is told the ask that is pending
   events.onFirstPoll((name) => {
-    if (name === YOUR_MOVE) void bridge.get<Record<string, unknown>>("/status").then((status) => moves.replay(status), () => undefined);
+    if (name === YOUR_MOVE) void bridge.get<SeatStatus>("/status").then((status) => moves.replay(status), () => undefined);
   });
   let watcher: StatusWatcher | undefined;
 

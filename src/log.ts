@@ -1,5 +1,5 @@
 import { appendFileSync } from "node:fs";
-import type { EventLog } from "./events.js";
+import type { EventLog } from "./event-log.js";
 
 export type ActivityLog = (line: string) => void;
 
