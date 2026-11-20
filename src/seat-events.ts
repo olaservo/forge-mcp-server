@@ -29,8 +29,10 @@ export function pendingMove(status: SeatStatus): Move | undefined {
       return { key: `decision:${decision.id}`, data: { kind: "decision", prompt: decision.prompt, decisionKind: decision.kind, ...at } };
     }
     const prompt = game.prompt ?? "";
-    // When the host auto-passes for the seat it sends no new prompt, so the last "Priority: ..." text stays up.
-    if (prompt.startsWith("Priority:") && game.hasPriority === false) return undefined;
+    // When the host auto-passes for the seat it sends no new prompt, so the last priority prompt stays up.
+    // A bridge after 0.1.3 marks that prompt. Before it, the English text is matched.
+    const priorityPrompt = game.priorityPrompt ?? prompt.startsWith("Priority:");
+    if (priorityPrompt && game.hasPriority === false) return undefined;
     // An empty prompt is the gap between two inputs, not an ask.
     if ((game.buttons?.okEnabled || game.buttons?.cancelEnabled) && prompt.trim() !== "" && !game.waiting) {
       // The bridge counts each prompt the host sends, so the same text twice in a turn is two asks.
