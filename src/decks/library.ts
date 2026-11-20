@@ -142,6 +142,7 @@ export function folderFor(deck: Decklist): string {
 /** A deck name as Forge stores it (`/` becomes `_`), without what a Windows file name cannot end in or hold. */
 export function deckName(name: string): string {
   return name
+    // eslint-disable-next-line no-control-regex
     .replace(/[\\\u0000-\u001f]/g, "")
     .replace(/\//g, "_")
     .replace(/[.\s]+$/, "")

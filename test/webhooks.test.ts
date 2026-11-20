@@ -213,7 +213,7 @@ describe("webhook delivery", () => {
       });
       const text = await res.text();
       const json = text.startsWith("{") ? text : (text.split("\n").find((l) => l.startsWith("data: "))?.slice(6) ?? "{}");
-      return { status: res.status, message: JSON.parse(json || "{}") as { result?: Record<string, any>; error?: { code: number } } };
+      return { status: res.status, message: JSON.parse(json || "{}") as { result?: Record<string, unknown>; error?: { code: number } } };
     };
 
     expect((await rpc("events/list", {})).status).toBe(401);
