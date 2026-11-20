@@ -7,8 +7,9 @@
     {
       "index": 0,
       "type": "LOCAL",
-      "name": "Ola",
+      "name": "HostAI",
       "ready": false,
+      "avatar": 12,
       "team": 0,
       "deckName": null,
       "hasDeck": false
@@ -18,13 +19,14 @@
       "type": "REMOTE",
       "name": "AgentBot",
       "ready": false,
+      "avatar": 12,
       "team": 1,
       "deckName": null,
       "hasDeck": false
     }
   ],
   "event": {
-    "eventId": "cc07dc05",
+    "eventId": "ada7d955",
     "format": "BOOSTER_DRAFT",
     "phase": "LOBBY_GATHER",
     "product": "Block / Set",
@@ -33,15 +35,15 @@
     "pickTimerSeconds": 0,
     "participants": [
       {
-        "name": "Ola",
+        "name": "HostAI",
         "type": "HUMAN",
-        "seat": 0,
+        "seat": 1,
         "lobbySlot": 0
       },
       {
         "name": "AgentBot",
         "type": "HUMAN",
-        "seat": 1,
+        "seat": 0,
         "lobbySlot": 1
       }
     ]

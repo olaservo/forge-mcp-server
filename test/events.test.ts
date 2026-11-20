@@ -87,6 +87,31 @@ describe("events", () => {
     expect(moves.observe({ ...over, revision: 21 })).toBeUndefined();
   });
 
+  it("keys an ask on the bridge's prompt count and waits on its waiting flag", () => {
+    const moves = new MoveTracker(new EventLog());
+    const ask = (promptCount: number, more = {}) => ({
+      revision: promptCount,
+      game: { inGame: true, prompt: "Priority: Agent", promptCount, waiting: false, turn: 3, buttons: { okEnabled: true }, ...more },
+    });
+    expect(moves.observe(ask(4))?.data).toMatchObject({ kind: "priority", revision: 4 });
+    expect(moves.observe(ask(4))).toBeUndefined();
+    // The same text again is a new ask: priority came back after the seat played a land.
+    expect(moves.observe(ask(5))?.data).toMatchObject({ kind: "priority", revision: 5 });
+    expect(moves.observe(ask(5, { waiting: true, prompt: "En attente de HostAI...", buttons: { cancelEnabled: true } }))).toBeUndefined();
+    expect(moves.observe(ask(6, { prompt: "Waiting for the stack", waiting: false }))?.data).toMatchObject({ revision: 6 });
+  });
+
+  it("counts new chat lines with the bridge's chatCount", () => {
+    const chat = new ChatTracker(new EventLog());
+    const seat = { connection: { name: "Claude" }, lobby: { slots: [{ name: "Ola" }, { name: "Claude" }] } };
+    const same = Array.from({ length: 20 }, () => "Ola: gg");
+    expect(chat.observe({ ...seat, chat: same, chatCount: 30 })).toEqual([]);
+    expect(chat.observe({ ...seat, chat: same, chatCount: 30 })).toEqual([]);
+    expect(chat.observe({ ...seat, chat: same, chatCount: 32 }).map((e) => e.data.text)).toEqual(["gg", "gg"]);
+    expect(chat.observe({ ...seat, chat: ["Ola: hello"], chatCount: 1 })).toEqual([]);
+    expect(chat.observe({ ...seat, chat: ["Ola: hello", "Claude: hi", "Ola: again"], chatCount: 3 }).map((e) => e.data.text)).toEqual(["again"]);
+  });
+
   it("emits forge.chat for new lines from other players only", () => {
     const chat = new ChatTracker(new EventLog());
     const seat = { connection: { name: "Claude" }, lobby: { slots: [{ name: "Ola" }, { name: "Claude" }] } };

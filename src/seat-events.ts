@@ -15,7 +15,10 @@ function gameOver(game: NonNullable<SeatStatus["game"]>, revision: SeatStatus["r
   return { key: `game_over:${game.turn}:${game.winner}`, data };
 }
 
-/** What the seat is being asked to do, or undefined when it is waiting on someone else. `key` identifies the ask. */
+/**
+ * What the seat is being asked to do, or undefined when it is waiting on someone else. `key` identifies the ask.
+ * A bridge up to 0.1.2 sends no `waiting` and no `promptCount`, and the prompt's text stands in for both.
+ */
 export function pendingMove(status: SeatStatus): Move | undefined {
   const { draft, game, revision } = status;
   if (game?.inGame) {
@@ -28,11 +31,12 @@ export function pendingMove(status: SeatStatus): Move | undefined {
     const prompt = game.prompt ?? "";
     // When the host auto-passes for the seat it sends no new prompt, so the last "Priority: ..." text stays up.
     if (prompt.startsWith("Priority:") && game.hasPriority === false) return undefined;
+    const waiting = game.waiting ?? prompt.includes("Waiting for");
     // An empty prompt is the gap between two inputs, not an ask.
-    if ((game.buttons?.okEnabled || game.buttons?.cancelEnabled) && prompt.trim() !== "" && !prompt.includes("Waiting for")) {
+    if ((game.buttons?.okEnabled || game.buttons?.cancelEnabled) && prompt.trim() !== "" && !waiting) {
       // The key leaves the phase out: the host updates the phase before the prompt, so keying on both
       // reported each priority twice, a second apart, the first time with the previous prompt's text.
-      return { key: `priority:${game.turn}:${prompt}`, data: { kind: "priority", prompt, ...at } };
+      return { key: `priority:${game.promptCount ?? `${game.turn}:${prompt}`}`, data: { kind: "priority", prompt, ...at } };
     }
     return undefined;
   }
@@ -92,7 +96,7 @@ export class MoveTracker {
   }
 }
 
-/** The lines of `now` after its overlap with `before`. Both are the bridge's last 20 chat lines. */
+/** The lines of `now` after its overlap with `before`. Both are the bridge's last 20 chat lines. For a bridge up to 0.1.2, which sends no `chatCount`. */
 function newLines(before: string[], now: string[]): string[] {
   let dropped = 0;
   while (dropped < before.length && !before.slice(dropped).every((line, i) => now[i] === line)) dropped++;
@@ -102,18 +106,29 @@ function newLines(before: string[], now: string[]): string[] {
 /** Emits `forge.chat` for each new chat line from another player. Lines from the server and from our own seat are skipped. */
 export class ChatTracker {
   private last: string[] | undefined;
+  /** The bridge's count of chat lines at the last status. */
+  private count: number | undefined;
 
   constructor(private readonly log: EventLog) {}
 
-  observe(status: SeatStatus): EventOccurrence[] {
+  /** The lines that arrived since the last status. `chat` is the last 20 lines and `chatCount` counts them all. */
+  private added(status: SeatStatus): string[] {
     const lines = status.chat ?? [];
     const prev = this.last;
+    const seen = this.count;
     this.last = lines;
+    this.count = status.chatCount ?? undefined;
     if (prev === undefined) return [];
+    if (this.count === undefined || seen === undefined) return newLines(prev, lines);
+    return this.count > seen ? lines.slice(-(this.count - seen)) : [];
+  }
+
+  observe(status: SeatStatus): EventOccurrence[] {
+    const added = this.added(status);
     const me = status.connection?.name;
     const others = new Set((status.lobby?.slots ?? []).map((s) => s.name).filter((n) => n && n !== me));
     const emitted: EventOccurrence[] = [];
-    for (const line of newLines(prev, lines)) {
+    for (const line of added) {
       const at = line.indexOf(": ");
       const from = at > 0 ? line.slice(0, at) : "";
       if (others.has(from)) emitted.push(this.log.emit(CHAT, { from, text: line.slice(at + 2), revision: status.revision }));

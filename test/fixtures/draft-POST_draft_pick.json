@@ -1,16 +1,16 @@
 {
   "picked": {
-    "name": "Haunting Echoes",
+    "name": "Cyclops Gladiator",
     "set": "M11",
-    "collectorNumber": "99",
+    "collectorNumber": "131",
     "rarity": "Rare",
-    "manaCost": "{3}{B}{B}",
-    "type": "Sorcery",
-    "colors": "B",
-    "power": null,
-    "toughness": null,
-    "oracle": "Exile all cards from target player's graveyard other than basic land cards. For each card exiled this way, search that player's library for all cards with the same name as that card and exile them. Then that player shuffles."
+    "manaCost": "{1}{R}{R}{R}",
+    "type": "Creature - Cyclops Warrior",
+    "colors": "R",
+    "power": "4",
+    "toughness": "4",
+    "oracle": "Whenever Cyclops Gladiator attacks, you may have it deal damage equal to its power to target creature defending player controls. If you do, that creature deals damage equal to its power to Cyclops Gladiator."
   },
-  "packNumber": 3,
+  "packNumber": 1,
   "pickNumber": 13
 }

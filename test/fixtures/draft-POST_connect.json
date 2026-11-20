@@ -29,6 +29,8 @@
     "inGame": false,
     "finished": false,
     "prompt": "",
+    "promptCount": 0,
+    "waiting": false,
     "promptCard": null,
     "buttons": {
       "ok": "OK",
@@ -39,5 +41,6 @@
     "incorrectActions": 0,
     "messages": []
   },
-  "chat": []
+  "chat": [],
+  "chatCount": 0
 }

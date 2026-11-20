@@ -1,5 +1,5 @@
 {
-  "revision": 390,
+  "revision": 550,
   "connection": {
     "connected": true,
     "host": "127.0.0.1",
@@ -19,6 +19,7 @@
         "type": "AI",
         "name": "HostAI",
         "ready": true,
+        "avatar": 12,
         "team": 0,
         "deckName": null,
         "hasDeck": true
@@ -28,6 +29,7 @@
         "type": "REMOTE",
         "name": "AgentBot",
         "ready": true,
+        "avatar": 12,
         "team": 1,
         "deckName": null,
         "hasDeck": true
@@ -51,7 +53,9 @@
   "game": {
     "inGame": true,
     "finished": false,
-    "prompt": "Priority: AgentBot\nTurn: 8 (AgentBot)\nPhase: Main phase, precombat\nStack: Empty",
+    "prompt": "Priority: AgentBot\nTurn: 10 (AgentBot)\nPhase: Main phase, postcombat\nStack: Empty",
+    "promptCount": 65,
+    "waiting": false,
     "promptCard": null,
     "buttons": {
       "ok": "OK",
@@ -61,7 +65,7 @@
     },
     "incorrectActions": 0,
     "pendingDecision": {
-      "id": 3,
+      "id": 4,
       "kind": "choices",
       "prompt": "Choose optional costs",
       "options": [
@@ -72,17 +76,21 @@
       "default": null
     },
     "messages": [],
-    "turn": 8,
-    "phase": "MAIN1",
+    "turn": 10,
+    "phase": "MAIN2",
     "activePlayer": "AgentBot",
     "gameOver": false,
     "winner": "",
-    "me": "AgentBot"
+    "me": "AgentBot",
+    "hasPriority": true,
+    "autoPass": "opponent-turns",
+    "autoPassNow": false
   },
   "chat": [
     "AgentBot joined the lobby.",
     "AFK timeout: 5:00",
     "AgentBot is ready (1/1 players ready)",
     "AgentBot: gl hf"
-  ]
+  ],
+  "chatCount": 4
 }

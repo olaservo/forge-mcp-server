@@ -1,7 +1,9 @@
 {
   "inGame": true,
   "finished": false,
-  "prompt": "Forked Bolt (19) - Forked Bolt deals 2 damage divided as you choose among one or two targets.\n\nSelect any target to distribute damage to\nTargeted: \nHostAI\n(1 more can be targeted)",
+  "prompt": "Forked Bolt (13) - Forked Bolt deals 2 damage divided as you choose among one or two targets.\n\nSelect any target to distribute damage to\nTargeted: \nHostAI\n(1 more can be targeted)",
+  "promptCount": 8,
+  "waiting": false,
   "promptCard": "Forked Bolt",
   "buttons": {
     "ok": "OK",
@@ -11,7 +13,7 @@
   },
   "incorrectActions": 0,
   "messages": [],
-  "turn": 1,
+  "turn": 2,
   "phase": "MAIN1",
   "activePlayer": "AgentBot",
   "gameOver": false,
@@ -27,13 +29,13 @@
       "life": 20,
       "hasPriority": true,
       "isMe": true,
-      "handSize": 5,
-      "librarySize": 33,
+      "handSize": 6,
+      "librarySize": 32,
       "graveyardSize": 0,
       "exileSize": 0,
       "battlefield": [
         {
-          "id": 35,
+          "id": 32,
           "name": "Mountain",
           "zone": "Battlefield",
           "controller": "AgentBot",
@@ -52,23 +54,7 @@
       "graveyard": [],
       "hand": [
         {
-          "id": 23,
-          "name": "Mountain",
-          "zone": "Hand",
-          "controller": "AgentBot",
-          "tapped": false,
-          "sick": false,
-          "attacking": false,
-          "blocking": false,
-          "damage": 0,
-          "token": false,
-          "faceDown": false,
-          "type": "Basic Land - Mountain",
-          "manaCost": "no cost",
-          "text": ""
-        },
-        {
-          "id": 38,
+          "id": 35,
           "name": "Mountain",
           "zone": "Hand",
           "controller": "AgentBot",
@@ -100,7 +86,23 @@
           "text": ""
         },
         {
-          "id": 7,
+          "id": 38,
+          "name": "Mountain",
+          "zone": "Hand",
+          "controller": "AgentBot",
+          "tapped": false,
+          "sick": false,
+          "attacking": false,
+          "blocking": false,
+          "damage": 0,
+          "token": false,
+          "faceDown": false,
+          "type": "Basic Land - Mountain",
+          "manaCost": "no cost",
+          "text": ""
+        },
+        {
+          "id": 18,
           "name": "Forked Bolt",
           "zone": "Hand",
           "controller": "AgentBot",
@@ -116,7 +118,7 @@
           "text": "Forked Bolt deals 2 damage divided as you choose among one or two targets."
         },
         {
-          "id": 6,
+          "id": 17,
           "name": "Forked Bolt",
           "zone": "Hand",
           "controller": "AgentBot",
@@ -130,6 +132,22 @@
           "type": "Sorcery",
           "manaCost": "{R}",
           "text": "Forked Bolt deals 2 damage divided as you choose among one or two targets."
+        },
+        {
+          "id": 33,
+          "name": "Mountain",
+          "zone": "Hand",
+          "controller": "AgentBot",
+          "tapped": false,
+          "sick": false,
+          "attacking": false,
+          "blocking": false,
+          "damage": 0,
+          "token": false,
+          "faceDown": false,
+          "type": "Basic Land - Mountain",
+          "manaCost": "no cost",
+          "text": ""
         }
       ]
     },
@@ -139,11 +157,46 @@
       "life": 20,
       "hasPriority": false,
       "isMe": false,
-      "handSize": 7,
+      "handSize": 5,
       "librarySize": 33,
       "graveyardSize": 0,
       "exileSize": 0,
-      "battlefield": [],
+      "battlefield": [
+        {
+          "id": 75,
+          "name": "Forest",
+          "zone": "Battlefield",
+          "controller": "HostAI",
+          "tapped": true,
+          "sick": false,
+          "attacking": false,
+          "blocking": false,
+          "damage": 0,
+          "token": false,
+          "faceDown": false,
+          "type": "Basic Land - Forest",
+          "manaCost": "no cost",
+          "text": ""
+        },
+        {
+          "id": 55,
+          "name": "Llanowar Elves",
+          "zone": "Battlefield",
+          "controller": "HostAI",
+          "tapped": false,
+          "sick": true,
+          "attacking": false,
+          "blocking": false,
+          "damage": 0,
+          "token": false,
+          "faceDown": false,
+          "type": "Creature - Elf Druid",
+          "manaCost": "{G}",
+          "power": 1,
+          "toughness": 1,
+          "text": "{T}: Add {G}."
+        }
+      ],
       "graveyard": []
     }
   ],
@@ -151,7 +204,26 @@
   "selection": {
     "min": 1,
     "max": 2,
-    "cards": [],
+    "cards": [
+      {
+        "id": 55,
+        "name": "Llanowar Elves",
+        "zone": "Battlefield",
+        "controller": "HostAI",
+        "tapped": false,
+        "sick": true,
+        "attacking": false,
+        "blocking": false,
+        "damage": 0,
+        "token": false,
+        "faceDown": false,
+        "type": "Creature - Elf Druid",
+        "manaCost": "{G}",
+        "power": 1,
+        "toughness": 1,
+        "text": "{T}: Add {G}."
+      }
+    ],
     "players": [
       {
         "type": "player",

@@ -1,13 +1,15 @@
 {
   "inGame": true,
   "finished": false,
-  "prompt": "Priority: AgentBot\nTurn: 4 (AgentBot)\nPhase: Main phase, precombat\nStack: 1 to Resolve.",
+  "prompt": "Waiting for HostAI...",
+  "promptCount": 18,
+  "waiting": true,
   "promptCard": null,
   "buttons": {
     "ok": "OK",
-    "okEnabled": true,
-    "cancel": "Undo",
-    "cancelEnabled": true
+    "okEnabled": false,
+    "cancel": "Cancel",
+    "cancelEnabled": false
   },
   "incorrectActions": 0,
   "pendingDecision": {
@@ -15,15 +17,15 @@
     "kind": "order",
     "prompt": "Select cards to be put into the graveyard / Cards to put in the graveyard",
     "options": [
-      "Island (25)",
-      "Curate (19)"
+      "Curate (5)",
+      "Curate (9)"
     ],
     "min": 0,
     "max": 2,
     "default": null
   },
   "messages": [],
-  "turn": 4,
+  "turn": 3,
   "phase": "MAIN1",
   "activePlayer": "AgentBot",
   "gameOver": false,
@@ -39,13 +41,13 @@
       "life": 20,
       "hasPriority": false,
       "isMe": true,
-      "handSize": 6,
-      "librarySize": 31,
+      "handSize": 5,
+      "librarySize": 32,
       "graveyardSize": 0,
       "exileSize": 0,
       "battlefield": [
         {
-          "id": 30,
+          "id": 31,
           "name": "Island",
           "zone": "Battlefield",
           "controller": "AgentBot",
@@ -61,7 +63,7 @@
           "text": ""
         },
         {
-          "id": 37,
+          "id": 33,
           "name": "Island",
           "zone": "Battlefield",
           "controller": "AgentBot",
@@ -80,7 +82,7 @@
       "graveyard": [],
       "hand": [
         {
-          "id": 14,
+          "id": 19,
           "name": "Curate",
           "zone": "Hand",
           "controller": "AgentBot",
@@ -96,7 +98,39 @@
           "text": "Surveil 2. (Look at the top two cards of your library, then put any number of them into your graveyard and the rest on top of your library in any order.) Draw a card."
         },
         {
-          "id": 36,
+          "id": 7,
+          "name": "Curate",
+          "zone": "Hand",
+          "controller": "AgentBot",
+          "tapped": false,
+          "sick": false,
+          "attacking": false,
+          "blocking": false,
+          "damage": 0,
+          "token": false,
+          "faceDown": false,
+          "type": "Instant",
+          "manaCost": "{1}{U}",
+          "text": "Surveil 2. (Look at the top two cards of your library, then put any number of them into your graveyard and the rest on top of your library in any order.) Draw a card."
+        },
+        {
+          "id": 8,
+          "name": "Curate",
+          "zone": "Hand",
+          "controller": "AgentBot",
+          "tapped": false,
+          "sick": false,
+          "attacking": false,
+          "blocking": false,
+          "damage": 0,
+          "token": false,
+          "faceDown": false,
+          "type": "Instant",
+          "manaCost": "{1}{U}",
+          "text": "Surveil 2. (Look at the top two cards of your library, then put any number of them into your graveyard and the rest on top of your library in any order.) Draw a card."
+        },
+        {
+          "id": 35,
           "name": "Island",
           "zone": "Hand",
           "controller": "AgentBot",
@@ -112,55 +146,7 @@
           "text": ""
         },
         {
-          "id": 5,
-          "name": "Curate",
-          "zone": "Hand",
-          "controller": "AgentBot",
-          "tapped": false,
-          "sick": false,
-          "attacking": false,
-          "blocking": false,
-          "damage": 0,
-          "token": false,
-          "faceDown": false,
-          "type": "Instant",
-          "manaCost": "{1}{U}",
-          "text": "Surveil 2. (Look at the top two cards of your library, then put any number of them into your graveyard and the rest on top of your library in any order.) Draw a card."
-        },
-        {
-          "id": 9,
-          "name": "Curate",
-          "zone": "Hand",
-          "controller": "AgentBot",
-          "tapped": false,
-          "sick": false,
-          "attacking": false,
-          "blocking": false,
-          "damage": 0,
-          "token": false,
-          "faceDown": false,
-          "type": "Instant",
-          "manaCost": "{1}{U}",
-          "text": "Surveil 2. (Look at the top two cards of your library, then put any number of them into your graveyard and the rest on top of your library in any order.) Draw a card."
-        },
-        {
-          "id": 40,
-          "name": "Island",
-          "zone": "Hand",
-          "controller": "AgentBot",
-          "tapped": false,
-          "sick": false,
-          "attacking": false,
-          "blocking": false,
-          "damage": 0,
-          "token": false,
-          "faceDown": false,
-          "type": "Basic Land - Island",
-          "manaCost": "no cost",
-          "text": ""
-        },
-        {
-          "id": 38,
+          "id": 37,
           "name": "Island",
           "zone": "Hand",
           "controller": "AgentBot",
@@ -180,17 +166,17 @@
     {
       "id": 1,
       "name": "HostAI",
-      "life": 21,
+      "life": 20,
       "hasPriority": true,
       "isMe": false,
-      "handSize": 5,
+      "handSize": 7,
       "librarySize": 52,
       "graveyardSize": 0,
       "exileSize": 0,
       "battlefield": [
         {
-          "id": 54,
-          "name": "Stark Industries",
+          "id": 67,
+          "name": "Bleeding Woods",
           "zone": "Battlefield",
           "controller": "HostAI",
           "tapped": true,
@@ -202,41 +188,7 @@
           "faceDown": false,
           "type": "Land",
           "manaCost": "no cost",
-          "text": "This land enters tapped.\r\n\r\nWhen this land enters, you gain 1 life.\r\n\r\n{T}: Add {U} or {R}."
-        },
-        {
-          "id": 96,
-          "name": "Plains",
-          "zone": "Battlefield",
-          "controller": "HostAI",
-          "tapped": true,
-          "sick": false,
-          "attacking": false,
-          "blocking": false,
-          "damage": 0,
-          "token": false,
-          "faceDown": false,
-          "type": "Basic Land - Plains",
-          "manaCost": "no cost",
-          "text": ""
-        },
-        {
-          "id": 76,
-          "name": "Steadfast Cathar",
-          "zone": "Battlefield",
-          "controller": "HostAI",
-          "tapped": false,
-          "sick": true,
-          "attacking": false,
-          "blocking": false,
-          "damage": 0,
-          "token": false,
-          "faceDown": false,
-          "type": "Creature - Human Soldier",
-          "manaCost": "{1}{W}",
-          "power": 2,
-          "toughness": 1,
-          "text": "Whenever Steadfast Cathar attacks, it gets +0/+2 until end of turn."
+          "text": "Bleeding Woods enters tapped unless a player has 13 or less life.\r\n\r\n{T}: Add {R} or {G}."
         }
       ],
       "graveyard": []
@@ -244,10 +196,10 @@
   ],
   "stack": [
     {
-      "id": 44,
+      "id": 557,
       "source": "Curate",
       "by": "AgentBot",
-      "text": "Curate (1) - AgentBot surveils (2). AgentBot draws a card."
+      "text": "Curate (3) - AgentBot surveils (2). AgentBot draws a card."
     }
   ]
 }

@@ -1,20 +1,36 @@
 {
   "inGame": true,
   "finished": false,
-  "prompt": "Select creatures to block Illusion Token (109) or select another attacker to declare blockers for.",
+  "prompt": "Priority: AgentBot\nTurn: 10 (AgentBot)\nPhase: Main phase, postcombat\nStack: Empty",
+  "promptCount": 65,
+  "waiting": false,
   "promptCard": null,
   "buttons": {
     "ok": "OK",
     "okEnabled": true,
-    "cancel": "Cancel",
-    "cancelEnabled": false
+    "cancel": "End Turn",
+    "cancelEnabled": true
   },
   "incorrectActions": 0,
+  "pendingDecision": {
+    "id": 4,
+    "kind": "choices",
+    "prompt": "Choose optional costs",
+    "options": [
+      "Kicker – {R}"
+    ],
+    "min": 0,
+    "max": 1,
+    "default": null
+  },
   "messages": [],
-  "turn": 11,
-  "phase": "COMBAT_DECLARE_BLOCKERS",
-  "activePlayer": "HostAI",
+  "turn": 10,
+  "phase": "MAIN2",
+  "activePlayer": "AgentBot",
   "gameOver": false,
   "winner": "",
-  "me": "AgentBot"
+  "me": "AgentBot",
+  "hasPriority": true,
+  "autoPass": "opponent-turns",
+  "autoPassNow": false
 }

@@ -1,5 +1,5 @@
 {
-  "revision": 613,
+  "revision": 882,
   "connection": {
     "connected": false,
     "host": "127.0.0.1",
@@ -29,6 +29,8 @@
     "inGame": false,
     "finished": true,
     "prompt": "Waiting for HostAI...",
+    "promptCount": 101,
+    "waiting": true,
     "promptCard": null,
     "buttons": {
       "ok": "OK",
@@ -38,17 +40,21 @@
     },
     "incorrectActions": 0,
     "messages": [],
-    "turn": 11,
+    "turn": 15,
     "phase": "COMBAT_DAMAGE",
     "activePlayer": "HostAI",
     "gameOver": true,
     "winner": "HostAI",
-    "me": "AgentBot"
+    "me": "AgentBot",
+    "hasPriority": false,
+    "autoPass": "opponent-turns",
+    "autoPassNow": true
   },
   "chat": [
     "AgentBot joined the lobby.",
     "AFK timeout: 5:00",
     "AgentBot is ready (1/1 players ready)",
     "AgentBot: gl hf"
-  ]
+  ],
+  "chatCount": 4
 }

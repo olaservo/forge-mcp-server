@@ -9,6 +9,7 @@
       "type": "AI",
       "name": "HostAI",
       "ready": true,
+      "avatar": 12,
       "team": 0,
       "deckName": null,
       "hasDeck": true
@@ -18,6 +19,7 @@
       "type": "REMOTE",
       "name": "AgentBot",
       "ready": false,
+      "avatar": 12,
       "team": 1,
       "deckName": null,
       "hasDeck": false

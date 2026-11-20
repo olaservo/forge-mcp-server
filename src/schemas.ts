@@ -148,6 +148,8 @@ export const Game = z.looseObject({
   inGame: bool,
   finished: bool,
   prompt: str,
+  promptCount: num,
+  waiting: bool,
   promptCard: str,
   buttons: z.looseObject({ ok: str, okEnabled: bool, cancel: str, cancelEnabled: bool }).nullish(),
   incorrectActions: num,
@@ -180,6 +182,7 @@ export const Status = z.looseObject({
   draft: Draft.nullish(),
   game: Game.nullish(),
   chat: strings,
+  chatCount: num,
 });
 
 export const StatusWithBridge = Status.extend({
