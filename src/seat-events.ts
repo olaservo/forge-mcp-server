@@ -30,7 +30,7 @@ export function pendingMove(status: SeatStatus): Move | undefined {
     }
     const prompt = game.prompt ?? "";
     // When the host auto-passes for the seat it sends no new prompt, so the last priority prompt stays up.
-    // A bridge after 0.1.3 marks that prompt. Before it, the English text is matched.
+    // Bridge 0.1.4 marks that prompt. Before it, the English text is matched.
     const priorityPrompt = game.priorityPrompt ?? prompt.startsWith("Priority:");
     if (priorityPrompt && game.hasPriority === false) return undefined;
     // An empty prompt is the gap between two inputs, not an ask.
