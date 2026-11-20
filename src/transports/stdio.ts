@@ -4,6 +4,7 @@ import { STATUS_URI, createServer, skillCatalog } from "../server.js";
 import { fileLog } from "../log.js";
 import { createSeat } from "../seat.js";
 import { listenHttp } from "./http.js";
+import { exitOn } from "./shutdown.js";
 
 const log = fileLog();
 const seat = createSeat(log);
@@ -21,8 +22,7 @@ seat.start(() => {
 });
 console.error(`forge-mcp-server on stdio; bridge at ${bridge.url}`);
 
-process.on("SIGINT", () => {
+exitOn(() => {
   http?.close();
   seat.stop();
-  process.exit(0);
-});
+}, { stdin: true });

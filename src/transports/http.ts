@@ -1,5 +1,5 @@
 import { createHash, timingSafeEqual } from "node:crypto";
-import { createServer as createHttpServer } from "node:http";
+import { type IncomingMessage, createServer as createHttpServer } from "node:http";
 import type { AddressInfo } from "node:net";
 import { hostHeaderValidation, toNodeHandler } from "@modelcontextprotocol/node";
 import { type AuthInfo, InMemoryServerEventBus, createMcpHandler } from "@modelcontextprotocol/server";
@@ -76,24 +76,29 @@ export function listenHttp({ bridge, skills, events, port, ...opts }: HttpOption
   const nodeHandler = toNodeHandler({ fetch: async (request, options) => (await eventNameMismatch(request)) ?? handler.fetch(request, options) });
   const guard = hostHeaderValidation(allowedHosts);
 
+  /** The caller of a request: undefined when no token is configured, false when the request must be refused. */
+  const authenticate = (req: IncomingMessage): AuthInfo | undefined | false => {
+    if (!token && !proxyToken) return undefined;
+    const given = /^Bearer (.+)$/i.exec(req.headers.authorization ?? "")?.[1] ?? "";
+    const principal = req.headers[PRINCIPAL_HEADER];
+    if (proxyToken && same(given, proxyToken) && typeof principal === "string" && principal.trim()) {
+      return { token: given, clientId: principal.trim(), scopes: [] };
+    }
+    return token && same(given, token) ? tokenAuth : false;
+  };
+
   const http = createHttpServer((req, res) => {
     if (!guard(req, res)) return;
-    if (!req.url?.startsWith("/mcp")) {
+    if (!/^\/mcp\/?(\?|$)/.test(req.url ?? "")) {
       res.statusCode = 404;
       res.end("forge-mcp-server: POST /mcp");
       return;
     }
-    let auth = tokenAuth;
-    if (token || proxyToken) {
-      const given = /^Bearer (.+)$/i.exec(req.headers.authorization ?? "")?.[1] ?? "";
-      const principal = req.headers[PRINCIPAL_HEADER];
-      if (proxyToken && same(given, proxyToken) && typeof principal === "string" && principal.trim()) {
-        auth = { token: given, clientId: principal.trim(), scopes: [] };
-      } else if (!token || !same(given, token)) {
-        res.writeHead(401, { "www-authenticate": "Bearer" });
-        res.end("forge-mcp-server: missing or wrong bearer token");
-        return;
-      }
+    const auth = authenticate(req);
+    if (auth === false) {
+      res.writeHead(401, { "www-authenticate": "Bearer" });
+      res.end("forge-mcp-server: missing or wrong bearer token");
+      return;
     }
     void nodeHandler(Object.assign(req, { auth }), res);
   });
