@@ -35,7 +35,7 @@ export async function fetchNames(type: string, count: number, get: GetText = get
   try {
     text = await get(url);
   } catch (e) {
-    throw new Error(`The name generator did not answer (${(e as Error).message}). Make up a name instead.`);
+    throw new Error(`The name generator did not answer (${(e as Error).message}). Make up a name instead.`, { cause: e });
   }
   const names = [...new Set(text.split(/\r?\n/).map((line) => line.trim()).filter(Boolean))];
   if (names.length === 0) {

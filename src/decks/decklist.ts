@@ -63,7 +63,7 @@ const sectionByName = new Map(SECTIONS.map((s) => [s.toLowerCase(), s]));
 export function parseDck(text: string): Decklist {
   const deck = emptyDecklist();
   let section: Section | "metadata" | "extra" | undefined;
-  for (const raw of text.replace(/^﻿/, "").split(/\r?\n/)) {
+  for (const raw of text.replace(/^\uFEFF/, "").split(/\r?\n/)) {
     const line = raw.trim();
     const header = /^\[(.+)\]$/.exec(line);
     if (header) {
@@ -157,7 +157,7 @@ export function parseText(text: string): Decklist {
   // Groups of card lines. A header starts a named group; a blank line starts an unnamed one.
   const groups: { section?: Section | "skip"; entries: ReturnType<typeof parseCardLine>[] }[] = [{ entries: [] }];
   let about = false;
-  for (const raw of text.replace(/^﻿/, "").split(/\r?\n/)) {
+  for (const raw of text.replace(/^\uFEFF/, "").split(/\r?\n/)) {
     const line = raw.trim();
     if (!line) {
       about = false;
