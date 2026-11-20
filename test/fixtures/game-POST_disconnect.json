@@ -1,5 +1,5 @@
 {
-  "revision": 882,
+  "revision": 939,
   "connection": {
     "connected": false,
     "host": "127.0.0.1",
@@ -29,8 +29,9 @@
     "inGame": false,
     "finished": true,
     "prompt": "Waiting for HostAI...",
-    "promptCount": 101,
+    "promptCount": 189,
     "waiting": true,
+    "priorityPrompt": false,
     "promptCard": null,
     "buttons": {
       "ok": "OK",
@@ -40,7 +41,7 @@
     },
     "incorrectActions": 0,
     "messages": [],
-    "turn": 15,
+    "turn": 21,
     "phase": "COMBAT_DAMAGE",
     "activePlayer": "HostAI",
     "gameOver": true,

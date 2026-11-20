@@ -1,9 +1,10 @@
 {
   "inGame": true,
   "finished": false,
-  "prompt": "Forked Bolt (13) - Forked Bolt deals 2 damage divided as you choose among one or two targets.\n\nSelect any target to distribute damage to\nTargeted: \nHostAI\n(1 more can be targeted)",
+  "prompt": "Forked Bolt (2) - Forked Bolt deals 2 damage divided as you choose among one or two targets.\n\nSelect any target to distribute damage to\nTargeted: \nHostAI\n(1 more can be targeted)",
   "promptCount": 8,
   "waiting": false,
+  "priorityPrompt": false,
   "promptCard": "Forked Bolt",
   "buttons": {
     "ok": "OK",
@@ -35,7 +36,7 @@
       "exileSize": 0,
       "battlefield": [
         {
-          "id": 32,
+          "id": 31,
           "name": "Mountain",
           "zone": "Battlefield",
           "controller": "AgentBot",
@@ -54,6 +55,22 @@
       "graveyard": [],
       "hand": [
         {
+          "id": 20,
+          "name": "Forked Bolt",
+          "zone": "Hand",
+          "controller": "AgentBot",
+          "tapped": false,
+          "sick": false,
+          "attacking": false,
+          "blocking": false,
+          "damage": 0,
+          "token": false,
+          "faceDown": false,
+          "type": "Sorcery",
+          "manaCost": "{R}",
+          "text": "Forked Bolt deals 2 damage divided as you choose among one or two targets."
+        },
+        {
           "id": 35,
           "name": "Mountain",
           "zone": "Hand",
@@ -70,7 +87,7 @@
           "text": ""
         },
         {
-          "id": 34,
+          "id": 33,
           "name": "Mountain",
           "zone": "Hand",
           "controller": "AgentBot",
@@ -86,7 +103,23 @@
           "text": ""
         },
         {
-          "id": 38,
+          "id": 1,
+          "name": "Forked Bolt",
+          "zone": "Hand",
+          "controller": "AgentBot",
+          "tapped": false,
+          "sick": false,
+          "attacking": false,
+          "blocking": false,
+          "damage": 0,
+          "token": false,
+          "faceDown": false,
+          "type": "Sorcery",
+          "manaCost": "{R}",
+          "text": "Forked Bolt deals 2 damage divided as you choose among one or two targets."
+        },
+        {
+          "id": 32,
           "name": "Mountain",
           "zone": "Hand",
           "controller": "AgentBot",
@@ -116,38 +149,6 @@
           "type": "Sorcery",
           "manaCost": "{R}",
           "text": "Forked Bolt deals 2 damage divided as you choose among one or two targets."
-        },
-        {
-          "id": 17,
-          "name": "Forked Bolt",
-          "zone": "Hand",
-          "controller": "AgentBot",
-          "tapped": false,
-          "sick": false,
-          "attacking": false,
-          "blocking": false,
-          "damage": 0,
-          "token": false,
-          "faceDown": false,
-          "type": "Sorcery",
-          "manaCost": "{R}",
-          "text": "Forked Bolt deals 2 damage divided as you choose among one or two targets."
-        },
-        {
-          "id": 33,
-          "name": "Mountain",
-          "zone": "Hand",
-          "controller": "AgentBot",
-          "tapped": false,
-          "sick": false,
-          "attacking": false,
-          "blocking": false,
-          "damage": 0,
-          "token": false,
-          "faceDown": false,
-          "type": "Basic Land - Mountain",
-          "manaCost": "no cost",
-          "text": ""
         }
       ]
     },
@@ -163,7 +164,7 @@
       "exileSize": 0,
       "battlefield": [
         {
-          "id": 75,
+          "id": 78,
           "name": "Forest",
           "zone": "Battlefield",
           "controller": "HostAI",
@@ -179,7 +180,7 @@
           "text": ""
         },
         {
-          "id": 55,
+          "id": 53,
           "name": "Llanowar Elves",
           "zone": "Battlefield",
           "controller": "HostAI",
@@ -206,7 +207,7 @@
     "max": 2,
     "cards": [
       {
-        "id": 55,
+        "id": 53,
         "name": "Llanowar Elves",
         "zone": "Battlefield",
         "controller": "HostAI",
