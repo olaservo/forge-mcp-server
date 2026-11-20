@@ -2,7 +2,7 @@ import type { CallToolResult, ToolAnnotations } from "@modelcontextprotocol/serv
 import type { z } from "zod";
 
 export const json = (value: unknown): CallToolResult => ({
-  content: [{ type: "text", text: JSON.stringify(value, null, 2) }],
+  content: [{ type: "text", text: JSON.stringify(value) }],
   structuredContent: value as Record<string, unknown>,
 });
 
