@@ -5,7 +5,7 @@ import type { ActivityLog } from "./log.js";
 import { FORBIDDEN, INVALID_PARAMS, NOT_FOUND, UNSUPPORTED, type WebhookHub } from "./webhooks.js";
 
 /**
- * MCP Events (SEP-3415, Accepted 2026-11-11, read at f77a5fe), poll and webhook delivery.
+ * MCP Events (SEP-3415, Final, https://modelcontextprotocol.io/seps/3415-events-extension), poll and webhook delivery.
  * The `events/*` methods are registered as custom methods because SDK 2.4.0 has no events support.
  */
 export const YOUR_MOVE = "forge.your_move";

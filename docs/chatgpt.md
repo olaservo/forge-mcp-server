@@ -2,7 +2,7 @@
 
 ChatGPT's MCP Events client uses webhook delivery only ([MCP Events for plugins](https://developers.openai.com/plugins/build/mcp-events), read 2026-11-11). It calls `events/subscribe` with a callback URL and a signing secret, and the server POSTs each event there. [Events](events.md#webhooks) describes the server's side and its settings.
 
-The server follows ChatGPT where it differs from SEP-3415 at `f77a5fe`: `webhook-id` is the event's `eventId`, `events/unsubscribe` of an unknown subscription succeeds, the capability is also declared under the top-level `events` key, and no `gap` or `terminated` envelope is sent.
+The server follows ChatGPT where it differs from SEP-3415: `webhook-id` is the event's `eventId`, `events/unsubscribe` of an unknown subscription succeeds, the capability is also declared under the top-level `events` key, and no `gap` or `terminated` envelope is sent.
 
 ## Authentication
 

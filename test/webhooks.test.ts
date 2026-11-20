@@ -229,6 +229,14 @@ describe("webhook delivery", () => {
     const discover = await rpc("server/discover", { _meta: envelope }, "s3cret", modern);
     expect(discover.message.result?.capabilities).toMatchObject({ events: {}, extensions: { "io.modelcontextprotocol/events": {} } });
 
+    // A 2026-07-28 request that names an event must carry the name in Mcp-Name
+    const poll = (extra: Record<string, string>) =>
+      rpc("events/poll", { name: YOUR_MOVE, cursor: null, _meta: envelope }, "s3cret", { "mcp-protocol-version": "2026-07-28", "mcp-method": "events/poll", ...extra });
+    expect(await poll({})).toMatchObject({ status: 400, message: { error: { code: -32020 } } });
+    expect(await poll({ "mcp-name": CHAT })).toMatchObject({ status: 400, message: { error: { code: -32020 } } });
+    expect((await poll({ "mcp-name": YOUR_MOVE })).message.result).toMatchObject({ events: [] });
+    expect((await poll({ "mcp-name": `=?base64?${Buffer.from(YOUR_MOVE).toString("base64")}?=` })).message.result).toMatchObject({ events: [] });
+
     const secret = newSecret();
     const sub = await rpc("events/subscribe", { name: YOUR_MOVE, arguments: {}, delivery: { mode: "webhook", url: callbackUrl, secret }, cursor: null }, "s3cret");
     expect(sub.message.result).toMatchObject({ id: expect.stringMatching(/^sub_/), cursor: null });

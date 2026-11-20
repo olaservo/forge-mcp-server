@@ -9,7 +9,7 @@ import type { EventLog, EventOccurrence } from "./events.js";
 import type { ActivityLog } from "./log.js";
 
 /**
- * Webhook delivery for MCP Events (SEP-3415 at f77a5fe, "Webhook-Based Delivery"), written against what the
+ * Webhook delivery for MCP Events (SEP-3415, "Webhook-Based Delivery"), written against what the
  * ChatGPT client accepts (developers.openai.com/plugins/build/mcp-events, read 2026-11-11). Two choices follow
  * ChatGPT where it differs from the SEP: `webhook-id` is the event's `eventId`, and `events/unsubscribe` of an
  * unknown subscription succeeds. `gap` and `terminated` envelopes are never sent; ChatGPT does not accept them.

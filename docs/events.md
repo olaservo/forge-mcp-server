@@ -6,14 +6,14 @@ A watcher long-polls the bridge and pushes `notifications/resources/updated` for
 
 ## MCP Events
 
-`events/list` and `events/poll` from [SEP-3415](https://github.com/modelcontextprotocol/modelcontextprotocol/pull/3415) (Accepted by the Core Maintainers on 2026-11-11, not yet merged; read at `f77a5fe`), declared as `capabilities.extensions["io.modelcontextprotocol/events"]` and registered as custom methods in `src/events.ts` because SDK 2.4.0 has no events support.
+`events/list` and `events/poll` from [SEP-3415](https://modelcontextprotocol.io/seps/3415-events-extension) (Final, merged 2026-11-19), declared as `capabilities.extensions["io.modelcontextprotocol/events"]` and registered as custom methods in `src/events.ts` because SDK 2.4.0 has no events support.
 
 There are two event types:
 
 - `forge.your_move` is emitted when the seat's pending ask changes: a seat in the lobby that is not ready, a draft pick, a priority prompt, a choice dialog, or the end of a game. A client's first poll is told the ask that is pending then.
 - `forge.chat` is emitted for each chat line from another player.
 
-Both are delivered by poll, and by webhook when the HTTP endpoint has a token. Events are kept in memory (1000 entries), cursors are per process, and a cursor from before a restart polls as `truncated`. No push (`events/stream`) delivery yet.
+Both are delivered by poll, and by webhook when the HTTP endpoint has a token. Events are kept in memory (1000 entries), cursors are per process, and a cursor from before a restart polls as `truncated`. No push (`events/stream`) delivery yet. Over HTTP, a 2026-07-28 request that names an event must carry the same name in the `Mcp-Name` header, or it gets 400 `HeaderMismatch` (`-32020`).
 
 [Claude Code](claude-code.md) describes the mod that polls for Claude Code, and [ChatGPT](chatgpt.md) describes webhook delivery to ChatGPT.
 

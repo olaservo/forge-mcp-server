@@ -28,6 +28,32 @@ export const PRINCIPAL_HEADER = "x-forge-principal";
 const digest = (value: string) => createHash("sha256").update(value).digest();
 const same = (a: string, b: string) => timingSafeEqual(digest(a), digest(b));
 
+const NAMED_EVENT_METHODS = new Set(["events/poll", "events/stream", "events/subscribe", "events/unsubscribe"]);
+const HEADER_MISMATCH = -32020;
+
+/** The value of an `Mcp-Name` header, which is plain or `=?base64?<utf-8>?=`. */
+function decodeName(value: string): string {
+  const encoded = /^=\?base64\?(.*)\?=$/.exec(value)?.[1];
+  return encoded === undefined ? value : Buffer.from(encoded, "base64").toString("utf8");
+}
+
+/**
+ * SEP-3415 "Streamable HTTP: Routing Headers": an events request that names an event carries the name in
+ * `Mcp-Name`. The SDK checks that header only for its own methods. Returns the 400 for a request that fails,
+ * and nothing for a request from before 2026-07-28, which has no such header.
+ */
+export async function eventNameMismatch(request: Request): Promise<Response | undefined> {
+  if (request.method !== "POST" || (request.headers.get("mcp-protocol-version") ?? "") < "2026-07-28") return undefined;
+  const message = (await request.clone().json().catch(() => undefined)) as { id?: unknown; method?: unknown; params?: { name?: unknown } } | undefined;
+  const name = message?.params?.name;
+  if (typeof message?.method !== "string" || !NAMED_EVENT_METHODS.has(message.method) || typeof name !== "string") return undefined;
+  const header = request.headers.get("mcp-name");
+  if (header !== null && decodeName(header.trim()) === name) return undefined;
+  const body = header === null ? `the body names ${JSON.stringify(name)} but the Mcp-Name header is absent` : `the Mcp-Name header is ${JSON.stringify(header)} but the body names ${JSON.stringify(name)}`;
+  const error = { code: HEADER_MISMATCH, message: `Bad Request: the request headers and body disagree: ${body}`, data: { mismatch: { header: "Mcp-Name", body } } };
+  return Response.json({ jsonrpc: "2.0", id: message.id ?? null, error }, { status: 400 });
+}
+
 /**
  * Serves `/mcp` over Streamable HTTP. Servers are per request, so resource updates go on the handler's event bus.
  * With a token, a request without `Authorization: Bearer <token>` gets 401, and the caller's principal is
@@ -47,7 +73,7 @@ export function listenHttp({ bridge, skills, events, port, ...opts }: HttpOption
   const tokenAuth: AuthInfo | undefined = token ? { token, clientId: `token:${digest(token).toString("hex").slice(0, 8)}`, scopes: [] } : undefined;
   const bus = new InMemoryServerEventBus((e) => console.error(`[forge-mcp-server] ${e.message}`));
   const handler = createMcpHandler((ctx) => createServer({ bridge, skills, events, webhooks, principal: ctx.authInfo?.clientId, log: ctx.authInfo ? log : toFile }), { bus });
-  const nodeHandler = toNodeHandler(handler);
+  const nodeHandler = toNodeHandler({ fetch: async (request, options) => (await eventNameMismatch(request)) ?? handler.fetch(request, options) });
   const guard = hostHeaderValidation(allowedHosts);
 
   const http = createHttpServer((req, res) => {
