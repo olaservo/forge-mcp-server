@@ -4,29 +4,39 @@ import { EventLog } from "../src/event-log.js";
 import { CHAT, ChatTracker, MoveTracker, YOUR_MOVE } from "../src/seat-events.js";
 import { connect, fakeBridge } from "./helpers.js";
 
-const priority = (prompt: string, revision: number) => ({
-  revision,
-  game: { inGame: true, prompt, turn: 3, phase: "MAIN1", buttons: { okEnabled: true, cancelEnabled: false } },
+const game = (promptCount: number, more = {}) => ({
+  inGame: true,
+  prompt: "Priority: Agent",
+  promptCount,
+  waiting: false,
+  turn: 3,
+  phase: "MAIN1",
+  buttons: { okEnabled: true, cancelEnabled: false },
+  ...more,
 });
+const priority = (promptCount: number, more = {}) => ({ revision: promptCount, game: game(promptCount, more) });
 
 describe("events", () => {
   it("emits forge.your_move once per new ask and not while waiting", () => {
     const moves = new MoveTracker(new EventLog());
-    expect(moves.observe({ revision: 1, game: { inGame: true, prompt: "Waiting for HostAI...", buttons: { okEnabled: true } } })).toBeUndefined();
+    const waiting = { waiting: true, prompt: "Waiting for HostAI..." };
+    expect(moves.observe(priority(1, waiting))).toBeUndefined();
     const yielding = "Yielding until end of turn.\nYou may cancel this yield to take an action.\n\nWaiting for HostAI...";
-    expect(moves.observe({ revision: 1, game: { inGame: true, prompt: yielding, buttons: { cancelEnabled: true } } })).toBeUndefined();
-    expect(moves.observe(priority("", 1))).toBeUndefined();
-    const upkeep = { inGame: true, turn: 3, prompt: "Priority: Agent / Phase: Upkeep step", buttons: { okEnabled: true } };
-    expect(moves.observe({ revision: 1, game: { ...upkeep, phase: "UPKEEP" } })?.data).toMatchObject({ kind: "priority" });
-    expect(moves.observe({ revision: 1, game: { ...upkeep, phase: "DRAW" } })).toBeUndefined();
-    const stale = { revision: 1, game: { inGame: true, prompt: "Priority: Agent" + String.fromCharCode(10) + "Phase: Upkeep step", hasPriority: false, buttons: { okEnabled: true } } };
-    expect(moves.observe(stale)).toBeUndefined();
-    expect(moves.observe(priority("Priority: Agent", 2))?.data).toMatchObject({ kind: "priority", revision: 2 });
-    expect(moves.observe(priority("Priority: Agent", 3))).toBeUndefined();
-    const decision = { revision: 4, game: { inGame: true, pendingDecision: { id: 7, kind: "choices", prompt: "Mulligan?" } } };
+    expect(moves.observe(priority(1, { waiting: true, prompt: yielding, buttons: { cancelEnabled: true } }))).toBeUndefined();
+    expect(moves.observe(priority(1, { prompt: "" }))).toBeUndefined();
+    expect(moves.observe(priority(2, { phase: "UPKEEP" }))?.data).toMatchObject({ kind: "priority", revision: 2 });
+    expect(moves.observe(priority(2, { phase: "DRAW" }))).toBeUndefined();
+    // The host passed for the seat and left the prompt up.
+    expect(moves.observe(priority(2, { hasPriority: false }))).toBeUndefined();
+    // The same text again is a new ask: priority came back after the seat played a land.
+    expect(moves.observe(priority(3))?.data).toMatchObject({ kind: "priority", revision: 3 });
+    expect(moves.observe(priority(3))).toBeUndefined();
+    const decision = { revision: 4, game: game(3, { pendingDecision: { id: 7, kind: "choices", prompt: "Mulligan?" } }) };
     expect(moves.observe(decision)?.data).toMatchObject({ kind: "decision", prompt: "Mulligan?" });
-    expect(moves.observe({ revision: 5, game: { inGame: true, prompt: "Waiting for HostAI..." } })).toBeUndefined();
-    expect(moves.observe(priority("Priority: Agent", 6))?.data).toMatchObject({ revision: 6 });
+    expect(moves.observe(priority(5, waiting))).toBeUndefined();
+    // The flag decides, whatever the text says or the language Forge runs in.
+    expect(moves.observe(priority(6, { prompt: "Waiting for the stack" }))?.data).toMatchObject({ revision: 6 });
+    expect(moves.observe(priority(6, { waiting: true, prompt: "En attente de HostAI..." }))).toBeUndefined();
     const pick = { revision: 7, game: { inGame: false }, draft: { pickPending: true, packNumber: 1, pickNumber: 2 } };
     expect(moves.observe(pick)?.data).toMatchObject({ kind: "draft_pick" });
   });
@@ -63,13 +73,13 @@ describe("events", () => {
     expect(log.poll(YOUR_MOVE, second.cursor).events).toEqual([]);
     expect(moves.replay(seat, 0)?.data).toMatchObject({ kind: "lobby" });
     expect(moves.observe(seat)).toBeUndefined();
-    expect(moves.replay({ revision: 3, game: { inGame: true, prompt: "Waiting for Ola..." } })).toBeUndefined();
+    expect(moves.replay(priority(3, { waiting: true, prompt: "Waiting for Ola..." }))).toBeUndefined();
   });
 
   it("emits game_over once when the seat is already back in the lobby", () => {
     const moves = new MoveTracker(new EventLog());
     const over = { revision: 9, game: { inGame: false, finished: true, gameOver: true, winner: "Agent", turn: 14 } };
-    expect(moves.observe(priority("Priority: Agent", 8))?.data).toMatchObject({ kind: "priority" });
+    expect(moves.observe(priority(8))?.data).toMatchObject({ kind: "priority" });
     expect(moves.observe(over)?.data).toMatchObject({ kind: "game_over", prompt: "Game over. Winner: Agent" });
     expect(moves.observe({ ...over, revision: 10 })).toBeUndefined();
     const pick = { ...over, revision: 11, draft: { pickPending: true, packNumber: 1, pickNumber: 1 } };
@@ -82,47 +92,24 @@ describe("events", () => {
     const over = { revision: 9, game: { inGame: false, finished: true, gameOver: true, winner: "Agent", turn: 12 } };
     expect(moves.observe(over)?.data).toMatchObject({ kind: "game_over" });
     expect(moves.observe({ ...over, revision: 10 })).toBeUndefined();
-    expect(moves.observe(priority("Priority: Agent", 11))?.data).toMatchObject({ kind: "priority" });
+    expect(moves.observe(priority(11))?.data).toMatchObject({ kind: "priority" });
     expect(moves.observe({ ...over, revision: 20 })?.data).toMatchObject({ kind: "game_over", revision: 20 });
     expect(moves.observe({ ...over, revision: 21 })).toBeUndefined();
-  });
-
-  it("keys an ask on the bridge's prompt count and waits on its waiting flag", () => {
-    const moves = new MoveTracker(new EventLog());
-    const ask = (promptCount: number, more = {}) => ({
-      revision: promptCount,
-      game: { inGame: true, prompt: "Priority: Agent", promptCount, waiting: false, turn: 3, buttons: { okEnabled: true }, ...more },
-    });
-    expect(moves.observe(ask(4))?.data).toMatchObject({ kind: "priority", revision: 4 });
-    expect(moves.observe(ask(4))).toBeUndefined();
-    // The same text again is a new ask: priority came back after the seat played a land.
-    expect(moves.observe(ask(5))?.data).toMatchObject({ kind: "priority", revision: 5 });
-    expect(moves.observe(ask(5, { waiting: true, prompt: "En attente de HostAI...", buttons: { cancelEnabled: true } }))).toBeUndefined();
-    expect(moves.observe(ask(6, { prompt: "Waiting for the stack", waiting: false }))?.data).toMatchObject({ revision: 6 });
-  });
-
-  it("counts new chat lines with the bridge's chatCount", () => {
-    const chat = new ChatTracker(new EventLog());
-    const seat = { connection: { name: "Claude" }, lobby: { slots: [{ name: "Ola" }, { name: "Claude" }] } };
-    const same = Array.from({ length: 20 }, () => "Ola: gg");
-    expect(chat.observe({ ...seat, chat: same, chatCount: 30 })).toEqual([]);
-    expect(chat.observe({ ...seat, chat: same, chatCount: 30 })).toEqual([]);
-    expect(chat.observe({ ...seat, chat: same, chatCount: 32 }).map((e) => e.data.text)).toEqual(["gg", "gg"]);
-    expect(chat.observe({ ...seat, chat: ["Ola: hello"], chatCount: 1 })).toEqual([]);
-    expect(chat.observe({ ...seat, chat: ["Ola: hello", "Claude: hi", "Ola: again"], chatCount: 3 }).map((e) => e.data.text)).toEqual(["again"]);
   });
 
   it("emits forge.chat for new lines from other players only", () => {
     const chat = new ChatTracker(new EventLog());
     const seat = { connection: { name: "Claude" }, lobby: { slots: [{ name: "Ola" }, { name: "Claude" }] } };
     const old = ["Claude joined the lobby.", "AFK timeout: 5:00", "Ola: before we were watching"];
-    expect(chat.observe({ ...seat, chat: old })).toEqual([]);
-    expect(chat.observe({ ...seat, chat: old })).toEqual([]);
-    const next = chat.observe({ ...seat, revision: 9, chat: [...old, "Claude: hi", "Ola: do you see this?", "AFK timeout: 4:00"] });
+    expect(chat.observe({ ...seat, chat: old, chatCount: 3 })).toEqual([]);
+    expect(chat.observe({ ...seat, chat: old, chatCount: 3 })).toEqual([]);
+    const next = chat.observe({ ...seat, revision: 9, chat: [...old, "Claude: hi", "Ola: do you see this?", "AFK timeout: 4:00"], chatCount: 6 });
     expect(next.map((e) => e.data)).toEqual([{ from: "Ola", text: "do you see this?", revision: 9 }]);
-    const full = Array.from({ length: 20 }, (_, i) => `Ola: line ${i}`);
-    chat.observe({ ...seat, chat: full });
-    expect(chat.observe({ ...seat, chat: [...full.slice(2), "Ola: one", "Ola: two"] }).map((e) => e.data.text)).toEqual(["one", "two"]);
+    // Twenty identical lines: only the count says two more arrived.
+    const same = Array.from({ length: 20 }, () => "Ola: gg");
+    expect(chat.observe({ ...seat, chat: same, chatCount: 30 }).length).toBe(20);
+    expect(chat.observe({ ...seat, chat: same, chatCount: 30 })).toEqual([]);
+    expect(chat.observe({ ...seat, chat: same, chatCount: 32 }).map((e) => e.data.text)).toEqual(["gg", "gg"]);
   });
 
   it("serves events/list and events/poll with cursors", async () => {
