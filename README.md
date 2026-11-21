@@ -37,7 +37,7 @@ Claude Code: `claude mcp add forge -- node <path>/dist/index.js`. To have the ag
 
 ## More
 
-- [Decks](docs/decks.md): the deck tools, the folders they read, and the deck sites `forge_deck_save` can fetch from.
+- [Decks](docs/decks.md): the deck tools, the folders they read, and the deck sites `forge_deck_save` can fetch from and `forge_deck_search` can search.
 - [Events](docs/events.md): `forge.your_move` and `forge.chat` over MCP Events, by poll or webhook, and the settings for both.
 - [Claude Code](docs/claude-code.md): the `mcp-events` mod that starts a turn when an event fires.
 - [ChatGPT](docs/chatgpt.md): connecting ChatGPT, which takes events by webhook and signs in with OAuth.
@@ -55,7 +55,7 @@ Lobby, draft and full matches work end to end. The bridge's tests run a draft an
 
 The HTTP endpoint has no authentication unless `FORGE_MCP_TOKEN` is set. It binds to `127.0.0.1` by default. Without a token, do not set `FORGE_MCP_HOST` to an address reachable from outside a network you trust: anyone who can reach the port can act as the seat. With a token, anyone who holds it can act as the seat, and the token is the only credential, so serve it over HTTPS only. The same holds for `FORGE_MCP_PROXY_TOKEN`, and its holder can also name any principal, so only the Worker should have it.
 
-Whoever can call the tools can also read the deck files in Forge's folders and, through `forge_deck_save`, write `.dck` files into them and make the server fetch from the deck sites listed in [Decks](docs/decks.md#sites). File names are stripped of path characters and deck ids are confined to their folder. `FORGE_DECKS_READONLY=1` removes the saving tool.
+Whoever can call the tools can also read the deck files in Forge's folders and, through `forge_deck_save`, write `.dck` files into them and make the server fetch from the deck sites listed in [Decks](docs/decks.md#sites). `forge_deck_search` makes it send search requests to three of those sites. File names are stripped of path characters and deck ids are confined to their folder. `FORGE_DECKS_READONLY=1` removes both tools.
 
 ## License
 

@@ -5,6 +5,7 @@ import type { SkillCatalog } from "@modelcontextprotocol/server/ext/skills";
 import { loadSkills } from "@modelcontextprotocol/server/ext/skills/node";
 import { Bridge } from "./bridge.js";
 import type { DeckLibrary } from "./decks/library.js";
+import type { SearchIo } from "./decks/search.js";
 import { EventLog } from "./event-log.js";
 import { registerEvents } from "./events.js";
 import type { ActivityLog } from "./log.js";
@@ -43,6 +44,8 @@ export interface CreateServerOptions {
   decks?: DeckLibrary;
   /** Fetches the name generator's answer. Default: an HTTP GET. */
   names?: GetText;
+  /** Reaches the deck sites for forge_deck_search. Default: HTTPS requests to the sites. */
+  deckSearch?: SearchIo;
 }
 
 export function createServer(opts: CreateServerOptions = {}): McpServer {
@@ -66,7 +69,7 @@ export function createServer(opts: CreateServerOptions = {}): McpServer {
       "Otherwise call forge_wait instead of polling, or subscribe to forge://status through subscriptions/listen.",
   });
 
-  registerTools(server, bridge, opts.log, opts.decks, opts.names);
+  registerTools(server, bridge, opts.log, opts.decks, opts.names, opts.deckSearch);
   registerEvents(server, opts.events ?? new EventLog(), opts.webhooks && { hub: opts.webhooks, principal: opts.principal }, opts.log);
 
   server.registerResource(

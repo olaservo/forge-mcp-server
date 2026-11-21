@@ -120,6 +120,7 @@ describe("bridge fixtures", () => {
       forge_lobby_deck: [{ dck: "[Main]\n40 Plains" }, "POST /lobby/deck"],
       forge_decks: [{}, null],
       forge_deck_save: [{ text: "4 Lightning Bolt\n20 Mountain", name: "Burn", dryRun: true }, null],
+      forge_deck_search: [{ query: "burn" }, null],
       forge_chat: [{ text: "hi" }, "POST /chat"],
       forge_draft_pack: [{}, "GET /draft/pack"],
       forge_draft_pick: [{ card: "0" }, "POST /draft/pick"],
