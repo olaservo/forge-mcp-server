@@ -1,8 +1,8 @@
-import { get as httpsGet } from "node:https";
+import { request as httpsRequest } from "node:https";
 import { addEntry, decodeEntities, emptyDecklist, parseDck, parseText, type Decklist, type Section } from "./decklist.js";
 
-/** Fetches a URL and returns its body as text. Tests pass their own. */
-export type FetchText = (url: string, encoding?: "utf8" | "latin1") => Promise<string>;
+/** Fetches a URL and returns its body as text. With `body`, posts it as JSON. Tests pass their own. */
+export type FetchText = (url: string, encoding?: "utf8" | "latin1", body?: string) => Promise<string>;
 
 interface Site {
   name: string;
@@ -223,11 +223,13 @@ interface Reply {
 }
 
 // node:https, because Moxfield, AetherHub and MTGDecks answer 403 to Node's fetch (observed 2026-11-13).
-const request = (url: URL): Promise<Reply> =>
+const request = (url: URL, body?: string): Promise<Reply> =>
   new Promise((resolve, reject) => {
-    const req = httpsGet(
+    const headers: Record<string, string | number> = { "user-agent": "forge-mcp-server (deck import)", accept: "application/json, text/plain, text/html;q=0.8" };
+    if (body !== undefined) Object.assign(headers, { "content-type": "application/json", "content-length": Buffer.byteLength(body) });
+    const req = httpsRequest(
       url,
-      { headers: { "user-agent": "forge-mcp-server (deck import)", accept: "application/json, text/plain, text/html;q=0.8" }, timeout: 25_000 },
+      { method: body === undefined ? "GET" : "POST", headers, timeout: 25_000 },
       (res) => {
         const chunks: Buffer[] = [];
         let size = 0;
@@ -242,15 +244,16 @@ const request = (url: URL): Promise<Reply> =>
     );
     req.on("timeout", () => req.destroy(new Error(`${url.hostname} did not answer in time`)));
     req.on("error", reject);
+    req.end(body);
   });
 
-/** HTTPS GET limited to the deck sites, following redirects only between them. */
-export const fetchText: FetchText = async (url, encoding = "utf8") => {
+/** HTTPS request limited to the deck sites, following redirects only between them. */
+export const fetchText: FetchText = async (url, encoding = "utf8", body) => {
   let next = url;
   for (let hop = 0; hop < 4; hop++) {
     const u = new URL(next);
     if (u.protocol !== "https:" || !ALLOWED_HOSTS.has(bareHost(u.hostname))) throw new Error(`Refusing to fetch ${u.origin}: not a supported deck site.`);
-    const res = await request(u);
+    const res = await request(u, body);
     if (res.status >= 300 && res.status < 400 && res.location) {
       next = new URL(res.location, u).toString();
       continue;

@@ -220,4 +220,15 @@ export const DeckList = z.looseObject({
     dck: str,
   }).nullish(),
 });
+export const DeckSearch = z.looseObject({
+  query: z.string(),
+  sites: z.array(
+    z.looseObject({
+      site: z.string(),
+      total: num,
+      results: z.array(z.looseObject({ name: z.string(), url: z.string(), format: str, colors: str, author: str, event: str, date: str, note: str })),
+      note: str,
+    }),
+  ),
+});
 export const DeckSaved = DeckSummary.extend({ saved: bool, path: str, unknown: strings, notes: strings, source: str });

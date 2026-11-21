@@ -1,6 +1,7 @@
 import { z } from "zod";
 import { parseAny } from "../decks/decklist.js";
 import { FOLDERS, type DeckLibrary } from "../decks/library.js";
+import { searchDecks, SEARCH_SITE_NAMES, type SearchIo } from "../decks/search.js";
 import { fetchDeck, SITES } from "../decks/sites.js";
 import * as out from "../schemas.js";
 import { readOnly, run, type RegisterTool } from "./common.js";
@@ -10,7 +11,7 @@ const writableKeys = FOLDERS.filter((f) => f.writable).map((f) => f.key) as [str
 const siteNames = SITES.filter((s) => s.fetch).map((s) => s.name).join(", ");
 
 /** Deck tools work on Forge's folders on the server's machine and need no bridge. */
-export function registerDeckTools(tool: RegisterTool, decks: DeckLibrary): void {
+export function registerDeckTools(tool: RegisterTool, decks: DeckLibrary, search?: SearchIo): void {
   tool(
     "forge_decks",
     {
@@ -41,6 +42,27 @@ export function registerDeckTools(tool: RegisterTool, decks: DeckLibrary): void 
   );
 
   if (process.env.FORGE_DECKS_READONLY === "1") return;
+
+  tool(
+    "forge_deck_search",
+    {
+      title: "Search deck sites",
+      description:
+        `Find decks on deck sites (${SEARCH_SITE_NAMES.join(", ")}) by \`query\`: an archetype or deck name, a commander, or a card. ` +
+        "Each site answers in its own order: MTGTop8 and AetherHub by deck name and, when no name matches, by decks that play a card of that name; " +
+        "EDHREC by commander, with a theme after the name (`atraxa infect`). `format` narrows the search and leaves out a site that has no such decks. " +
+        "Nothing is saved: show the player the results, then give the chosen `url` to forge_deck_save. A MTGTop8 search waits 5 seconds after the one before it.",
+      inputSchema: z.object({
+        query: z.string().min(1).max(100),
+        format: z.string().optional().describe("standard, pioneer, modern, legacy, vintage, pauper, commander and so on"),
+        site: z.enum(SEARCH_SITE_NAMES).optional().describe("Search this one site"),
+        limit: z.number().int().min(1).max(25).default(10).describe("Results per site"),
+      }),
+      outputSchema: out.DeckSearch,
+      annotations: { readOnlyHint: true, destructiveHint: false, idempotentHint: true, openWorldHint: true },
+    },
+    async (input) => run(() => searchDecks(input, search)),
+  );
 
   tool(
     "forge_deck_save",

@@ -1,0 +1,37 @@
+{
+ "header": "Atraxa, Praetors' Voice (Commander)",
+ "panels": {
+  "taglinks": [
+   {
+    "count": 3400,
+    "slug": "infect",
+    "value": "Infect"
+   },
+   {
+    "count": 2140,
+    "slug": "plus-1-plus-1-counters",
+    "value": "+1/+1 Counters"
+   },
+   {
+    "count": 1699,
+    "slug": "planeswalkers",
+    "value": "Planeswalkers"
+   },
+   {
+    "count": 1529,
+    "slug": "proliferate",
+    "value": "Proliferate"
+   },
+   {
+    "count": 837,
+    "slug": "phyrexians",
+    "value": "Phyrexians"
+   },
+   {
+    "count": 341,
+    "slug": "minus-1-minus-1-counters",
+    "value": "-1/-1 Counters"
+   }
+  ]
+ }
+}

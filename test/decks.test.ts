@@ -5,6 +5,7 @@ import { describe, expect, it } from "vitest";
 import { CardIndex, loadCardIndex, zipEntries } from "../src/decks/cards.js";
 import { countCards, parseAny, parseDck, parseText, toDck } from "../src/decks/decklist.js";
 import { DeckLibrary, deckName, fileName, folderFor } from "../src/decks/library.js";
+import { searchDecks } from "../src/decks/search.js";
 import { fetchDeck, fetchText, type FetchText } from "../src/decks/sites.js";
 import { connect, fakeBridge, forgeHome } from "./helpers.js";
 
@@ -312,6 +313,97 @@ describe("deck sites", () => {
   });
 });
 
+describe("deck search", () => {
+  /** Answers each request from the first recorded response whose prefix matches, and records requests and waits. */
+  const recorded = (responses: [string, string][]) => {
+    const asked: { url: string; body?: unknown }[] = [];
+    const waits: number[] = [];
+    const get: FetchText = async (url, _encoding, body) => {
+      asked.push({ url, ...(body === undefined ? {} : { body: JSON.parse(body) }) });
+      const hit = responses.find(([prefix]) => url.startsWith(prefix));
+      if (!hit) throw new Error(`unexpected fetch ${url}`);
+      return hit[1].includes(".") ? fixture(hit[1]) : hit[1];
+    };
+    return { io: { get, sleep: async (ms: number) => void waits.push(ms) }, asked, waits };
+  };
+  const never: FetchText = async () => {
+    throw new Error("should not fetch");
+  };
+
+  it("reads MTGTop8 search rows into URLs forge_deck_save takes", async () => {
+    const { io, asked } = recorded([["https://mtgtop8.com/search?", "mtgtop8-search.html"]]);
+    const { sites } = await searchDecks({ query: "burn", format: "Modern", site: "MTGTop8", limit: 2 }, io);
+    expect(asked.map((a) => a.url)).toEqual(["https://mtgtop8.com/search?deck_titre=burn&format=MO"]);
+    expect(sites).toHaveLength(1);
+    expect(sites[0]).toMatchObject({ site: "MTGTop8", total: 3304 });
+    expect(sites[0].results).toEqual([
+      { name: "Burn", url: "https://mtgtop8.com/event?e=94105&d=914473&f=MO", format: "modern", author: "Player 1", event: "Friday night modern MTGBino - Perjuuj @ Endstep, place 2", date: "2026-11-20" },
+      expect.objectContaining({ name: "Boros Burn", author: "Player 2", date: "2026-11-07" }),
+    ]);
+    await expect(fetchDeck(sites[0].results[0].url, never)).rejects.toThrow("should not fetch");
+  });
+
+  it("searches MTGTop8 by card when no deck name matches, five seconds after the first request", async () => {
+    const { io, asked, waits } = recorded([
+      ["https://mtgtop8.com/search?deck_titre", "<html>0 decks matching</html>"],
+      ["https://mtgtop8.com/search?cards", "mtgtop8-search.html"],
+    ]);
+    const { sites } = await searchDecks({ query: "Goblin Guide", site: "MTGTop8", limit: 1 }, io);
+    expect(asked.map((a) => a.url)).toEqual(["https://mtgtop8.com/search?deck_titre=Goblin+Guide", "https://mtgtop8.com/search?cards=Goblin+Guide&MD_check=1"]);
+    expect(waits.at(-1)).toBeGreaterThan(4000);
+    expect(sites[0].results).toEqual([expect.objectContaining({ name: "Burn", note: "plays Goblin Guide" })]);
+  });
+
+  it("posts AetherHub's table request and gives every deck a URL with its number", async () => {
+    const { io, asked } = recorded([["https://aetherhub.com/Meta/FetchMetaListAdv", "aetherhub-search.json"]]);
+    const { sites } = await searchDecks({ query: "burn", format: "modern", site: "AetherHub", limit: 3 }, io);
+    expect(asked).toHaveLength(1);
+    expect(asked[0].url).toBe("https://aetherhub.com/Meta/FetchMetaListAdv?formatId=2");
+    const body = asked[0].body as { length: number; search: { value: string }; columns: { search: { value: string } }[] };
+    expect(body).toMatchObject({ length: 40, search: { value: "" } });
+    expect(body.columns.map((c) => c.search.value)).toEqual(["burn", "", "", "", "", "", "", "365", "", ""]);
+    expect(sites[0].total).toBe(27);
+    expect(sites[0].results.map((r) => r.url)).toEqual([
+      "https://aetherhub.com/Deck/Public/1432312",
+      "https://aetherhub.com/Deck/urza-simic-1432311",
+      "https://aetherhub.com/Deck/urza-modern-counterspell-1430238",
+    ]);
+    expect(sites[0].results[0]).toMatchObject({ name: "emry brandon rashad", format: "modern", colors: "WU", author: "user1", date: "2026-10-11" });
+    for (const r of sites[0].results) await expect(fetchDeck(r.url, never)).rejects.toThrow("should not fetch");
+  });
+
+  it("finds an EDHREC commander and reads the rest of the query as a theme", async () => {
+    const { io, asked } = recorded([
+      ["https://edhrec.com/api/typeahead/?q=atraxa+infect", "[]"],
+      ["https://edhrec.com/api/typeahead/?q=atraxa", "edhrec-typeahead.json"],
+      ["https://json.edhrec.com/pages/commanders/atraxa-grand-unifier.json", "edhrec-commander.json"],
+    ]);
+    const { sites } = await searchDecks({ query: "atraxa infect", site: "EDHREC", limit: 10 }, io);
+    expect(asked).toHaveLength(3);
+    expect(sites[0].results).toEqual([
+      { name: "Average deck for Atraxa, Grand Unifier, Infect", url: "https://edhrec.com/average-decks/atraxa-grand-unifier/infect", format: "commander", note: "3400 decks" },
+      { name: "Average deck for Atraxa, Grand Unifier", url: "https://edhrec.com/average-decks/atraxa-grand-unifier", format: "commander" },
+      { name: "Average deck for Atraxa, Praetors' Voice", url: "https://edhrec.com/average-decks/atraxa-praetors-voice", format: "commander" },
+      { name: "Average deck for Ixhel, Scion of Atraxa", url: "https://edhrec.com/average-decks/ixhel-scion-of-atraxa", format: "commander" },
+    ]);
+    for (const r of sites[0].results) await expect(fetchDeck(r.url, never)).rejects.toThrow("should not fetch");
+  });
+
+  it("leaves out a site without the format and reports a site that fails beside the others", async () => {
+    const { io, asked } = recorded([["https://aetherhub.com/", "aetherhub-search.json"]]);
+    const { sites } = await searchDecks({ query: "burn", format: "Timeless", limit: 3 }, io);
+    expect(asked).toHaveLength(1);
+    expect(sites.map((s) => [s.site, s.results.length, s.note])).toEqual([
+      ["MTGTop8", 0, "MTGTop8 has no Timeless decks to search."],
+      ["AetherHub", 3, undefined],
+      ["EDHREC", 0, "EDHREC has no Timeless decks to search."],
+    ]);
+    const failing = await searchDecks({ query: "burn", site: "EDHREC", limit: 3 }, { get: never, sleep: async () => {} });
+    expect(failing.sites[0]).toEqual({ site: "EDHREC", results: [], note: "EDHREC did not answer the search (should not fetch)." });
+    await expect(searchDecks({ query: "  ", limit: 3 }, io)).rejects.toThrow(/query/);
+  });
+});
+
 describe("deck tools", () => {
   it("lists decks, reads one, saves one and sends a deck id to the lobby as deck text", async () => {
     const { bridge, calls } = fakeBridge({ "POST /lobby/deck": { deck: "Bolt Precon", size: 24 } });
@@ -334,6 +426,9 @@ describe("deck tools", () => {
     const lobby = await client.callTool({ name: "forge_lobby_deck", arguments: { id: "constructed/Burn" } });
     expect(lobby.isError).toBeFalsy();
     expect(calls.find((c) => c.path === "/lobby/deck")?.body).toEqual({ dck: "[metadata]\nName=Burn\n[Main]\n4 Lightning Bolt\n20 Mountain\n" });
+
+    const found = await client.callTool({ name: "forge_deck_search", arguments: { query: "burn", site: "EDHREC" } });
+    expect(found.structuredContent).toEqual({ query: "burn", sites: [{ site: "EDHREC", results: [] }] });
 
     const missing = await client.callTool({ name: "forge_lobby_deck", arguments: { id: "constructed/Nope" } });
     expect(missing.isError).toBe(true);
