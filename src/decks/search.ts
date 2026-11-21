@@ -162,11 +162,17 @@ const aetherhub: SearchSite = {
     };
     let data = await page(query, "");
     let byCard = false;
-    if (!data.metadecks?.length) {
+    // Column 0 also matches user names, so keep the decks whose own name has every word of the query.
+    const words = query.toLowerCase().split(/\s+/);
+    const found = data.metadecks ?? [];
+    let decks = found.filter((d) => words.every((w) => d.name.toLowerCase().includes(w)));
+    const dropped = decks.length < found.length;
+    if (decks.length === 0) {
       data = await page("", query);
+      decks = data.metadecks ?? [];
       byCard = true;
     }
-    const results = (data.metadecks ?? []).slice(0, limit).map((d): DeckHit => {
+    const results = decks.slice(0, limit).map((d): DeckHit => {
       const colors = [..."WUBRG"].filter((_, i) => (d.color?.[i] ?? 0) > 0).join("");
       return {
         name: d.name,
@@ -180,7 +186,8 @@ const aetherhub: SearchSite = {
         ...(byCard ? { note: `plays ${query}` } : {}),
       };
     });
-    return { total: data.recordsFiltered ?? results.length, results };
+    // The site's count includes the user-name matches, so it is left out when any were dropped.
+    return { ...(dropped && !byCard ? {} : { total: data.recordsFiltered ?? results.length }), results };
   },
 };
 

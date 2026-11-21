@@ -354,22 +354,27 @@ describe("deck search", () => {
     expect(sites[0].results).toEqual([expect.objectContaining({ name: "Burn", note: "plays Goblin Guide" })]);
   });
 
-  it("posts AetherHub's table request and gives every deck a URL with its number", async () => {
+  it("posts AetherHub's table request, drops decks matched by user name and gives every deck a URL with its number", async () => {
     const { io, asked } = recorded([["https://aetherhub.com/Meta/FetchMetaListAdv", "aetherhub-search.json"]]);
-    const { sites } = await searchDecks({ query: "burn", format: "modern", site: "AetherHub", limit: 3 }, io);
+    const { sites } = await searchDecks({ query: "Emry", format: "modern", site: "AetherHub", limit: 3 }, io);
     expect(asked).toHaveLength(1);
     expect(asked[0].url).toBe("https://aetherhub.com/Meta/FetchMetaListAdv?formatId=2");
     const body = asked[0].body as { length: number; search: { value: string }; columns: { search: { value: string } }[] };
     expect(body).toMatchObject({ length: 40, search: { value: "" } });
-    expect(body.columns.map((c) => c.search.value)).toEqual(["burn", "", "", "", "", "", "", "365", "", ""]);
-    expect(sites[0].total).toBe(27);
+    expect(body.columns.map((c) => c.search.value)).toEqual(["Emry", "", "", "", "", "", "", "365", "", ""]);
+    expect(sites[0].total).toBeUndefined();
     expect(sites[0].results.map((r) => r.url)).toEqual([
       "https://aetherhub.com/Deck/Public/1432312",
       "https://aetherhub.com/Deck/urza-simic-1432311",
-      "https://aetherhub.com/Deck/urza-modern-counterspell-1430238",
     ]);
     expect(sites[0].results[0]).toMatchObject({ name: "emry brandon rashad", format: "modern", colors: "WU", author: "user1", date: "2026-10-11" });
     for (const r of sites[0].results) await expect(fetchDeck(r.url, never)).rejects.toThrow("should not fetch");
+
+    // No deck is named burn, so the decks the site matched some other way are dropped and the card search runs.
+    const byCard = await searchDecks({ query: "burn", site: "AetherHub", limit: 3 }, io);
+    expect(asked).toHaveLength(3);
+    expect((asked[2].body as typeof body).search.value).toBe("burn");
+    expect(byCard.sites[0]).toMatchObject({ total: 27, results: [{ note: "plays burn" }, { note: "plays burn" }, { note: "plays burn" }] });
   });
 
   it("finds an EDHREC commander and reads the rest of the query as a theme", async () => {
@@ -391,11 +396,11 @@ describe("deck search", () => {
 
   it("leaves out a site without the format and reports a site that fails beside the others", async () => {
     const { io, asked } = recorded([["https://aetherhub.com/", "aetherhub-search.json"]]);
-    const { sites } = await searchDecks({ query: "burn", format: "Timeless", limit: 3 }, io);
+    const { sites } = await searchDecks({ query: "urza", format: "Timeless", limit: 3 }, io);
     expect(asked).toHaveLength(1);
     expect(sites.map((s) => [s.site, s.results.length, s.note])).toEqual([
       ["MTGTop8", 0, "MTGTop8 has no Timeless decks to search."],
-      ["AetherHub", 3, undefined],
+      ["AetherHub", 1, undefined],
       ["EDHREC", 0, "EDHREC has no Timeless decks to search."],
     ]);
     const failing = await searchDecks({ query: "burn", site: "EDHREC", limit: 3 }, { get: never, sleep: async () => {} });
