@@ -14,7 +14,7 @@ This repo is one of three parts. Cloning it alone is not enough to play.
 
 ## Run
 
-Download the [Forge 2.0.16 desktop release](https://github.com/Card-Forge/forge/releases/tag/forge-2.0.16) and `forge-agent-bridge-0.1.4-forge-2.0.16.jar` from the [forge-agent-bridge releases](https://github.com/olaservo/forge-agent-bridge/releases). The events need bridge 0.1.3 or later. From 0.1.4 the bridge marks the priority prompt, and before it the server matches the prompt's English text. For another Forge version, build the bridge jar against that version's jar, as the forge-agent-bridge README describes. Then set three variables and the server starts the bridge on first use:
+Download the [Forge 2.0.16 desktop release](https://github.com/Card-Forge/forge/releases/tag/forge-2.0.16) and `forge-agent-bridge-0.1.5-forge-2.0.16.jar` from the [forge-agent-bridge releases](https://github.com/olaservo/forge-agent-bridge/releases). The events need bridge 0.1.3 or later. From 0.1.4 the bridge marks the priority prompt, and before it the server matches the prompt's English text. From 0.1.5 a chat line names its sender, and before it the server splits the line on the seat names. For another Forge version, build the bridge jar against that version's jar, as the forge-agent-bridge README describes. Then set three variables and the server starts the bridge on first use:
 
 - `FORGE_JAR`: the Forge `forge-gui-desktop-<version>-jar-with-dependencies.jar`.
 - `FORGE_BRIDGE_JAR`: the bridge jar.
