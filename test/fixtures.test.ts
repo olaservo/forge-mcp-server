@@ -1,5 +1,5 @@
 import { readFileSync } from "node:fs";
-import { describe, expect, it } from "vitest";
+import { afterEach, describe, expect, it, vi } from "vitest";
 import type { z } from "zod";
 import * as out from "../src/schemas.js";
 import { avatarSheet, connect, fakeBridge } from "./helpers.js";
@@ -31,7 +31,58 @@ const schemaForRoute: Record<string, z.ZodType> = {
 /** "game GET /game#decision" -> route "GET /game". */
 const routeOf = (key: string) => key.split(" ").slice(1).join(" ").split("#")[0];
 
+type Fields = Map<string, Set<string>>;
+const exported = new Map<unknown, string>(Object.entries(out).map(([name, schema]) => [schema, name]));
+
+/** The schema inside `nullish()`. */
+function inner(schema: z.ZodType): z.ZodType {
+  let s = schema as z.ZodType & { unwrap?: () => z.ZodType };
+  while ((s.def.type === "optional" || s.def.type === "nullable") && s.unwrap) s = s.unwrap();
+  return s;
+}
+
+/**
+ * Walks a payload beside its schema. `seen` gets the fields the payload has and `declared` the fields the schema
+ * has, both by object schema. `unknown` gets the payload's fields that the schema does not name.
+ */
+function walk(schema: z.ZodType, value: unknown, name: string, declared: Fields, seen: Fields, unknown: Set<string>): void {
+  const s = inner(schema);
+  if (s.def.type === "union") {
+    // A text or an object, by bridge version: the object is the form to compare.
+    const object = ((s as z.ZodUnion).options as z.ZodType[]).find((o) => o.def.type === "object");
+    if (object && typeof value !== "string") walk(object, value, name, declared, seen, unknown);
+  } else if (s.def.type === "array") {
+    const element = (s as z.ZodArray).element as z.ZodType;
+    for (const item of Array.isArray(value) ? value : [undefined]) walk(element, item, name, declared, seen, unknown);
+  } else if (s.def.type === "object") {
+    const shape = (s as z.ZodObject).shape as Record<string, z.ZodType>;
+    const label = exported.get(s) ?? name;
+    const record = value !== null && typeof value === "object" ? (value as Record<string, unknown>) : {};
+    if (!declared.has(label)) declared.set(label, new Set(Object.keys(shape)));
+    if (!seen.has(label)) seen.set(label, new Set());
+    for (const key of Object.keys(record)) {
+      if (key in shape) seen.get(label)!.add(key);
+      else unknown.add(`${label}.${key}`);
+    }
+    for (const [key, field] of Object.entries(shape)) walk(field, record[key], `${label}.${key}`, declared, seen, unknown);
+  }
+}
+
 describe("bridge fixtures", () => {
+  afterEach(() => vi.unstubAllEnvs());
+
+  it("name the same fields as the output schemas", () => {
+    const declared: Fields = new Map();
+    const seen: Fields = new Map();
+    const unknown = new Set<string>();
+    for (const [key, file] of Object.entries(index)) walk(schemaForRoute[routeOf(key)], fixture(file), routeOf(key), declared, seen, unknown);
+    const missing = [...declared].flatMap(([label, keys]) => [...keys].filter((k) => !seen.get(label)!.has(k)).map((k) => `${label}.${k}`));
+    // A field the bridge sends and no schema names: add it to the schema.
+    expect([...unknown].sort()).toEqual([]);
+    // A field a schema names and no recording has: the bridge dropped or renamed it, or no test records it.
+    expect(missing.sort()).toEqual([]);
+  });
+
   it("cover every route the tools call", () => {
     const routes = new Set(Object.keys(index).map(routeOf));
     expect([...Object.keys(schemaForRoute)].filter((r) => !routes.has(r))).toEqual([]);
@@ -53,47 +104,51 @@ describe("bridge fixtures", () => {
       const route = routeOf(key);
       if (key.startsWith("game ") || !(route in responses)) responses[route] = fixture(file);
     }
-    process.env.FORGE_AVATARS = avatarSheet(3, 2);
+    vi.stubEnv("FORGE_AVATARS", avatarSheet(3, 2));
     const { bridge, calls } = fakeBridge(responses);
     const client = await connect(bridge);
-    const args: Record<string, Record<string, unknown>> = {
-      forge_status: {},
-      forge_connect: { host: "127.0.0.1", port: 36743, name: "Agent" },
-      forge_disconnect: {},
-      forge_lobby_ready: { ready: true },
-      forge_lobby_avatar: { index: 3 },
-      forge_lobby_name: { name: "Sarge" },
-      forge_name_ideas: { type: "Wizard", count: 3 },
-      forge_lobby_avatars: { page: 0 },
-      forge_lobby_deck: { dck: "[Main]\n40 Plains" },
-      forge_decks: {},
-      forge_deck_save: { text: "4 Lightning Bolt\n20 Mountain", name: "Burn", dryRun: true },
-      forge_chat: { text: "hi" },
-      forge_draft_pack: {},
-      forge_draft_pick: { card: "0" },
-      forge_draft_pool: {},
-      forge_game_state: {},
-      forge_game_log: { since: 0 },
-      forge_game_act: { action: "ok" },
-      forge_game_decide: { id: 1, choices: [0] },
-      forge_wait: { since: 3, timeout: 5 },
+    // Each tool's arguments and the bridge route it must call. Null for a tool that works without the bridge.
+    const cases: Record<string, [Record<string, unknown>, string | null]> = {
+      forge_status: [{}, "GET /status"],
+      forge_connect: [{ host: "127.0.0.1", port: 36743, name: "Agent" }, "POST /connect"],
+      forge_disconnect: [{}, "POST /disconnect"],
+      forge_lobby_ready: [{ ready: true }, "POST /lobby/ready"],
+      forge_lobby_avatar: [{ index: 3 }, "POST /lobby/avatar"],
+      forge_lobby_name: [{ name: "Sarge" }, "POST /lobby/name"],
+      forge_name_ideas: [{ type: "Wizard", count: 3 }, null],
+      forge_lobby_avatars: [{ page: 0 }, null],
+      forge_lobby_deck: [{ dck: "[Main]\n40 Plains" }, "POST /lobby/deck"],
+      forge_decks: [{}, null],
+      forge_deck_save: [{ text: "4 Lightning Bolt\n20 Mountain", name: "Burn", dryRun: true }, null],
+      forge_chat: [{ text: "hi" }, "POST /chat"],
+      forge_draft_pack: [{}, "GET /draft/pack"],
+      forge_draft_pick: [{ card: "0" }, "POST /draft/pick"],
+      forge_draft_pool: [{}, "GET /draft/pool"],
+      forge_game_state: [{}, "GET /game"],
+      forge_game_log: [{ since: 0 }, "GET /game/log"],
+      forge_game_act: [{ action: "ok" }, "POST /game/act"],
+      forge_game_decide: [{ id: 1, choices: [0] }, "POST /game/decide"],
+      forge_wait: [{ since: 3, timeout: 5 }, "GET /wait"],
     };
     const { tools } = await client.listTools();
-    expect(tools.map((t) => t.name).sort()).toEqual(Object.keys(args).sort());
+    expect(tools.map((t) => t.name).sort()).toEqual(Object.keys(cases).sort());
     for (const tool of tools) {
-      const res = await client.callTool({ name: tool.name, arguments: args[tool.name] });
+      const [args, route] = cases[tool.name];
+      const before = calls.length;
+      const res = await client.callTool({ name: tool.name, arguments: args });
       expect(res.isError, `${tool.name}: ${JSON.stringify(res.content)}`).toBeFalsy();
       expect(res.structuredContent, `${tool.name} returned structuredContent`).toBeDefined();
+      const called = calls.slice(before).map((c) => `${c.method} ${c.path}`);
+      if (route) expect(called, tool.name).toContain(route);
+      else expect(called, tool.name).toEqual([]);
     }
-    // forge_lobby_avatars, forge_decks, forge_deck_save and forge_name_ideas do not call the bridge.
-    expect(calls.length).toBeGreaterThanOrEqual(tools.length - 4);
     await client.close();
   });
 
   it("sends a damage split as amounts", async () => {
     const assign = fixture(index["combat GET /game#assign"]) as { pendingDecision: { id: number; kind: string; amount: number } };
     expect(assign.pendingDecision).toMatchObject({ kind: "assign", amount: 3 });
-    const { bridge, calls } = fakeBridge({ "POST /game/decide": fixture(index["combat POST /game/decide"] ?? index["game POST /game/decide"]) });
+    const { bridge, calls } = fakeBridge({ "POST /game/decide": fixture(index["game POST /game/decide"]) });
     const client = await connect(bridge);
     const res = await client.callTool({ name: "forge_game_decide", arguments: { id: assign.pendingDecision.id, amounts: [2, 1] } });
     expect(res.isError, JSON.stringify(res.content)).toBeFalsy();
