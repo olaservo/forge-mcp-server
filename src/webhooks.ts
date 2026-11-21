@@ -170,13 +170,16 @@ export interface SubscribeParams {
   delivery: { mode?: string; url: string; secret?: string };
   /** Absent asks for the default lifetime, null for no expiry. */
   ttlMs?: number | null;
+  /** The client's last persisted position. A new or lapsed subscription replays from it. */
+  cursor?: string | null;
+  maxAgeMs?: number;
 }
 
 export interface SubscribeResult {
   id: string;
   refreshBefore: string | null;
-  cursor: null;
-  truncated: false;
+  cursor: string;
+  truncated: boolean;
   deliveryStatus?: { active: true; lastDeliveryAt: string | null; lastError: DeliveryErrorReason | null; failedSince?: string; abandoned?: number };
 }
 
@@ -204,8 +207,10 @@ export interface WebhookOptions {
 
 /**
  * Holds webhook subscriptions and POSTs each emitted event to the ones that match.
- * Events are not replayable over webhook: every cursor is null, and an event emitted while a subscription
- * is lapsed is not delivered to it later.
+ * Cursors are the event log's. The one in a payload or a subscribe result is the SEP's watermark: every event
+ * at or before it has been delivered to this subscription or given up on. A new or lapsed subscription that
+ * names a cursor gets the retained events after it. A refresh is `truncated` when a delivery was abandoned
+ * since the last one, or when its cursor is from before a restart.
  */
 export class WebhookHub {
   private readonly subs = new Map<string, Subscription>();
@@ -214,6 +219,9 @@ export class WebhookHub {
   private readonly inFlight = new Set<Promise<void>>();
   /** Per subscription, the deliveries that have failed and are still being retried. */
   private readonly retrying = new Map<string, number>();
+  /** Per subscription, the events not yet delivered or given up on, oldest first. */
+  private readonly pending = new Map<string, Set<EventOccurrence>>();
+  private readonly events: EventLog;
   private readonly post: WebhookPost;
   private readonly insecure: boolean;
   private readonly file: string | undefined;
@@ -221,7 +229,8 @@ export class WebhookHub {
   private readonly now: () => number;
   private readonly log: ActivityLog;
 
-  constructor(source: Pick<EventLog, "onEmit">, opts: WebhookOptions = {}) {
+  constructor(source: EventLog, opts: WebhookOptions = {}) {
+    this.events = source;
     this.insecure = opts.insecure ?? false;
     this.post = opts.post ?? webhookPost({ insecure: this.insecure });
     this.file = opts.file;
@@ -282,13 +291,22 @@ export class WebhookHub {
     delete sub.abandoned;
     this.subs.set(id, sub);
     this.save();
+    const cursor = params.cursor ?? null;
+    let truncated = false;
+    if (existing) {
+      truncated = Boolean(existing.abandoned) || (cursor !== null && !this.events.issued(cursor));
+    } else if (cursor !== null) {
+      const replay = this.events.poll(params.name, cursor, Number.MAX_SAFE_INTEGER, params.maxAgeMs);
+      truncated = replay.truncated;
+      for (const event of replay.events) this.start(sub, event);
+    }
     this.log(`webhook ${existing ? "refresh" : "subscribe"} ${id} ${params.name} principal=${principal} expires=${expiresAt === null ? "never" : new Date(expiresAt).toISOString()}`);
 
     return {
       id,
       refreshBefore: expiresAt === null ? null : new Date(expiresAt).toISOString(),
-      cursor: null,
-      truncated: false,
+      cursor: this.watermark(id),
+      truncated,
       ...(status ? { deliveryStatus: status } : {}),
     };
   }
@@ -343,8 +361,7 @@ export class WebhookHub {
 
   private dispatch(event: EventOccurrence): void {
     this.dropExpired(this.now());
-    const body = JSON.stringify({ ...event, cursor: null });
-    const oversize = Buffer.byteLength(body) > MAX_BODY_BYTES;
+    const oversize = Buffer.byteLength(JSON.stringify({ ...event, cursor: this.events.head() })) > MAX_BODY_BYTES;
     if (oversize) console.error(`[forge-mcp-server] ${event.name} ${event.eventId} is over 256 KiB and was not delivered by webhook`);
     for (const sub of this.subs.values()) {
       if (sub.name !== event.name) continue;
@@ -352,16 +369,36 @@ export class WebhookHub {
         sub.abandoned = (sub.abandoned ?? 0) + 1;
         continue;
       }
-      const delivery = this.deliver(sub, event.name, event.eventId, body).finally(() => this.inFlight.delete(delivery));
-      this.inFlight.add(delivery);
+      this.start(sub, event);
     }
+  }
+
+  /** Starts the delivery of `event` to `sub`, unless one is already under way. */
+  private start(sub: Subscription, event: EventOccurrence): void {
+    const pending = this.pending.get(sub.id) ?? new Set();
+    if (pending.has(event)) return;
+    this.pending.set(sub.id, pending.add(event));
+    const delivery = this.deliver(sub, event).finally(() => {
+      pending.delete(event);
+      if (pending.size === 0 && this.pending.get(sub.id) === pending) this.pending.delete(sub.id);
+      this.inFlight.delete(delivery);
+    });
+    this.inFlight.add(delivery);
+  }
+
+  /** The position at or before which every event has been delivered to this subscription or given up on. */
+  private watermark(id: string, sending?: EventOccurrence): string {
+    const [oldest] = this.pending.get(id) ?? [];
+    if (oldest && oldest !== sending) return this.events.cursorBefore(oldest);
+    return sending ? this.events.cursorAfter(sending) : this.events.head();
   }
 
   /**
    * One event to one subscription. Each attempt is signed again. 410 and 413 are not retried.
    * A delivery given up on is counted in `abandoned`, except after 410, which the receiver sends to refuse an event.
    */
-  private async deliver(sub: Subscription, name: string, eventId: string, body: string): Promise<void> {
+  private async deliver(sub: Subscription, event: EventOccurrence): Promise<void> {
+    const { name, eventId } = event;
     const id = sub.id;
     let failed = false;
     const retried = (by: number) => this.retrying.set(id, (this.retrying.get(id) ?? 0) + by);
@@ -373,6 +410,7 @@ export class WebhookHub {
         const secrets = [current.secret, ...(current.previous && current.previous.until > this.now() ? [current.previous.secret] : [])];
         let error: DeliveryErrorReason;
         let status: number | undefined;
+        const body = JSON.stringify({ ...event, cursor: this.watermark(id, event) });
         const started = Date.now();
         const note = (result: string | number) => this.log(`webhook delivery ${name} ${eventId} to ${id} attempt ${attempt + 1}: ${result} in ${Date.now() - started} ms`);
         try {

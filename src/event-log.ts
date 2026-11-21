@@ -49,6 +49,16 @@ export class EventLog {
     return event.eventId.replace(/-(\d+)$/, ":$1");
   }
 
+  /** The cursor before `event`. */
+  cursorBefore(event: EventOccurrence): string {
+    return event.eventId.replace(/-(\d+)$/, (_, seq) => `:${Number(seq) - 1}`);
+  }
+
+  /** Whether this process issued `cursor`. */
+  issued(cursor: string): boolean {
+    return cursor.startsWith(`${this.epoch}:`);
+  }
+
   /** Calls `listener` after a poll without a cursor, which is a client starting to follow `name`. */
   onFirstPoll(listener: (name: string) => void): void {
     this.firstPollListeners.push(listener);
