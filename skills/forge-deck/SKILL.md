@@ -66,7 +66,7 @@ Sets are kept when the source names one that Forge knows, so the deck shows the 
 
 Try these in order, and stop at the first that finds what the player asked for:
 
-1. `forge_deck_search` with a `query` and, when known, a `format`. It searches MTGTop8 (tournament lists by deck name), AetherHub (by deck or user name) and EDHREC (a commander, with a theme after the name: `atraxa infect`). When no deck name matches, MTGTop8 and AetherHub return decks that play a card of that name. Each site answers in its own order, and a site with a `note` and no results was skipped or did not answer. A MTGTop8 search can take a few seconds because the server spaces its requests.
+1. `forge_deck_search` with a `query` and, when known, a `format`. It searches MTGTop8 (tournament lists by deck name), AetherHub (by deck name) and EDHREC (a commander, with a theme after the name: `atraxa infect`). When no deck name matches, MTGTop8 and AetherHub return decks that play a card of that name. Each site answers in its own order, and a site with a `note` and no results was skipped or did not answer. A MTGTop8 search can take a few seconds because the server spaces its requests.
 2. Browser tools, when your client has them. Open the search page of a site in the table above, or of MTGGoldfish or TappedOut, and search there. This is the way to Moxfield, Archidekt, MTGDecks and Cube Cobra, which `forge_deck_search` leaves out. For a site in the table, take the deck page's URL. For MTGGoldfish and TappedOut, open the deck's text export, copy it and pass it as `text`.
 3. Web search for the archetype and a site name.
 

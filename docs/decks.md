@@ -39,7 +39,7 @@ MTGGoldfish and TappedOut answered 403 with a Cloudflare challenge to every requ
 | Site | Request | Matches |
 |---|---|---|
 | MTGTop8 | `GET mtgtop8.com/search?deck_titre=<query>&format=<code>` | Deck name. When none matches, `cards=<query>` for decks that play the card |
-| AetherHub | `POST aetherhub.com/Meta/FetchMetaListAdv?formatId=<n>` with the body its deck table sends | Deck or user name, updated in the last 365 days. When none matches, decks that play the card |
+| AetherHub | `POST aetherhub.com/Meta/FetchMetaListAdv?formatId=<n>` with the body its deck table sends | Deck name, updated in the last 365 days. The site also matches user names, and those results are dropped. When none is left, decks that play the card |
 | EDHREC | `GET edhrec.com/api/typeahead/?q=<query>`, then `json.edhrec.com/pages/commanders/<commander>.json` for a theme | Commander name, with up to two trailing words read as a theme of the first commander found |
 
 Each answered a request from `node:https` on 2026-11-21. None is a documented API. `mtgtop8.com/robots.txt` sets `Crawl-delay: 5`, so a MTGTop8 search request waits until 5 seconds after the one before it. A search sends one to three requests per site. An AetherHub request for fewer than 5 rows came back empty, so the server asks for the site's page size of 40 and cuts the list.
