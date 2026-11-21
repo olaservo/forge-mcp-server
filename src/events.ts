@@ -29,6 +29,8 @@ const SubscribeParams = z.looseObject({
   arguments: z.record(z.string(), z.unknown()).nullish(),
   delivery: z.looseObject({ mode: z.string().optional(), url: z.string(), secret: z.string().optional() }),
   ttlMs: z.number().nullish(),
+  cursor: z.string().nullish(),
+  maxAgeMs: z.number().optional(),
 });
 
 export interface WebhookAccess {

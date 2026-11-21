@@ -5,7 +5,7 @@ import type { AddressInfo } from "node:net";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
 import { Webhook } from "standardwebhooks";
-import { describe, expect, it } from "vitest";
+import { describe, expect, it, vi } from "vitest";
 import { z } from "zod";
 import { EventLog } from "../src/event-log.js";
 import { CHAT, YOUR_MOVE } from "../src/seat-events.js";
@@ -32,7 +32,21 @@ function receiver(statuses: number[] = []) {
   return { posts, post, events };
 }
 
-const subscribeParams = (secret: string, extra: Record<string, unknown> = {}) => ({
+/** A receiver that answers the first event with 500 and holds that event's retry until `release` is called. */
+function heldRetry() {
+  const { posts, post: answer, events } = receiver([500]);
+  let release = () => {};
+  const held = new Promise<void>((resolve) => (release = resolve));
+  const post: WebhookPost = async (url, headers, body) => {
+    const retry = !isVerification(body) && events().some((p) => p.headers["webhook-id"] === headers["webhook-id"]);
+    const response = await answer(url, headers, body);
+    if (retry) await held;
+    return response;
+  };
+  return { posts, post, events, release };
+}
+
+const subscribeParams =(secret: string, extra: Record<string, unknown> = {}) => ({
   name: YOUR_MOVE,
   arguments: {},
   delivery: { mode: "webhook", url: URL_A, secret },
@@ -53,7 +67,7 @@ describe("webhook delivery", () => {
     expect(listed.events.map((e) => e.delivery)).toEqual([["poll", "push", "webhook"], ["poll", "push", "webhook"]]);
 
     const sub = (await client.request({ method: "events/subscribe", params: subscribeParams(secret) }, Any)) as unknown as SubscribeResult;
-    expect(sub).toMatchObject({ id: subscriptionId("ola", URL_A, YOUR_MOVE, {}), cursor: null, truncated: false });
+    expect(sub).toMatchObject({ id: subscriptionId("ola", URL_A, YOUR_MOVE, {}), cursor: log.head(), truncated: false });
     expect(Date.parse(sub.refreshBefore!) - Date.now()).toBeGreaterThan(59 * 60 * 1000);
     expect(sub.deliveryStatus).toBeUndefined();
     expect(posts).toHaveLength(1);
@@ -71,7 +85,7 @@ describe("webhook delivery", () => {
     const delivery = events()[0]!;
     expect(delivery.url).toBe(URL_A);
     expect(delivery.headers).toMatchObject({ "webhook-id": emitted.eventId, "x-mcp-subscription-id": sub.id, "content-type": "application/json" });
-    expect(new Webhook(secret).verify(delivery.body, delivery.headers)).toEqual({ ...emitted, cursor: null });
+    expect(new Webhook(secret).verify(delivery.body, delivery.headers)).toEqual({ ...emitted, cursor: log.cursorAfter(emitted) });
 
     const refreshed = (await client.request({ method: "events/subscribe", params: subscribeParams(secret) }, Any)) as unknown as SubscribeResult;
     expect(refreshed.id).toBe(sub.id);
@@ -155,19 +169,93 @@ describe("webhook delivery", () => {
 
   it("keeps the failure in the status while an earlier event is still retried", async () => {
     const log = new EventLog();
-    const { post } = receiver([500]);
-    const hub = new WebhookHub(log, { post, retryDelaysMs: [20] });
+    const { post, events, release } = heldRetry();
+    const hub = new WebhookHub(log, { post, retryDelaysMs: [0] });
     const secret = newSecret();
     await hub.subscribe("ola", subscribeParams(secret));
 
     log.emit(YOUR_MOVE, { kind: "priority" });
-    await new Promise((resolve) => setTimeout(resolve, 5));
     log.emit(YOUR_MOVE, { kind: "decision" });
-    await new Promise((resolve) => setTimeout(resolve, 5));
-    expect((await hub.subscribe("ola", subscribeParams(secret))).deliveryStatus).toMatchObject({ lastError: "http_5xx", failedSince: expect.any(String) });
-    await new Promise((resolve) => setTimeout(resolve, 40));
+    await vi.waitFor(() => expect(events()).toHaveLength(3));
+    expect((await hub.subscribe("ola", subscribeParams(secret))).deliveryStatus).toMatchObject({ lastError: "http_5xx", failedSince: expect.any(String), lastDeliveryAt: expect.any(String) });
+    release();
     await hub.idle();
     expect((await hub.subscribe("ola", subscribeParams(secret))).deliveryStatus).toEqual({ active: true, lastError: null, lastDeliveryAt: expect.any(String) });
+  });
+
+  it("sends a cursor that stays behind an event still being retried", async () => {
+    const log = new EventLog();
+    const { post, events, release } = heldRetry();
+    const hub = new WebhookHub(log, { post, retryDelaysMs: [0] });
+    const secret = newSecret();
+    const cursorOf = (index: number) => (JSON.parse(events()[index]!.body) as { cursor: string }).cursor;
+    await hub.subscribe("ola", subscribeParams(secret));
+
+    const first = log.emit(YOUR_MOVE, { kind: "priority" });
+    const second = log.emit(YOUR_MOVE, { kind: "decision" });
+    await vi.waitFor(() => expect(events()).toHaveLength(3));
+    expect(events().map((p) => p.headers["webhook-id"])).toEqual([first.eventId, second.eventId, first.eventId]);
+    expect(cursorOf(1)).toBe(log.cursorBefore(first));
+    expect(cursorOf(2)).toBe(log.cursorAfter(first));
+    expect(await hub.subscribe("ola", subscribeParams(secret))).toMatchObject({ cursor: log.cursorBefore(first), truncated: false });
+
+    release();
+    await hub.idle();
+    expect(await hub.subscribe("ola", subscribeParams(secret))).toMatchObject({ cursor: log.head(), truncated: false });
+  });
+
+  it("marks one refresh truncated after an abandoned delivery", async () => {
+    const log = new EventLog();
+    const hub = new WebhookHub(log, { post: receiver([500]).post, retryDelaysMs: [] });
+    const secret = newSecret();
+    await hub.subscribe("ola", subscribeParams(secret));
+    log.emit(YOUR_MOVE, { kind: "priority" });
+    await hub.idle();
+    expect(await hub.subscribe("ola", subscribeParams(secret))).toMatchObject({ cursor: log.head(), truncated: true });
+    expect(await hub.subscribe("ola", subscribeParams(secret))).toMatchObject({ cursor: log.head(), truncated: false });
+  });
+
+  it("replays from the cursor of a new subscription", async () => {
+    const log = new EventLog();
+    const { post, events } = receiver();
+    const hub = new WebhookHub(log, { post });
+    const secret = newSecret();
+    const { cursor } = await hub.subscribe("ola", subscribeParams(secret));
+    hub.unsubscribe("ola", subscribeParams(secret));
+
+    const missed = [log.emit(YOUR_MOVE, { kind: "priority" }), log.emit(YOUR_MOVE, { kind: "decision" })];
+    log.emit(CHAT, { from: "Ola", text: "another event type" });
+    await hub.idle();
+    expect(events()).toHaveLength(0);
+
+    const again = await hub.subscribe("ola", subscribeParams(secret, { cursor }));
+    expect(again).toMatchObject({ cursor: log.cursorBefore(missed[0]!), truncated: false });
+    await hub.idle();
+    expect(events().map((p) => p.headers["webhook-id"])).toEqual(missed.map((e) => e.eventId));
+
+    // a refresh of the live subscription replays nothing
+    expect(await hub.subscribe("ola", subscribeParams(secret, { cursor }))).toMatchObject({ cursor: log.head(), truncated: false });
+    await hub.idle();
+    expect(events()).toHaveLength(2);
+
+    hub.unsubscribe("ola", subscribeParams(secret));
+    expect(await hub.subscribe("ola", subscribeParams(secret, { cursor: "0ldepoch:3" }))).toMatchObject({ cursor: log.head(), truncated: true });
+    await hub.idle();
+    expect(events()).toHaveLength(2);
+  });
+
+  it("marks a refresh truncated when its cursor is from before a restart", async () => {
+    const file = join(mkdtempSync(join(tmpdir(), "forge-subs-")), "subscriptions.json");
+    const { post } = receiver();
+    const secret = newSecret();
+    const before = await new WebhookHub(new EventLog(), { post, file }).subscribe("ola", subscribeParams(secret, { ttlMs: null }));
+
+    const log = new EventLog();
+    const hub = new WebhookHub(log, { post, file });
+    const after = await hub.subscribe("ola", subscribeParams(secret, { cursor: before.cursor }));
+    expect(after).toMatchObject({ cursor: log.head(), truncated: true });
+    expect(await hub.subscribe("ola", subscribeParams(secret, { cursor: after.cursor }))).toMatchObject({ truncated: false });
+    expect(await hub.subscribe("ola", subscribeParams(secret))).toMatchObject({ truncated: false });
   });
 
   it("reads the retry waits from a setting", () => {
@@ -288,7 +376,7 @@ describe("webhook delivery", () => {
 
     const secret = newSecret();
     const sub = await rpc("events/subscribe", { name: YOUR_MOVE, arguments: {}, delivery: { mode: "webhook", url: callbackUrl, secret }, cursor: null }, "s3cret");
-    expect(sub.message.result).toMatchObject({ id: expect.stringMatching(/^sub_/), cursor: null });
+    expect(sub.message.result).toMatchObject({ id: expect.stringMatching(/^sub_/), cursor: log.head(), truncated: false });
     const emitted = log.emit(YOUR_MOVE, { kind: "game_over", prompt: "Game over. Winner: Ola" });
     await hub.idle();
     expect(received).toHaveLength(2);
