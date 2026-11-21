@@ -11,7 +11,7 @@ import { EventLog } from "../src/event-log.js";
 import { CHAT, YOUR_MOVE } from "../src/seat-events.js";
 import { skillCatalog } from "../src/server.js";
 import { listenHttp } from "../src/transports/http.js";
-import { type SubscribeResult, WebhookHub, type WebhookPost, isPublicAddress, isSigningSecret, subscriptionId, webhookPost } from "../src/webhooks.js";
+import { type SubscribeResult, WebhookHub, type WebhookPost, isPublicAddress, isSigningSecret, retryDelays, subscriptionId, webhookPost } from "../src/webhooks.js";
 import { connect, fakeBridge } from "./helpers.js";
 
 const newSecret = () => `whsec_${randomBytes(32).toString("base64")}`;
@@ -126,6 +126,54 @@ describe("webhook delivery", () => {
     expect(events()).toHaveLength(3);
     const status = (await hub.subscribe("ola", subscribeParams(newSecret()))).deliveryStatus;
     expect(status).toMatchObject({ lastError: "http_4xx" });
+  });
+
+  it("reports an abandoned delivery until a refresh has returned it", async () => {
+    const log = new EventLog();
+    const { post, events } = receiver([500, 500, 500]);
+    const hub = new WebhookHub(log, { post, retryDelaysMs: [0, 0] });
+    const secret = newSecret();
+    const refresh = async () => (await hub.subscribe("ola", subscribeParams(secret))).deliveryStatus;
+    await hub.subscribe("ola", subscribeParams(secret));
+
+    log.emit(YOUR_MOVE, { kind: "priority" });
+    await hub.idle();
+    log.emit(YOUR_MOVE, { kind: "decision" });
+    await hub.idle();
+    expect(events()).toHaveLength(4);
+    expect(await refresh()).toMatchObject({ lastError: "http_5xx", failedSince: expect.any(String), abandoned: 1, lastDeliveryAt: expect.any(String) });
+    expect(await refresh()).toEqual({ active: true, lastError: null, lastDeliveryAt: expect.any(String) });
+
+    // 413 and a body over 256 KiB are lost deliveries too
+    const big = new WebhookHub(log, { post: receiver([413]).post });
+    await big.subscribe("ola", subscribeParams(secret));
+    log.emit(YOUR_MOVE, { kind: "priority" });
+    log.emit(YOUR_MOVE, { kind: "priority", prompt: "x".repeat(300 * 1024) });
+    await big.idle();
+    expect((await big.subscribe("ola", subscribeParams(secret))).deliveryStatus).toMatchObject({ abandoned: 2 });
+  });
+
+  it("keeps the failure in the status while an earlier event is still retried", async () => {
+    const log = new EventLog();
+    const { post } = receiver([500]);
+    const hub = new WebhookHub(log, { post, retryDelaysMs: [20] });
+    const secret = newSecret();
+    await hub.subscribe("ola", subscribeParams(secret));
+
+    log.emit(YOUR_MOVE, { kind: "priority" });
+    await new Promise((resolve) => setTimeout(resolve, 5));
+    log.emit(YOUR_MOVE, { kind: "decision" });
+    await new Promise((resolve) => setTimeout(resolve, 5));
+    expect((await hub.subscribe("ola", subscribeParams(secret))).deliveryStatus).toMatchObject({ lastError: "http_5xx", failedSince: expect.any(String) });
+    await new Promise((resolve) => setTimeout(resolve, 40));
+    await hub.idle();
+    expect((await hub.subscribe("ola", subscribeParams(secret))).deliveryStatus).toEqual({ active: true, lastError: null, lastDeliveryAt: expect.any(String) });
+  });
+
+  it("reads the retry waits from a setting", () => {
+    expect(retryDelays("1000, 60000,300000")).toEqual([1000, 60000, 300000]);
+    expect(retryDelays(undefined)).toBeUndefined();
+    expect(retryDelays("soon")).toBeUndefined();
   });
 
   it("signs with the old and new secret after a rotation", async () => {

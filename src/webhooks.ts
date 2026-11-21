@@ -160,6 +160,8 @@ interface Subscription {
   lastDeliveryAt?: string;
   lastError?: DeliveryErrorReason | null;
   failedSince?: string;
+  /** Deliveries given up on since the last refresh. */
+  abandoned?: number;
 }
 
 export interface SubscribeParams {
@@ -175,7 +177,16 @@ export interface SubscribeResult {
   refreshBefore: string | null;
   cursor: null;
   truncated: false;
-  deliveryStatus?: { active: true; lastDeliveryAt: string | null; lastError: DeliveryErrorReason | null; failedSince?: string };
+  deliveryStatus?: { active: true; lastDeliveryAt: string | null; lastError: DeliveryErrorReason | null; failedSince?: string; abandoned?: number };
+}
+
+/** Reads `FORGE_MCP_WEBHOOK_RETRY_MS`: the waits before the second and later attempts, in ms, separated by commas. */
+export function retryDelays(value: string | undefined): number[] | undefined {
+  if (!value?.trim()) return undefined;
+  const waits = value.split(",").map((part) => Number(part.trim()));
+  if (waits.every((wait) => Number.isFinite(wait) && wait >= 0)) return waits;
+  console.error(`[forge-mcp-server] FORGE_MCP_WEBHOOK_RETRY_MS is not a list of waits in ms: ${value}`);
+  return undefined;
 }
 
 export interface WebhookOptions {
@@ -201,6 +212,8 @@ export class WebhookHub {
   /** `(principal, url)` pairs that passed the verification handshake, with the time the result lapses. */
   private readonly verified = new Map<string, number>();
   private readonly inFlight = new Set<Promise<void>>();
+  /** Per subscription, the deliveries that have failed and are still being retried. */
+  private readonly retrying = new Map<string, number>();
   private readonly post: WebhookPost;
   private readonly insecure: boolean;
   private readonly file: string | undefined;
@@ -258,6 +271,15 @@ export class WebhookHub {
     const expiresAt = lifetime === null ? null : now + lifetime;
     const rotated = existing && existing.secret !== secret ? { secret: existing.secret, until: now + ROTATION_GRACE_MS } : existing?.previous;
     const sub: Subscription = { ...existing, id, principal, url, name: params.name, arguments: args, secret, previous: rotated, expiresAt };
+    const status = existing
+      ? { active: true as const, lastDeliveryAt: sub.lastDeliveryAt ?? null, lastError: sub.lastError ?? null, ...(sub.failedSince ? { failedSince: sub.failedSince } : {}), ...(sub.abandoned ? { abandoned: sub.abandoned } : {}) }
+      : undefined;
+    // This refresh reports the abandoned deliveries, so the next one starts clean if delivery has worked since.
+    if (sub.abandoned && !this.retrying.get(id) && sub.failedSince && (sub.lastDeliveryAt ?? "") >= sub.failedSince) {
+      sub.lastError = null;
+      delete sub.failedSince;
+    }
+    delete sub.abandoned;
     this.subs.set(id, sub);
     this.save();
     this.log(`webhook ${existing ? "refresh" : "subscribe"} ${id} ${params.name} principal=${principal} expires=${expiresAt === null ? "never" : new Date(expiresAt).toISOString()}`);
@@ -267,9 +289,7 @@ export class WebhookHub {
       refreshBefore: expiresAt === null ? null : new Date(expiresAt).toISOString(),
       cursor: null,
       truncated: false,
-      ...(existing
-        ? { deliveryStatus: { active: true, lastDeliveryAt: sub.lastDeliveryAt ?? null, lastError: sub.lastError ?? null, ...(sub.failedSince ? { failedSince: sub.failedSince } : {}) } }
-        : {}),
+      ...(status ? { deliveryStatus: status } : {}),
     };
   }
 
@@ -324,51 +344,73 @@ export class WebhookHub {
   private dispatch(event: EventOccurrence): void {
     this.dropExpired(this.now());
     const body = JSON.stringify({ ...event, cursor: null });
-    if (Buffer.byteLength(body) > MAX_BODY_BYTES) {
-      console.error(`[forge-mcp-server] ${event.name} ${event.eventId} is over 256 KiB and was not delivered by webhook`);
-      return;
-    }
+    const oversize = Buffer.byteLength(body) > MAX_BODY_BYTES;
+    if (oversize) console.error(`[forge-mcp-server] ${event.name} ${event.eventId} is over 256 KiB and was not delivered by webhook`);
     for (const sub of this.subs.values()) {
       if (sub.name !== event.name) continue;
+      if (oversize) {
+        sub.abandoned = (sub.abandoned ?? 0) + 1;
+        continue;
+      }
       const delivery = this.deliver(sub, event.name, event.eventId, body).finally(() => this.inFlight.delete(delivery));
       this.inFlight.add(delivery);
     }
   }
 
-  /** One event to one subscription. Each attempt is signed again. 410 and 413 are not retried. */
+  /**
+   * One event to one subscription. Each attempt is signed again. 410 and 413 are not retried.
+   * A delivery given up on is counted in `abandoned`, except after 410, which the receiver sends to refuse an event.
+   */
   private async deliver(sub: Subscription, name: string, eventId: string, body: string): Promise<void> {
-    for (let attempt = 0; ; attempt++) {
-      // A refresh replaces the stored object, so read the current secret each time.
-      const current = this.subs.get(sub.id);
-      if (!current) return;
-      const secrets = [current.secret, ...(current.previous && current.previous.until > this.now() ? [current.previous.secret] : [])];
-      let error: DeliveryErrorReason;
-      let final = false;
-      const started = Date.now();
-      const note = (result: string | number) => this.log(`webhook delivery ${name} ${eventId} to ${current.id} attempt ${attempt + 1}: ${result} in ${Date.now() - started} ms`);
-      try {
-        const { status } = await this.post(current.url, this.headers(current.id, eventId, secrets, body), body);
-        note(status);
-        if (status >= 200 && status < 300) {
-          current.lastDeliveryAt = new Date(this.now()).toISOString();
-          current.lastError = null;
-          delete current.failedSince;
+    const id = sub.id;
+    let failed = false;
+    const retried = (by: number) => this.retrying.set(id, (this.retrying.get(id) ?? 0) + by);
+    try {
+      for (let attempt = 0; ; attempt++) {
+        // A refresh replaces the stored object, so read it again before and after each attempt.
+        const current = this.subs.get(id);
+        if (!current) return;
+        const secrets = [current.secret, ...(current.previous && current.previous.until > this.now() ? [current.previous.secret] : [])];
+        let error: DeliveryErrorReason;
+        let status: number | undefined;
+        const started = Date.now();
+        const note = (result: string | number) => this.log(`webhook delivery ${name} ${eventId} to ${id} attempt ${attempt + 1}: ${result} in ${Date.now() - started} ms`);
+        try {
+          ({ status } = await this.post(current.url, this.headers(id, eventId, secrets, body), body));
+          note(status);
+          error = status >= 500 ? "http_5xx" : "http_4xx";
+        } catch (err) {
+          error = reasonOf(err);
+          note(error);
+        }
+        const latest = this.subs.get(id);
+        if (!latest) return;
+        if (status !== undefined && status >= 200 && status < 300) {
+          if (failed) retried(-1);
+          failed = false;
+          latest.lastDeliveryAt = new Date(this.now()).toISOString();
+          // An earlier event may still be failing, or lost and not yet reported by a refresh.
+          if (!this.retrying.get(id) && !latest.abandoned) {
+            latest.lastError = null;
+            delete latest.failedSince;
+          }
           return;
         }
-        error = status >= 500 ? "http_5xx" : "http_4xx";
-        final = status === 410 || status === 413;
-      } catch (err) {
-        error = reasonOf(err);
-        note(error);
+        if (!failed) retried(1);
+        failed = true;
+        latest.lastError = error;
+        latest.failedSince ??= new Date(this.now()).toISOString();
+        const wait = this.retryDelaysMs[attempt];
+        if (status === 410 || status === 413 || wait === undefined) {
+          if (status !== 410) latest.abandoned = (latest.abandoned ?? 0) + 1;
+          console.error(`[forge-mcp-server] webhook delivery of ${eventId} to ${id} failed: ${error}`);
+          return;
+        }
+        await new Promise((resolve) => setTimeout(resolve, wait).unref());
       }
-      current.lastError = error;
-      current.failedSince ??= new Date(this.now()).toISOString();
-      const wait = this.retryDelaysMs[attempt];
-      if (final || wait === undefined) {
-        console.error(`[forge-mcp-server] webhook delivery of ${eventId} to ${current.id} failed: ${error}`);
-        return;
-      }
-      await new Promise((resolve) => setTimeout(resolve, wait).unref());
+    } finally {
+      if (failed) retried(-1);
+      if (!this.retrying.get(id)) this.retrying.delete(id);
     }
   }
 
