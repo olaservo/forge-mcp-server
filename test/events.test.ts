@@ -1,7 +1,10 @@
+import { Client } from "@modelcontextprotocol/client";
+import { InMemoryTransport } from "@modelcontextprotocol/server";
 import { describe, expect, it, vi } from "vitest";
 import { z } from "zod";
 import { EventLog } from "../src/event-log.js";
 import { CHAT, ChatTracker, MoveTracker, YOUR_MOVE } from "../src/seat-events.js";
+import { createServer, skillCatalog } from "../src/server.js";
 import { connect, fakeBridge } from "./helpers.js";
 
 const game = (promptCount: number, more = {}) => ({
@@ -201,6 +204,40 @@ describe("events", () => {
     await expect(second.done).rejects.toThrow();
 
     await expect(client.request({ method: "events/stream", params: { name: "nope" } }, Any)).rejects.toMatchObject({ code: -32023 });
+    await client.close();
+  });
+
+  it("ends a stream on notifications/cancelled over a persistent connection, as on stdio", async () => {
+    const { bridge } = fakeBridge({});
+    const log = new EventLog();
+    const server = createServer({ bridge, skills: await skillCatalog(), events: log });
+    const [clientSide, serverSide] = InMemoryTransport.createLinkedPair();
+    await server.connect(serverSide);
+    const client = new Client({ name: "test", version: "0.0.0" }, { versionNegotiation: { mode: "auto" } });
+    await client.connect(clientSide);
+    const sent: string[] = [];
+    const send = clientSide.send.bind(clientSide);
+    clientSide.send = (message, options) => {
+      if ("method" in message) sent.push(message.method);
+      return send(message, options);
+    };
+    const got: string[] = [];
+    client.fallbackNotificationHandler = async (n) => void got.push(n.method);
+    const listeners = () => (log as unknown as { listeners: unknown[] }).listeners.length;
+
+    const abort = new AbortController();
+    const done = client.request({ method: "events/stream", params: { name: YOUR_MOVE, cursor: null } }, z.looseObject({}), { signal: abort.signal, timeout: 60_000 });
+    done.catch(() => {});
+    await vi.waitFor(() => expect(got).toEqual(["notifications/events/active"]));
+    expect(listeners()).toBe(1);
+
+    abort.abort();
+    await expect(done).rejects.toThrow();
+    expect(sent).toContain("notifications/cancelled");
+    await vi.waitFor(() => expect(listeners()).toBe(0));
+    log.emit(YOUR_MOVE, { kind: "priority" });
+    await new Promise((resolve) => setTimeout(resolve, 50));
+    expect(got).toEqual(["notifications/events/active"]);
     await client.close();
   });
 
