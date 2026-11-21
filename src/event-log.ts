@@ -30,9 +30,23 @@ export class EventLog {
 
   constructor(private readonly capacity = 1000) {}
 
-  /** Calls `listener` with each event as it is emitted. */
-  onEmit(listener: (event: EventOccurrence) => void): void {
+  /** Calls `listener` with each event as it is emitted. Returns a function that stops it. */
+  onEmit(listener: (event: EventOccurrence) => void): () => void {
     this.listeners.push(listener);
+    return () => {
+      const at = this.listeners.indexOf(listener);
+      if (at >= 0) this.listeners.splice(at, 1);
+    };
+  }
+
+  /** The cursor after the newest event. */
+  head(): string {
+    return `${this.epoch}:${this.seq}`;
+  }
+
+  /** The cursor after `event`. */
+  cursorAfter(event: EventOccurrence): string {
+    return event.eventId.replace(/-(\d+)$/, ":$1");
   }
 
   /** Calls `listener` after a poll without a cursor, which is a client starting to follow `name`. */
@@ -50,7 +64,7 @@ export class EventLog {
   }
 
   poll(name: string, cursor: string | null | undefined, maxEvents = 100, maxAgeMs?: number): PollResult {
-    const head = `${this.epoch}:${this.seq}`;
+    const head = this.head();
     const floor = maxAgeMs === undefined ? "" : new Date(Date.now() - maxAgeMs).toISOString();
     const fresh = { events: [], cursor: head, hasMore: false, nextPollMs: POLL_MS };
     if (cursor == null) {

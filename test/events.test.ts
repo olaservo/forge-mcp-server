@@ -1,4 +1,4 @@
-import { describe, expect, it } from "vitest";
+import { describe, expect, it, vi } from "vitest";
 import { z } from "zod";
 import { EventLog } from "../src/event-log.js";
 import { CHAT, ChatTracker, MoveTracker, YOUR_MOVE } from "../src/seat-events.js";
@@ -135,7 +135,7 @@ describe("events", () => {
     const Any = z.looseObject({});
 
     const listed = (await client.request({ method: "events/list", params: {} }, Any)) as { events: { name: string; delivery: string[] }[] };
-    expect(listed.events.map((e) => [e.name, e.delivery])).toEqual([[YOUR_MOVE, ["poll"]], [CHAT, ["poll"]]]);
+    expect(listed.events.map((e) => [e.name, e.delivery])).toEqual([[YOUR_MOVE, ["poll", "push"]], [CHAT, ["poll", "push"]]]);
 
     const Polled = z.looseObject({ events: z.array(z.looseObject({})), cursor: z.string(), truncated: z.boolean(), hasMore: z.boolean() });
     const poll = (cursor: string | null) => client.request({ method: "events/poll", params: { name: YOUR_MOVE, arguments: {}, cursor } }, Polled);
@@ -150,6 +150,56 @@ describe("events", () => {
 
     expect(await poll("otherproc:4")).toMatchObject({ events: [], truncated: true });
     await expect(client.request({ method: "events/poll", params: { name: "nope", cursor: null } }, Any)).rejects.toMatchObject({ code: -32023 });
+    await client.close();
+  });
+
+  it("pushes events on events/stream until the client aborts", async () => {
+    const { bridge } = fakeBridge({});
+    const log = new EventLog();
+    const client = await connect(bridge, undefined, log);
+    const got: { method: string; params?: Record<string, unknown> }[] = [];
+    client.fallbackNotificationHandler = async (n) => void got.push(n);
+    const Any = z.looseObject({});
+    const listeners = () => (log as unknown as { listeners: unknown[] }).listeners.length;
+    const open = (params: Record<string, unknown>) => {
+      const abort = new AbortController();
+      const done = client.request({ method: "events/stream", params: { name: YOUR_MOVE, ...params } }, Any, { signal: abort.signal, timeout: 60_000 });
+      done.catch(() => {});
+      return { abort, done };
+    };
+    const methods = () => got.map((n) => n.method);
+
+    const first = open({ cursor: null, heartbeatMs: 1 });
+    await vi.waitFor(() => expect(methods()).toEqual(["notifications/events/active"]));
+    const active = got[0]!.params!;
+    expect(active).toMatchObject({ truncated: false, heartbeatMs: 1000 });
+    const subscription = (active._meta as Record<string, unknown>)["io.modelcontextprotocol/subscriptionId"];
+    expect(subscription).toBeDefined();
+
+    log.emit(CHAT, { from: "Ola", text: "hi" });
+    const move = log.emit(YOUR_MOVE, { kind: "priority" });
+    await vi.waitFor(() => expect(methods()).toHaveLength(2));
+    expect(got[1]).toMatchObject({
+      method: "notifications/events/event",
+      params: { eventId: move.eventId, name: YOUR_MOVE, data: { kind: "priority" }, cursor: log.cursorAfter(move), _meta: { "io.modelcontextprotocol/subscriptionId": subscription } },
+    });
+    await vi.waitFor(() => expect(methods()[2]).toBe("notifications/events/heartbeat"), { timeout: 3000 });
+    expect(got[2]!.params).toMatchObject({ cursor: log.head() });
+
+    first.abort.abort();
+    await expect(first.done).rejects.toThrow();
+    await vi.waitFor(() => expect(listeners()).toBe(0));
+
+    // A stream that resumes from a cursor gets what it missed first.
+    const missed = log.emit(YOUR_MOVE, { kind: "decision" });
+    got.length = 0;
+    const second = open({ cursor: log.cursorAfter(move) });
+    await vi.waitFor(() => expect(methods()).toEqual(["notifications/events/active", "notifications/events/event"]));
+    expect(got[1]!.params).toMatchObject({ eventId: missed.eventId });
+    second.abort.abort();
+    await expect(second.done).rejects.toThrow();
+
+    await expect(client.request({ method: "events/stream", params: { name: "nope" } }, Any)).rejects.toMatchObject({ code: -32023 });
     await client.close();
   });
 
