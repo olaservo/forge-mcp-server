@@ -244,6 +244,67 @@ describe("webhook delivery", () => {
     expect(events()).toHaveLength(2);
   });
 
+  it("keeps the cursor behind replayed events when an older delivery is still under way", async () => {
+    const log = new EventLog();
+    const { post, events, release } = heldRetry();
+    const hub = new WebhookHub(log, { post, retryDelaysMs: [0] });
+    const secret = newSecret();
+    const { cursor } = await hub.subscribe("ola", subscribeParams(secret));
+    hub.unsubscribe("ola", subscribeParams(secret));
+    const [one, two] = [log.emit(YOUR_MOVE, { kind: "priority" }), log.emit(YOUR_MOVE, { kind: "decision" })];
+
+    await hub.subscribe("ola", subscribeParams(secret));
+    log.emit(YOUR_MOVE, { kind: "priority" });
+    await vi.waitFor(() => expect(events()).toHaveLength(2));
+    hub.unsubscribe("ola", subscribeParams(secret));
+
+    // the third event is held in its retry while the first two are replayed
+    expect(await hub.subscribe("ola", subscribeParams(secret, { cursor }))).toMatchObject({ cursor, truncated: false });
+    const replayed = events().filter((p) => p.headers["webhook-id"] === one.eventId || p.headers["webhook-id"] === two.eventId);
+    expect(replayed.map((p) => (JSON.parse(p.body) as { cursor: string }).cursor)).toEqual([log.cursorAfter(one), log.cursorBefore(one)]);
+    release();
+    await hub.idle();
+  });
+
+  it("reports an abandoned delivery to a subscription made after a lapse", async () => {
+    const log = new EventLog();
+    let now = Date.parse("2026-11-21T12:00:00Z");
+    const hub = new WebhookHub(log, { post: receiver([500]).post, retryDelaysMs: [], now: () => now });
+    const secret = newSecret();
+    const { cursor } = await hub.subscribe("ola", subscribeParams(secret, { ttlMs: 60_000 }));
+    log.emit(YOUR_MOVE, { kind: "priority" });
+    const delivered = log.emit(YOUR_MOVE, { kind: "decision" });
+    await hub.idle();
+
+    now += 2 * 60_000;
+    const lapsed = await hub.subscribe("ola", subscribeParams(secret, { cursor: log.cursorAfter(delivered) }));
+    expect(lapsed).toMatchObject({ truncated: true });
+    expect(lapsed.deliveryStatus).toBeUndefined();
+    expect(await hub.subscribe("ola", subscribeParams(secret, { cursor: lapsed.cursor }))).toMatchObject({ truncated: false });
+
+    // a cursor before the abandoned event replays it, so nothing is missing
+    log.emit(YOUR_MOVE, { kind: "priority" });
+    await hub.idle();
+    hub.unsubscribe("ola", subscribeParams(secret));
+    const failing = new WebhookHub(log, { post: receiver([500]).post, retryDelaysMs: [] });
+    await failing.subscribe("ola", subscribeParams(secret));
+    log.emit(YOUR_MOVE, { kind: "decision" });
+    await failing.idle();
+    failing.unsubscribe("ola", subscribeParams(secret));
+    expect(await failing.subscribe("ola", subscribeParams(secret, { cursor }))).toMatchObject({ truncated: false });
+    await failing.idle();
+  });
+
+  it("takes any maxAgeMs and flags a refresh cursor ahead of the log", async () => {
+    const log = new EventLog();
+    const hub = new WebhookHub(log, { post: receiver().post });
+    const secret = newSecret();
+    const first = await hub.subscribe("ola", subscribeParams(secret, { cursor: log.head(), maxAgeMs: 1e17 }));
+    expect(first).toMatchObject({ cursor: log.head(), truncated: false });
+    const ahead = `${log.head().split(":")[0]}:999`;
+    expect(await hub.subscribe("ola", subscribeParams(secret, { cursor: ahead }))).toMatchObject({ cursor: log.head(), truncated: true });
+  });
+
   it("marks a refresh truncated when its cursor is from before a restart", async () => {
     const file = join(mkdtempSync(join(tmpdir(), "forge-subs-")), "subscriptions.json");
     const { post } = receiver();
