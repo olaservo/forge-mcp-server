@@ -8,7 +8,7 @@ import { STATUS_URI, createServer } from "../server.js";
 import type { Bridge } from "../bridge.js";
 import type { EventLog } from "../event-log.js";
 import { fileLog, stderrLog } from "../log.js";
-import { WebhookHub } from "../webhooks.js";
+import { WebhookHub, retryDelays } from "../webhooks.js";
 
 export interface HttpOptions {
   bridge: Bridge;
@@ -69,7 +69,7 @@ export function listenHttp({ bridge, skills, events, port, ...opts }: HttpOption
   const log = toFile ?? stderrLog;
   const webhooks =
     opts.webhooks ??
-    (token || proxyToken ? new WebhookHub(events, { file: process.env.FORGE_MCP_SUBSCRIPTIONS, insecure: process.env.FORGE_MCP_WEBHOOK_INSECURE === "1", log }) : undefined);
+    (token || proxyToken ? new WebhookHub(events, { file: process.env.FORGE_MCP_SUBSCRIPTIONS, insecure: process.env.FORGE_MCP_WEBHOOK_INSECURE === "1", retryDelaysMs: retryDelays(process.env.FORGE_MCP_WEBHOOK_RETRY_MS), log }) : undefined);
   const tokenAuth: AuthInfo | undefined = token ? { token, clientId: `token:${digest(token).toString("hex").slice(0, 8)}`, scopes: [] } : undefined;
   const bus = new InMemoryServerEventBus((e) => console.error(`[forge-mcp-server] ${e.message}`));
   const handler = createMcpHandler((ctx) => createServer({ bridge, skills, events, webhooks, principal: ctx.authInfo?.clientId, log: ctx.authInfo ? log : toFile }), { bus });

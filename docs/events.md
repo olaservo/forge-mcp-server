@@ -23,7 +23,7 @@ Both are delivered by poll and push, and by webhook when the HTTP endpoint has a
 
 ## Webhooks
 
-`src/webhooks.ts` implements `events/subscribe` and `events/unsubscribe` from SEP-3415: the verification handshake, Standard Webhooks signatures, retries (4 attempts, none after 410 or 413), secret rotation, and callback addresses checked when the socket connects. Events are not replayable over webhook, so every cursor is `null`. The server follows ChatGPT in the places where ChatGPT differs from the SEP, listed in [ChatGPT](chatgpt.md).
+`src/webhooks.ts` implements `events/subscribe` and `events/unsubscribe` from SEP-3415: the verification handshake, Standard Webhooks signatures, retries (4 attempts by default, none after 410 or 413), secret rotation, and callback addresses checked when the socket connects. A delivery that is given up on is counted in `deliveryStatus.abandoned` until a refresh has returned it, and `lastError` and `failedSince` stay set until then. A 410 is the receiver refusing the event and is not counted. Events are not replayable over webhook, so every cursor is `null`. The server follows ChatGPT in the places where ChatGPT differs from the SEP, listed in [ChatGPT](chatgpt.md).
 
 Webhook subscriptions need an authenticated caller, so they are offered only when `FORGE_MCP_TOKEN` or `FORGE_MCP_PROXY_TOKEN` is set. Every request to `/mcp` must then carry `Authorization: Bearer <token>`.
 
@@ -32,5 +32,6 @@ Webhook subscriptions need an authenticated caller, so they are offered only whe
 - The HTTP server logs one line to stderr for each subscribe, unsubscribe and delivery attempt, with the callback's status and the time it took, and one line for each tool call by an authenticated caller.
 - `FORGE_MCP_LOG`: a file that gets those lines instead of stderr, plus one line for each event emitted, each `events/poll` that returns events, and each tool call on stdio or HTTP. Use it to see when an event was emitted, when a polling client picked it up, and when the seat acted.
 - `FORGE_MCP_SUBSCRIPTIONS`: a JSON file that keeps subscriptions across restarts. It holds the signing secrets. Without it subscriptions live in memory, last an hour by default (a day at most), and a request for no expiry gets a day.
+- `FORGE_MCP_WEBHOOK_RETRY_MS`: the waits before the second and later attempts of a delivery, in ms, separated by commas. The default is `1000,5000,25000`.
 - `FORGE_MCP_WEBHOOK_INSECURE=1`: allow `http` callbacks and non-public addresses, for a receiver on the same machine.
 - `FORGE_MCP_ALLOWED_HOSTS`: add the public host name the server is reached under.
