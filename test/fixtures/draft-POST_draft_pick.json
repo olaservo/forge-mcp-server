@@ -1,16 +1,16 @@
 {
   "picked": {
-    "name": "White Knight",
+    "name": "Knight Exemplar",
     "set": "M11",
-    "collectorNumber": "39",
-    "rarity": "Uncommon",
-    "manaCost": "{W}{W}",
+    "collectorNumber": "20",
+    "rarity": "Rare",
+    "manaCost": "{1}{W}{W}",
     "type": "Creature - Human Knight",
     "colors": "W",
     "power": "2",
     "toughness": "2",
-    "oracle": "First strike (This creature deals combat damage before creatures without first strike.)\\nProtection from black (This creature can't be blocked, targeted, dealt damage, or enchanted by anything black.)"
+    "oracle": "First strike (This creature deals combat damage before creatures without first strike.)\\nOther Knight creatures you control get +1/+1 and have indestructible. (Damage and effects that say \"destroy\" don't destroy them.)"
   },
-  "packNumber": 3,
-  "pickNumber": 10
+  "packNumber": 2,
+  "pickNumber": 13
 }

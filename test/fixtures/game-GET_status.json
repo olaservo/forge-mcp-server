@@ -1,5 +1,5 @@
 {
-  "revision": 938,
+  "revision": 689,
   "connection": {
     "connected": true,
     "host": "127.0.0.1",
@@ -54,7 +54,7 @@
     "inGame": false,
     "finished": true,
     "prompt": "Waiting for HostAI...",
-    "promptCount": 189,
+    "promptCount": 122,
     "waiting": true,
     "priorityPrompt": false,
     "promptCard": null,
@@ -77,10 +77,22 @@
     "autoPassNow": true
   },
   "chat": [
-    "AgentBot joined the lobby.",
-    "AFK timeout: 5:00",
-    "AgentBot is ready (1/1 players ready)",
-    "AgentBot: gl hf"
+    {
+      "from": null,
+      "text": "AgentBot joined the lobby."
+    },
+    {
+      "from": null,
+      "text": "AFK timeout: 5:00"
+    },
+    {
+      "from": null,
+      "text": "AgentBot is ready (1/1 players ready)"
+    },
+    {
+      "from": "AgentBot",
+      "text": "gl hf"
+    }
   ],
   "chatCount": 4
 }

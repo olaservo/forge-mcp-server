@@ -1,7 +1,7 @@
 {
   "inGame": true,
   "finished": false,
-  "prompt": "Shock (17) - Shock deals 2 damage to any target.\n\nSelect any target",
+  "prompt": "Shock (20) - Shock deals 2 damage to any target.\n\nSelect any target",
   "promptCount": 6,
   "waiting": false,
   "priorityPrompt": false,
@@ -36,7 +36,7 @@
       "exileSize": 0,
       "battlefield": [
         {
-          "id": 38,
+          "id": 30,
           "name": "Mountain",
           "zone": "Battlefield",
           "controller": "AgentBot",
@@ -55,7 +55,7 @@
       "graveyard": [],
       "hand": [
         {
-          "id": 35,
+          "id": 36,
           "name": "Mountain",
           "zone": "Hand",
           "controller": "AgentBot",
@@ -71,8 +71,8 @@
           "text": ""
         },
         {
-          "id": 28,
-          "name": "Mountain",
+          "id": 4,
+          "name": "Shock",
           "zone": "Hand",
           "controller": "AgentBot",
           "tapped": false,
@@ -82,12 +82,12 @@
           "damage": 0,
           "token": false,
           "faceDown": false,
-          "type": "Basic Land - Mountain",
-          "manaCost": "no cost",
-          "text": ""
+          "type": "Instant",
+          "manaCost": "{R}",
+          "text": "Shock deals 2 damage to any target."
         },
         {
-          "id": 29,
+          "id": 25,
           "name": "Mountain",
           "zone": "Hand",
           "controller": "AgentBot",
@@ -119,7 +119,7 @@
           "text": ""
         },
         {
-          "id": 16,
+          "id": 5,
           "name": "Shock",
           "zone": "Hand",
           "controller": "AgentBot",
@@ -142,8 +142,8 @@
       "life": 20,
       "hasPriority": false,
       "isMe": false,
-      "handSize": 7,
-      "librarySize": 33,
+      "handSize": 6,
+      "librarySize": 34,
       "graveyardSize": 0,
       "exileSize": 0,
       "battlefield": [],
