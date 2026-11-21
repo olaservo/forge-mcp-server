@@ -50,7 +50,7 @@ describe("webhook delivery", () => {
     const secret = newSecret();
 
     const listed = (await client.request({ method: "events/list", params: {} }, Any)) as { events: { delivery: string[] }[] };
-    expect(listed.events.map((e) => e.delivery)).toEqual([["poll", "webhook"], ["poll", "webhook"]]);
+    expect(listed.events.map((e) => e.delivery)).toEqual([["poll", "push", "webhook"], ["poll", "push", "webhook"]]);
 
     const sub = (await client.request({ method: "events/subscribe", params: subscribeParams(secret) }, Any)) as unknown as SubscribeResult;
     expect(sub).toMatchObject({ id: subscriptionId("ola", URL_A, YOUR_MOVE, {}), cursor: null, truncated: false });
