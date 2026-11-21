@@ -1,5 +1,5 @@
 {
-  "revision": 497,
+  "revision": 575,
   "connection": {
     "connected": true,
     "host": "127.0.0.1",
@@ -53,8 +53,8 @@
   "game": {
     "inGame": true,
     "finished": false,
-    "prompt": "Priority: AgentBot\nTurn: 12 (AgentBot)\nPhase: Main phase, postcombat\nStack: Empty",
-    "promptCount": 101,
+    "prompt": "Priority: AgentBot\nTurn: 18 (AgentBot)\nPhase: Main phase, postcombat\nStack: Empty",
+    "promptCount": 103,
     "waiting": false,
     "priorityPrompt": true,
     "promptCard": null,
@@ -66,7 +66,7 @@
     },
     "incorrectActions": 0,
     "pendingDecision": {
-      "id": 1,
+      "id": 6,
       "kind": "choices",
       "prompt": "Choose optional costs",
       "options": [
@@ -77,7 +77,7 @@
       "default": null
     },
     "messages": [],
-    "turn": 12,
+    "turn": 18,
     "phase": "MAIN2",
     "activePlayer": "AgentBot",
     "gameOver": false,
@@ -88,10 +88,22 @@
     "autoPassNow": false
   },
   "chat": [
-    "AgentBot joined the lobby.",
-    "AFK timeout: 5:00",
-    "AgentBot is ready (1/1 players ready)",
-    "AgentBot: gl hf"
+    {
+      "from": null,
+      "text": "AgentBot joined the lobby."
+    },
+    {
+      "from": null,
+      "text": "AFK timeout: 5:00"
+    },
+    {
+      "from": null,
+      "text": "AgentBot is ready (1/1 players ready)"
+    },
+    {
+      "from": "AgentBot",
+      "text": "gl hf"
+    }
   ],
   "chatCount": 4
 }

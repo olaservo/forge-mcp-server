@@ -18,8 +18,8 @@
     "kind": "order",
     "prompt": "Move cards to top or bottom of library / Choose the cards to keep on top, the first one topmost. The rest go to the bottom.",
     "options": [
-      "Island (39)",
-      "Island (38)"
+      "Preordain (15)",
+      "Island (34)"
     ],
     "min": 0,
     "max": 2,
@@ -48,7 +48,7 @@
       "exileSize": 0,
       "battlefield": [
         {
-          "id": 30,
+          "id": 36,
           "name": "Island",
           "zone": "Battlefield",
           "controller": "AgentBot",
@@ -67,23 +67,7 @@
       "graveyard": [],
       "hand": [
         {
-          "id": 9,
-          "name": "Preordain",
-          "zone": "Hand",
-          "controller": "AgentBot",
-          "tapped": false,
-          "sick": false,
-          "attacking": false,
-          "blocking": false,
-          "damage": 0,
-          "token": false,
-          "faceDown": false,
-          "type": "Sorcery",
-          "manaCost": "{U}",
-          "text": "Scry 2, then draw a card. (To scry 2, look at the top two cards of your library, then put any number of them on the bottom and the rest on top in any order.) "
-        },
-        {
-          "id": 26,
+          "id": 22,
           "name": "Island",
           "zone": "Hand",
           "controller": "AgentBot",
@@ -97,22 +81,6 @@
           "type": "Basic Land - Island",
           "manaCost": "no cost",
           "text": ""
-        },
-        {
-          "id": 18,
-          "name": "Preordain",
-          "zone": "Hand",
-          "controller": "AgentBot",
-          "tapped": false,
-          "sick": false,
-          "attacking": false,
-          "blocking": false,
-          "damage": 0,
-          "token": false,
-          "faceDown": false,
-          "type": "Sorcery",
-          "manaCost": "{U}",
-          "text": "Scry 2, then draw a card. (To scry 2, look at the top two cards of your library, then put any number of them on the bottom and the rest on top in any order.) "
         },
         {
           "id": 5,
@@ -131,7 +99,23 @@
           "text": "Scry 2, then draw a card. (To scry 2, look at the top two cards of your library, then put any number of them on the bottom and the rest on top in any order.) "
         },
         {
-          "id": 13,
+          "id": 23,
+          "name": "Island",
+          "zone": "Hand",
+          "controller": "AgentBot",
+          "tapped": false,
+          "sick": false,
+          "attacking": false,
+          "blocking": false,
+          "damage": 0,
+          "token": false,
+          "faceDown": false,
+          "type": "Basic Land - Island",
+          "manaCost": "no cost",
+          "text": ""
+        },
+        {
+          "id": 14,
           "name": "Preordain",
           "zone": "Hand",
           "controller": "AgentBot",
@@ -145,6 +129,22 @@
           "type": "Sorcery",
           "manaCost": "{U}",
           "text": "Scry 2, then draw a card. (To scry 2, look at the top two cards of your library, then put any number of them on the bottom and the rest on top in any order.) "
+        },
+        {
+          "id": 30,
+          "name": "Island",
+          "zone": "Hand",
+          "controller": "AgentBot",
+          "tapped": false,
+          "sick": false,
+          "attacking": false,
+          "blocking": false,
+          "damage": 0,
+          "token": false,
+          "faceDown": false,
+          "type": "Basic Land - Island",
+          "manaCost": "no cost",
+          "text": ""
         }
       ]
     },
@@ -154,8 +154,8 @@
       "life": 20,
       "hasPriority": true,
       "isMe": false,
-      "handSize": 7,
-      "librarySize": 53,
+      "handSize": 5,
+      "librarySize": 35,
       "graveyardSize": 0,
       "exileSize": 0,
       "battlefield": [],
@@ -164,10 +164,10 @@
   ],
   "stack": [
     {
-      "id": 609,
+      "id": 720,
       "source": "Preordain",
       "by": "AgentBot",
-      "text": "Preordain (12) - AgentBot scries 2. AgentBot draws a card."
+      "text": "Preordain (17) - AgentBot scries 2. AgentBot draws a card."
     }
   ]
 }

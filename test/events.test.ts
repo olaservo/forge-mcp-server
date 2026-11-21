@@ -102,17 +102,30 @@ describe("events", () => {
 
   it("emits forge.chat for new lines from other players only", () => {
     const chat = new ChatTracker(new EventLog());
+    const seat = { connection: { name: "Claude" } };
+    const host = (text: string) => ({ from: null, text });
+    const old = [host("Claude joined the lobby."), { from: "Ola", text: "before we were watching" }];
+    expect(chat.observe({ ...seat, chat: old, chatCount: 2 })).toEqual([]);
+    expect(chat.observe({ ...seat, chat: old, chatCount: 2 })).toEqual([]);
+    // A name or a line with ": " in it is not split, and a player who is not in a lobby slot is still heard.
+    const lines = [{ from: "Claude", text: "hi" }, { from: "Ola: the host", text: "re: your block" }, host("AFK timeout: 4:00")];
+    const next = chat.observe({ ...seat, revision: 9, chat: [...old, ...lines], chatCount: 5 });
+    expect(next.map((e) => e.data)).toEqual([{ from: "Ola: the host", text: "re: your block", revision: 9 }]);
+    // Twenty identical lines: only the count says two more arrived.
+    const same = Array.from({ length: 20 }, () => ({ from: "Ola", text: "gg" }));
+    expect(chat.observe({ ...seat, chat: same, chatCount: 30 }).length).toBe(20);
+    expect(chat.observe({ ...seat, chat: same, chatCount: 30 })).toEqual([]);
+    expect(chat.observe({ ...seat, chat: same, chatCount: 32 }).map((e) => e.data.text)).toEqual(["gg", "gg"]);
+  });
+
+  it("reads the chat lines of bridge 0.1.4, which are text", () => {
+    const chat = new ChatTracker(new EventLog());
     const seat = { connection: { name: "Claude" }, lobby: { slots: [{ name: "Ola" }, { name: "Claude" }] } };
     const old = ["Claude joined the lobby.", "AFK timeout: 5:00", "Ola: before we were watching"];
     expect(chat.observe({ ...seat, chat: old, chatCount: 3 })).toEqual([]);
     expect(chat.observe({ ...seat, chat: old, chatCount: 3 })).toEqual([]);
     const next = chat.observe({ ...seat, revision: 9, chat: [...old, "Claude: hi", "Ola: do you see this?", "AFK timeout: 4:00"], chatCount: 6 });
     expect(next.map((e) => e.data)).toEqual([{ from: "Ola", text: "do you see this?", revision: 9 }]);
-    // Twenty identical lines: only the count says two more arrived.
-    const same = Array.from({ length: 20 }, () => "Ola: gg");
-    expect(chat.observe({ ...seat, chat: same, chatCount: 30 }).length).toBe(20);
-    expect(chat.observe({ ...seat, chat: same, chatCount: 30 })).toEqual([]);
-    expect(chat.observe({ ...seat, chat: same, chatCount: 32 }).map((e) => e.data.text)).toEqual(["gg", "gg"]);
   });
 
   it("serves events/list and events/poll with cursors", async () => {

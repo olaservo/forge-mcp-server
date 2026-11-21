@@ -26,7 +26,7 @@
     }
   ],
   "event": {
-    "eventId": "0cd56160",
+    "eventId": "70ead0bf",
     "format": "BOOSTER_DRAFT",
     "phase": "LOBBY_GATHER",
     "product": "Block / Set",
@@ -37,13 +37,13 @@
       {
         "name": "HostAI",
         "type": "HUMAN",
-        "seat": 1,
+        "seat": 0,
         "lobbySlot": 0
       },
       {
         "name": "AgentBot",
         "type": "HUMAN",
-        "seat": 0,
+        "seat": 1,
         "lobbySlot": 1
       }
     ]

@@ -109,12 +109,17 @@ export class ChatTracker {
     this.count = status.chatCount ?? 0;
     const added = seen !== undefined && this.count > seen ? (status.chat ?? []).slice(seen - this.count) : [];
     const me = status.connection?.name;
-    const others = new Set((status.lobby?.slots ?? []).map((s) => s.name).filter((n) => n && n !== me));
     const emitted: EventOccurrence[] = [];
     for (const line of added) {
-      const at = line.indexOf(": ");
-      const from = at > 0 ? line.slice(0, at) : "";
-      if (others.has(from)) emitted.push(this.log.emit(CHAT, { from, text: line.slice(at + 2), revision: status.revision }));
+      if (typeof line === "string") {
+        // Bridge 0.1.4 and earlier: `from: text`, so the sender is told from the host's lines by the seat names.
+        const others = new Set((status.lobby?.slots ?? []).map((s) => s.name).filter((n) => n && n !== me));
+        const at = line.indexOf(": ");
+        const from = at > 0 ? line.slice(0, at) : "";
+        if (others.has(from)) emitted.push(this.log.emit(CHAT, { from, text: line.slice(at + 2), revision: status.revision }));
+      } else if (line.from && line.from !== me) {
+        emitted.push(this.log.emit(CHAT, { from: line.from, text: line.text ?? "", revision: status.revision }));
+      }
     }
     return emitted;
   }

@@ -176,13 +176,16 @@ export const Game = z.looseObject({
   actionable: z.array(z.looseObject({ id: num, name: str })).nullish(),
 });
 
+/** `from` is null for a line from the host itself. Before forge-agent-bridge 0.1.5 a line was the text `from: text`. */
+export const ChatLine = z.looseObject({ from: str, text: str });
+
 export const Status = z.looseObject({
   revision: num,
   connection: Connection.nullish(),
   lobby: Lobby.nullish(),
   draft: Draft.nullish(),
   game: Game.nullish(),
-  chat: strings,
+  chat: z.array(z.union([ChatLine, z.string()])).nullish(),
   chatCount: num,
 });
 
