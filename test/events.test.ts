@@ -195,7 +195,8 @@ describe("events", () => {
     got.length = 0;
     const second = open({ cursor: log.cursorAfter(move) });
     await vi.waitFor(() => expect(methods()).toEqual(["notifications/events/active", "notifications/events/event"]));
-    expect(got[1]!.params).toMatchObject({ eventId: missed.eventId });
+    expect(got[0]!.params).toMatchObject({ cursor: log.cursorAfter(move), truncated: false });
+    expect(got[1]!.params).toMatchObject({ eventId: missed.eventId, cursor: log.cursorAfter(missed) });
     second.abort.abort();
     await expect(second.done).rejects.toThrow();
 
