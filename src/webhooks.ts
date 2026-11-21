@@ -162,6 +162,8 @@ interface Subscription {
   failedSince?: string;
   /** Deliveries given up on since the last refresh. */
   abandoned?: number;
+  /** A delivery has succeeded since the last failure, with `abandoned` still to report. */
+  recovered?: boolean;
 }
 
 export interface SubscribeParams {
@@ -182,6 +184,9 @@ export interface SubscribeResult {
   truncated: boolean;
   deliveryStatus?: { active: true; lastDeliveryAt: string | null; lastError: DeliveryErrorReason | null; failedSince?: string; abandoned?: number };
 }
+
+/** The position of an event in the log. */
+const seqOf = (event: EventOccurrence) => Number(event.eventId.slice(event.eventId.lastIndexOf("-") + 1));
 
 /** Reads `FORGE_MCP_WEBHOOK_RETRY_MS`: the waits before the second and later attempts, in ms, separated by commas. */
 export function retryDelays(value: string | undefined): number[] | undefined {
@@ -219,8 +224,13 @@ export class WebhookHub {
   private readonly inFlight = new Set<Promise<void>>();
   /** Per subscription, the deliveries that have failed and are still being retried. */
   private readonly retrying = new Map<string, number>();
-  /** Per subscription, the events not yet delivered or given up on, oldest first. */
+  /** Per subscription, the events not yet delivered or given up on. */
   private readonly pending = new Map<string, Set<EventOccurrence>>();
+  /**
+   * Per subscription id, the position of the oldest abandoned event that no subscribe result has reported.
+   * It outlives the subscription, so a client that resubscribes after a lapse still learns of the gap.
+   */
+  private readonly unreported = new Map<string, number>();
   private readonly events: EventLog;
   private readonly post: WebhookPost;
   private readonly insecure: boolean;
@@ -265,8 +275,7 @@ export class WebhookHub {
     const id = subscriptionId(principal, url, params.name, args);
     const now = this.now();
     this.dropExpired(now);
-    const existing = this.subs.get(id);
-    if (!existing && this.subs.size >= MAX_SUBSCRIPTIONS) {
+    if (!this.subs.has(id) && this.subs.size >= MAX_SUBSCRIPTIONS) {
       throw new ProtocolError(RESOURCE_EXHAUSTED, "ResourceExhausted", { limit: "subscriptions", max: MAX_SUBSCRIPTIONS });
     }
 
@@ -275,6 +284,8 @@ export class WebhookHub {
       await this.verify(id, url, secret);
       this.verified.set(pair, now + VERIFIED_FOR_MS);
     }
+    // Read after the handshake, during which the subscription can be removed or deliveries can fail.
+    const existing = this.subs.get(id);
 
     const lifetime = this.lifetimeMs(params.ttlMs);
     const expiresAt = lifetime === null ? null : now + lifetime;
@@ -284,20 +295,24 @@ export class WebhookHub {
       ? { active: true as const, lastDeliveryAt: sub.lastDeliveryAt ?? null, lastError: sub.lastError ?? null, ...(sub.failedSince ? { failedSince: sub.failedSince } : {}), ...(sub.abandoned ? { abandoned: sub.abandoned } : {}) }
       : undefined;
     // This refresh reports the abandoned deliveries, so the next one starts clean if delivery has worked since.
-    if (sub.abandoned && !this.retrying.get(id) && sub.failedSince && (sub.lastDeliveryAt ?? "") >= sub.failedSince) {
+    if (sub.recovered && !this.retrying.get(id)) {
       sub.lastError = null;
       delete sub.failedSince;
     }
+    delete sub.recovered;
     delete sub.abandoned;
     this.subs.set(id, sub);
     this.save();
     const cursor = params.cursor ?? null;
+    const lost = this.unreported.get(id);
+    this.unreported.delete(id);
     let truncated = false;
     if (existing) {
-      truncated = Boolean(existing.abandoned) || (cursor !== null && !this.events.issued(cursor));
+      truncated = lost !== undefined || (cursor !== null && !this.events.issued(cursor));
     } else if (cursor !== null) {
       const replay = this.events.poll(params.name, cursor, Number.MAX_SAFE_INTEGER, params.maxAgeMs);
-      truncated = replay.truncated;
+      // An abandoned event at or before the cursor is not in the replay.
+      truncated = replay.truncated || (lost !== undefined && Number(cursor.split(":")[1]) >= lost);
       for (const event of replay.events) this.start(sub, event);
     }
     this.log(`webhook ${existing ? "refresh" : "subscribe"} ${id} ${params.name} principal=${principal} expires=${expiresAt === null ? "never" : new Date(expiresAt).toISOString()}`);
@@ -366,7 +381,7 @@ export class WebhookHub {
     for (const sub of this.subs.values()) {
       if (sub.name !== event.name) continue;
       if (oversize) {
-        sub.abandoned = (sub.abandoned ?? 0) + 1;
+        this.abandon(sub, event);
         continue;
       }
       this.start(sub, event);
@@ -386,9 +401,16 @@ export class WebhookHub {
     this.inFlight.add(delivery);
   }
 
+  private abandon(sub: Subscription, event: EventOccurrence): void {
+    sub.abandoned = (sub.abandoned ?? 0) + 1;
+    this.unreported.set(sub.id, Math.min(this.unreported.get(sub.id) ?? Infinity, seqOf(event)));
+  }
+
   /** The position at or before which every event has been delivered to this subscription or given up on. */
   private watermark(id: string, sending?: EventOccurrence): string {
-    const [oldest] = this.pending.get(id) ?? [];
+    let oldest: EventOccurrence | undefined;
+    // A replay can add events older than one already under way, so the set is not in log order.
+    for (const event of this.pending.get(id) ?? []) if (!oldest || seqOf(event) < seqOf(oldest)) oldest = event;
     if (oldest && oldest !== sending) return this.events.cursorBefore(oldest);
     return sending ? this.events.cursorAfter(sending) : this.events.head();
   }
@@ -406,7 +428,7 @@ export class WebhookHub {
       for (let attempt = 0; ; attempt++) {
         // A refresh replaces the stored object, so read it again before and after each attempt.
         const current = this.subs.get(id);
-        if (!current) return;
+        if (!current || (current.expiresAt !== null && current.expiresAt <= this.now())) return;
         const secrets = [current.secret, ...(current.previous && current.previous.until > this.now() ? [current.previous.secret] : [])];
         let error: DeliveryErrorReason;
         let status: number | undefined;
@@ -428,7 +450,10 @@ export class WebhookHub {
           failed = false;
           latest.lastDeliveryAt = new Date(this.now()).toISOString();
           // An earlier event may still be failing, or lost and not yet reported by a refresh.
-          if (!this.retrying.get(id) && !latest.abandoned) {
+          if (this.retrying.get(id)) return;
+          if (latest.abandoned) {
+            latest.recovered = true;
+          } else {
             latest.lastError = null;
             delete latest.failedSince;
           }
@@ -437,10 +462,11 @@ export class WebhookHub {
         if (!failed) retried(1);
         failed = true;
         latest.lastError = error;
+        delete latest.recovered;
         latest.failedSince ??= new Date(this.now()).toISOString();
         const wait = this.retryDelaysMs[attempt];
         if (status === 410 || status === 413 || wait === undefined) {
-          if (status !== 410) latest.abandoned = (latest.abandoned ?? 0) + 1;
+          if (status !== 410) this.abandon(latest, event);
           console.error(`[forge-mcp-server] webhook delivery of ${eventId} to ${id} failed: ${error}`);
           return;
         }

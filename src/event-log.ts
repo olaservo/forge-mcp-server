@@ -54,9 +54,11 @@ export class EventLog {
     return event.eventId.replace(/-(\d+)$/, (_, seq) => `:${Number(seq) - 1}`);
   }
 
-  /** Whether this process issued `cursor`. */
+  /** Whether `cursor` is a position in this process's log, retained or not. */
   issued(cursor: string): boolean {
-    return cursor.startsWith(`${this.epoch}:`);
+    const [epoch, raw] = cursor.split(":");
+    const seq = Number(raw);
+    return epoch === this.epoch && Number.isInteger(seq) && seq >= 0 && seq <= this.seq;
   }
 
   /** Calls `listener` after a poll without a cursor, which is a client starting to follow `name`. */
@@ -75,7 +77,8 @@ export class EventLog {
 
   poll(name: string, cursor: string | null | undefined, maxEvents = 100, maxAgeMs?: number): PollResult {
     const head = this.head();
-    const floor = maxAgeMs === undefined ? "" : new Date(Date.now() - maxAgeMs).toISOString();
+    // Held to the range a Date can represent
+    const floor = maxAgeMs === undefined ? "" : new Date(Math.min(8.64e15, Math.max(0, Date.now() - maxAgeMs))).toISOString();
     const fresh = { events: [], cursor: head, hasMore: false, nextPollMs: POLL_MS };
     if (cursor == null) {
       // After this poll's cursor is taken, so an event a listener emits reaches the new client
