@@ -46,7 +46,7 @@ describe("the Worker's forward", () => {
 
   it("reaches a server that takes the proxy token", async () => {
     const server = listenHttp({ bridge: fakeBridge({}).bridge, skills: await skillCatalog(), events: new EventLog(), port: 0, proxyToken: "pr0xy", webhooks: new WebhookHub(new EventLog(), { insecure: true }) });
-    await new Promise((resolve) => setTimeout(resolve, 50));
+    expect(await server.listening).toBe(true);
     const call = (token: string) =>
       forward(
         new Request("https://seat.example.com/mcp", {

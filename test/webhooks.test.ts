@@ -204,7 +204,7 @@ describe("webhook delivery", () => {
     const log = new EventLog();
     const hub = new WebhookHub(log, { insecure: true });
     const server = listenHttp({ bridge: fakeBridge({}).bridge, skills: await skillCatalog(), events: log, port: 0, token: "s3cret", webhooks: hub });
-    await new Promise((resolve) => setTimeout(resolve, 50));
+    expect(await server.listening).toBe(true);
     const rpc = async (method: string, params: unknown, token?: string, extra: Record<string, string> = {}) => {
       const res = await fetch(`http://127.0.0.1:${server.port()}/mcp`, {
         method: "POST",
@@ -256,7 +256,7 @@ describe("webhook delivery", () => {
     const log = new EventLog();
     const hub = new WebhookHub(log, { insecure: true });
     const server = listenHttp({ bridge: fakeBridge({}).bridge, skills: await skillCatalog(), events: log, port: 0, proxyToken: "pr0xy", webhooks: hub });
-    await new Promise((resolve) => setTimeout(resolve, 50));
+    expect(await server.listening).toBe(true);
     const callback = createHttpServer((req, res) => {
       let body = "";
       req.on("data", (chunk) => (body += chunk));
