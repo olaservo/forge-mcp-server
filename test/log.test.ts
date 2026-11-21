@@ -22,7 +22,7 @@ describe("the activity log", () => {
     const events = new EventLog();
     logEmitted(events, log);
     const skills = await skillCatalog();
-    const { bridge } = fakeBridge({ "GET /game/log": { lines: [] } });
+    const { bridge } = fakeBridge({ "GET /game/log": { log: [] } });
     const handler = createMcpHandler(() => createServer({ bridge, skills, events, log }));
     const client = new Client({ name: "test", version: "0.0.0" }, { versionNegotiation: { mode: "auto" } });
     await client.connect(new StreamableHTTPClientTransport(new URL("http://test.local/mcp"), { fetch: (url, init) => handler.fetch(new Request(url, init)) }));

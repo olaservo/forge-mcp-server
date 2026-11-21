@@ -102,16 +102,22 @@ export function listenHttp({ bridge, skills, events, port, ...opts }: HttpOption
     }
     void nodeHandler(Object.assign(req, { auth }), res);
   });
+  let settle: (listening: boolean) => void;
+  const listening = new Promise<boolean>((resolve) => (settle = resolve));
   // A port that is already taken (another session's server) must not take the stdio server down with it.
   http.on("error", (err: NodeJS.ErrnoException) => {
     console.error(`forge-mcp-server: no HTTP endpoint on ${host}:${port} (${err.code ?? err.message}); events over HTTP are unavailable in this process`);
+    settle(false);
   });
   http.listen(port, host, () => {
     const mode = token || proxyToken ? "bearer token required" : "no authentication";
     console.error(`forge-mcp-server on http://${host}:${(http.address() as AddressInfo).port}/mcp (${mode}); bridge at ${bridge.url}`);
+    settle(true);
   });
 
   return {
+    /** Resolves once the port is open, or with false when it could not be opened. */
+    listening,
     statusChanged: () => bus.publish({ kind: "resource_updated", uri: STATUS_URI }),
     /** The port in use, once listening. */
     port: () => (http.address() as AddressInfo).port,

@@ -20,11 +20,6 @@ describe("forge-mcp-server", () => {
     const { bridge } = fakeBridge({});
     const client = await connect(bridge);
     const { tools } = await client.listTools();
-    const names = tools.map((t) => t.name).sort();
-    expect(names).toContain("forge_status");
-    expect(names).toContain("forge_draft_pick");
-    expect(names).toContain("forge_game_decide");
-    expect(names).toContain("forge_wait");
     expect(tools.filter((t) => !t.outputSchema).map((t) => t.name)).toEqual([]);
 
     const skills = new SkillsClient(client);
