@@ -1,5 +1,6 @@
 #!/usr/bin/env node
-// Fetches one deck from each supported deck site and checks it against the cards Forge implements.
+// Fetches one deck from each supported deck site and checks it against the cards Forge implements,
+// then runs one search on each site forge_deck_search uses.
 // Run `npm run build` first. FORGE_HOME must point at a Forge install.
 //
 //   node scripts/check-deck-sites.mjs                 the sample decks below
@@ -11,6 +12,7 @@ import { mkdirSync, writeFileSync } from "node:fs";
 import { join } from "node:path";
 import { toDck } from "../dist/decks/decklist.js";
 import { DeckLibrary, fileName, forgeDirs } from "../dist/decks/library.js";
+import { searchDecks } from "../dist/decks/search.js";
 import { fetchDeck, SITES } from "../dist/decks/sites.js";
 
 const SAMPLES = [
@@ -21,6 +23,12 @@ const SAMPLES = [
   "https://mtgtop8.com/event?e=93717&d=911751&f=MO",
   "https://mtgdecks.net/Modern/boros-energy-decklist-by-forcato-3173421",
   "https://cubecobra.com/cube/overview/modovintage",
+];
+
+const SEARCHES = [
+  ["MTGTop8", "burn", "modern"],
+  ["AetherHub", "burn", "modern"],
+  ["EDHREC", "atraxa infect", "commander"],
 ];
 
 const args = process.argv.slice(2);
@@ -58,4 +66,14 @@ for (const url of urls) {
   }
 }
 for (const site of SITES.filter((s) => !s.fetch)) console.log(`text ${site.name}: no fetch, pass the deck's text export`);
+
+// One search per site that has one. Skipped when URLs were given.
+if (args.length === 0) {
+  for (const [site, query, format] of SEARCHES) {
+    const [found] = (await searchDecks({ query, format, site, limit: 3 })).sites;
+    const first = found.results[0];
+    if (!first) failed++;
+    console.log(`${first ? "ok  " : "FAIL"} ${site.padEnd(11)} search "${query}"  ${first ? `${found.results.length} results, first: ${first.name}  ${first.url}` : found.note ?? "no results"}`);
+  }
+}
 process.exit(failed ? 1 : 0);

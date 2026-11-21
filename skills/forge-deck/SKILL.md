@@ -1,15 +1,16 @@
 ---
 name: forge-deck
-description: Choose a deck for a Forge lobby from Forge's own deck folders, and bring new decks into Forge from deck sites or pasted lists through forge_decks and forge_deck_save. Use when a lobby needs a deck and none was named, when asked what decks are available, or when asked to find, import, download, convert or save a deck or cube for Forge.
+description: Choose a deck for a Forge lobby from Forge's own deck folders, find decks on deck sites with forge_deck_search, and bring new decks into Forge from deck sites or pasted lists through forge_decks and forge_deck_save. Use when a lobby needs a deck and none was named, when asked what decks are available, or when asked to find, import, download, convert or save a deck or cube for Forge.
 ---
 
 # Decks for a Forge seat
 
-Forge keeps decks as `.dck` files in folders on the machine the server runs on. Three tools work on them and none needs a connection to a host:
+Forge keeps decks as `.dck` files in folders on the machine the server runs on. Four tools work with them and none needs a connection to a host:
 
 - `forge_decks` lists and reads decks.
 - `forge_lobby_deck` with a deck `id` brings one to the lobby.
 - `forge_deck_save` writes a new deck into the right folder, from a deck page URL or from text.
+- `forge_deck_search` finds decks on deck sites and returns URLs for `forge_deck_save`.
 
 ## Choosing a deck for the lobby
 
@@ -61,7 +62,15 @@ Sets are kept when the source names one that Forge knows, so the deck shows the 
 | Cube Cobra | `https://cubecobra.com/cube/overview/<id>` | Saved as a cube with a draft definition |
 | MTGGoldfish, TappedOut | none | They turn away requests that do not come from a browser. Ask the player to open the deck, use the site's download or export, and paste the text. Pass that as `text`. |
 
-To find a deck, search the web for the archetype and a site name, show the player a few links, and save the one they choose. For any other site, get the deck as text.
+### Finding a deck
+
+Try these in order, and stop at the first that finds what the player asked for:
+
+1. `forge_deck_search` with a `query` and, when known, a `format`. It searches MTGTop8 (tournament lists by deck name), AetherHub (by deck name) and EDHREC (a commander, with a theme after the name: `atraxa infect`). When no deck name matches, MTGTop8 and AetherHub return decks that play a card of that name. Each site answers in its own order, and a site with a `note` and no results was skipped or did not answer. A MTGTop8 search can take a few seconds because the server spaces its requests.
+2. Browser tools, when your client has them. Open the search page of a site in the table above, or of MTGGoldfish or TappedOut, and search there. This is the way to Moxfield, Archidekt, MTGDecks and Cube Cobra, which `forge_deck_search` leaves out. For a site in the table, take the deck page's URL. For MTGGoldfish and TappedOut, open the deck's text export, copy it and pass it as `text`.
+3. Web search for the archetype and a site name.
+
+Show the player a few results with the name, the site and what the result says about the deck (event and place, date, colours), and save the one they choose with `forge_deck_save`. An AetherHub result's URL may carry only a number, so pass the result's `name` as `name` when saving it. For any other site, get the deck as text.
 
 The server reads the data these sites' own pages load, one or two requests per deck. None of it is a documented API. If a site starts answering with an error, fall back to pasted text.
 

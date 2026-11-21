@@ -6,6 +6,7 @@ import { InMemoryServerEventBus, createMcpHandler } from "@modelcontextprotocol/
 import { PNG } from "pngjs";
 import { Bridge } from "../src/bridge.js";
 import { DeckLibrary, type ForgeDirs } from "../src/decks/library.js";
+import type { SearchIo } from "../src/decks/search.js";
 import type { EventLog } from "../src/event-log.js";
 import { createServer, skillCatalog } from "../src/server.js";
 import type { WebhookHub } from "../src/webhooks.js";
@@ -13,6 +14,9 @@ import type { WebhookHub } from "../src/webhooks.js";
 /** Stands in for the name generator: three names for a known type, blank lines for any other. */
 export const generatedNames = async (url: string): Promise<string> =>
   new URL(url).searchParams.get("type") === "Goblin Female" ? "\n\n\n" : "Aporphus\nKyria\nTosiasat\n";
+
+/** Stands in for the deck sites: every search finds nothing. */
+export const noDecksFound: SearchIo = { get: async () => "[]", sleep: async () => {} };
 
 /** A fake Forge bridge: records calls and answers with canned JSON keyed by `METHOD /path`. */
 export function fakeBridge(responses: Record<string, unknown>) {
@@ -80,7 +84,7 @@ export async function connect(
 ) {
   const skills = await skillCatalog();
   const factory = (ctx: { authInfo?: { clientId: string } }) =>
-    createServer({ bridge, skills, events, webhooks: webhooks?.hub, principal: ctx.authInfo?.clientId, decks, names: generatedNames });
+    createServer({ bridge, skills, events, webhooks: webhooks?.hub, principal: ctx.authInfo?.clientId, decks, names: generatedNames, deckSearch: noDecksFound });
   const handler = createMcpHandler(factory, bus ? { bus } : {});
   const authInfo = webhooks?.principal ? { token: "test", clientId: webhooks.principal, scopes: [] } : undefined;
   const transport = new StreamableHTTPClientTransport(new URL("http://test.local/mcp"), {

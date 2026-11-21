@@ -3,6 +3,7 @@ import { z } from "zod";
 import { avatarPage, avatarSheetPath, AVATARS_PER_PAGE } from "../avatars.js";
 import { Bridge } from "../bridge.js";
 import { sharedLibrary, type DeckLibrary } from "../decks/library.js";
+import type { SearchIo } from "../decks/search.js";
 import type { ActivityLog } from "../log.js";
 import type { GetText } from "../names.js";
 import * as out from "../schemas.js";
@@ -27,6 +28,7 @@ export function registerTools(
   log?: ActivityLog,
   decks: DeckLibrary = sharedLibrary(),
   names?: GetText,
+  deckSearch?: SearchIo,
 ): void {
   /** Registers a tool and logs each call. */
   const tool: RegisterTool = <In extends z.ZodType>(name: string, config: ToolConfig<In>, handler: (args: z.output<In>) => Promise<CallToolResult>) => {
@@ -184,7 +186,7 @@ export function registerTools(
     async ({ id, name, dck }) => run(async () => bridge.post("/lobby/deck", id ? { dck: decks.read(id).dck } : { name, dck })),
   );
 
-  registerDeckTools(tool, decks);
+  registerDeckTools(tool, decks, deckSearch);
   registerNameTools(tool, names);
 
   tool(

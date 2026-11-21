@@ -1,6 +1,6 @@
 # Decks
 
-`forge_decks` lists the decks in Forge's folders on the server's machine, and `forge_lobby_deck` takes a deck `id` from that list. `forge_deck_save` writes a new deck into the folder it belongs in. The three tools read and write files and do not need the bridge. The `forge-deck` skill tells an agent how to use them.
+`forge_decks` lists the decks in Forge's folders on the server's machine, and `forge_lobby_deck` takes a deck `id` from that list. `forge_deck_save` writes a new deck into the folder it belongs in, and `forge_deck_search` finds decks on deck sites to save. The four tools do not need the bridge. The `forge-deck` skill tells an agent how to use them.
 
 ## Folders
 
@@ -30,4 +30,18 @@ Each was checked on 2026-11-13 by fetching one public deck, converting it and lo
 
 MTGGoldfish and TappedOut answered 403 with a Cloudflare challenge to every request tried, so the tool asks for the deck's text export instead. Moxfield, AetherHub and MTGDecks answered 403 to Node's `fetch` and 200 to `node:https` with the same headers, so the fetcher uses `node:https`. None of these endpoints is a documented API. The fetcher sends one or two requests per deck, to these hosts only, over HTTPS.
 
-`FORGE_HOME=<forge folder> npm run check:decks` repeats the check against the live sites: it fetches a sample deck from each and reports any card Forge does not have. `--out <dir>` also writes the converted `.dck` files.
+`FORGE_HOME=<forge folder> npm run check:decks` repeats the check against the live sites: it fetches a sample deck from each and reports any card Forge does not have, then runs one search on each site below. `--out <dir>` also writes the converted `.dck` files.
+
+## Searching
+
+`forge_deck_search` asks the sites that have a search and returns each site's results in the site's own order, with a URL `forge_deck_save` takes. It saves nothing. `FORGE_DECKS_READONLY=1` leaves it out along with `forge_deck_save`, so that setting stops every request to the deck sites.
+
+| Site | Request | Matches |
+|---|---|---|
+| MTGTop8 | `GET mtgtop8.com/search?deck_titre=<query>&format=<code>` | Deck name. When none matches, `cards=<query>` for decks that play the card |
+| AetherHub | `POST aetherhub.com/Meta/FetchMetaListAdv?formatId=<n>` with the body its deck table sends | Deck name, updated in the last 365 days. The site also matches user names, and those results are dropped. When none is left, decks that play the card |
+| EDHREC | `GET edhrec.com/api/typeahead/?q=<query>`, then `json.edhrec.com/pages/commanders/<commander>.json` for a theme | Commander name, with up to two trailing words read as a theme of the first commander found |
+
+Each answered a request from `node:https` on 2026-11-21. None is a documented API. `mtgtop8.com/robots.txt` sets `Crawl-delay: 5`, so a MTGTop8 search request waits until 5 seconds after the one before it. A search sends one to three requests per site. An AetherHub request for fewer than 5 rows came back empty, so the server asks for the site's page size of 40 and cuts the list.
+
+The other sites `forge_deck_save` reads are not searched. Archidekt's terms forbid automated searches. Cube Cobra's `robots.txt` disallows `/search`. Moxfield's terms page needs a browser and has not been read. MTGDecks has no text search for decks. The `forge-deck` skill sends an agent to a browser or to web search for those.
