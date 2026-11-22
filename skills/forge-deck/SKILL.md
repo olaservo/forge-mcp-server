@@ -26,7 +26,7 @@ When nobody named a deck, pick one that fits the lobby and say in chat which one
 | Constructed | `constructed`, `precons`, `quest-duels`, and `net` when asked for | 60 main |
 | Commander | `commander`, `commander-precons` | 99 main and a commander |
 | Brawl, Oathbreaker, Tiny Leaders | the folder of that name | |
-| Limited | none: `forge_lobby_deck` with no arguments plays the pool you drafted | 40 main |
+| Limited | none: `forge_draft_deck` builds the deck from the pool you drafted | 40 main |
 
 A `network-events` deck is a draft or sealed pool. Forge delivers a pool with every card in the sideboard, so `main` is 0 until a deck has been built from it. `draft` holds one folder per local draft, with `human` and the AI decks. `quest-duels` are Forge's quest opponents and vary a lot in strength; their `description` says what they do.
 
