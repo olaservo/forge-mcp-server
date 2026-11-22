@@ -20,7 +20,7 @@ Report once per problem, not once per failed call. Finish the game or draft firs
 
 Title: `[agent feedback] ` and one line naming the problem, for example `[agent feedback] forge_draft_pick reports a pick that the pack does not show`.
 
-Body, with every heading kept and "Not known" where you have nothing:
+Body, from the repo's issue template `.github/ISSUE_TEMPLATE/agent-feedback.md`, with every heading kept and "Not known" where you have nothing:
 
 ```markdown
 Filed by an agent with the forge-feedback skill.
@@ -64,10 +64,10 @@ gh issue create --repo olaservo/forge-mcp-server --title "<title>" --body-file <
 
 With a GitHub MCP server: its issue search, then its issue-creating tool (`issue_write` with method `create` in GitHub's own server) with owner `olaservo`, repo `forge-mcp-server`, the title and the body.
 
-With neither, give the user this link with the title filled in, and the body to paste:
+With neither, give the user this link, which opens the issue template with the title filled in, and the body to paste over the template:
 
 ```
-https://github.com/olaservo/forge-mcp-server/issues/new?title=<title, URL-encoded>
+https://github.com/olaservo/forge-mcp-server/issues/new?template=agent-feedback.md&title=<title, URL-encoded>
 ```
 
 Tell the user the issue's URL once it is filed.
