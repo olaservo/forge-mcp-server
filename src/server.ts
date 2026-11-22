@@ -35,6 +35,8 @@ export interface CreateServerOptions {
   skills?: SkillCatalog;
   /** Shared across server instances so every request polls the same log. */
   events?: EventLog;
+  /** Whether this process serves `/mcp` over HTTP, where a client can poll `events`. Default: it does not. */
+  servesHttp?: () => boolean;
   /** Webhook subscriptions, shared like `events`. Without it the event types offer poll only. */
   webhooks?: WebhookHub;
   /** The authenticated caller of the request this instance serves. */
@@ -53,6 +55,7 @@ export interface CreateServerOptions {
 
 export function createServer(opts: CreateServerOptions = {}): McpServer {
   const bridge = opts.bridge ?? new Bridge();
+  const events = opts.events ?? new EventLog();
   const server = new McpServer(SERVER_INFO, {
     // subscribe: lets subscriptions/listen honour resourceSubscriptions for forge://status
     // extensions: MCP Events (SEP-3415), declared through extension negotiation
@@ -72,8 +75,8 @@ export function createServer(opts: CreateServerOptions = {}): McpServer {
       "Otherwise call forge_wait instead of polling, or subscribe to forge://status through subscriptions/listen.",
   });
 
-  registerTools(server, bridge, opts.log, opts.decks, opts.names, opts.deckSearch, opts.host);
-  registerEvents(server, opts.events ?? new EventLog(), opts.webhooks && { hub: opts.webhooks, principal: opts.principal }, opts.log);
+  registerTools(server, bridge, opts.log, opts.decks, opts.names, opts.deckSearch, opts.host, () => ({ source: events.source, http: opts.servesHttp?.() ?? false }));
+  registerEvents(server, events, opts.webhooks && { hub: opts.webhooks, principal: opts.principal }, opts.log);
 
   server.registerResource(
     "status",

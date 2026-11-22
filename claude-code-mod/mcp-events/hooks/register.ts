@@ -32,6 +32,8 @@ const seen = new Set<string>()
 const held = new Map<string, Occurrence>()
 /** Event names whose poll came back truncated. */
 const missed = new Set<string>()
+/** What the session's own server said of its events in its status tool: the prefix of its event ids, and whether the polled endpoint can be its own. */
+let own: { source: string; http: boolean } | undefined
 
 const storeKey = (url: string, name: string) => `mcp-events:cursor:${url}:${name}`
 
@@ -85,6 +87,22 @@ function standingNote(server: string, names: readonly string[], waitTools: reado
   ].join('\n')
 }
 
+/** The `events` object in a status tool's result, which carries the tool's JSON as structuredContent or as text. */
+function eventsOf(result: unknown, text: string | undefined): { source: string; http: boolean } | undefined {
+  const record = result as { structuredContent?: { events?: unknown }; events?: unknown } | null | undefined
+  let events = record?.structuredContent?.events ?? record?.events
+  for (const json of [text, result]) {
+    if (events !== undefined || typeof json !== 'string') continue
+    try {
+      events = (JSON.parse(json) as { events?: unknown } | null)?.events
+    } catch {
+      // Not JSON: an error text
+    }
+  }
+  const { source, http } = (events ?? {}) as { source?: unknown; http?: unknown }
+  return typeof source === 'string' && source ? { source, http: http === true } : undefined
+}
+
 /** Starts a turn. Not awaited: the prompt runs once the session is idle, and a command.run hook may not wait on it. */
 function submit($: EngineInterface, text: string) {
   $.prompt.submit({ text }).catch((err: unknown) => {
@@ -110,7 +128,7 @@ function flush($: EngineInterface, server: string, superseded: readonly string[]
   held.clear()
 }
 
-async function pollOne($: EngineInterface, url: string, sub: Subscription) {
+async function pollOne($: EngineInterface, url: string, sub: Subscription, ownOnly: boolean) {
   let hasMore = true
   while (hasMore) {
     const res = await rpc<PollResult>($, url, 'events/poll', { name: sub.name, arguments: {}, cursor: sub.cursor, maxAgeMs: MAX_AGE_MS })
@@ -121,12 +139,16 @@ async function pollOne($: EngineInterface, url: string, sub: Subscription) {
       else await $.store.set(storeKey(url, sub.name), cursor)
     }
     // A stale cursor on the first poll is a restart of either side: nothing this session was missed.
-    if (res.truncated && sub.hasPolled) missed.add(sub.name)
+    if (res.truncated && sub.hasPolled && (!ownOnly || own?.http)) missed.add(sub.name)
+    // The session's server may have restarted with another id prefix: its status tool is read again.
+    if (res.truncated && sub.hasPolled && own?.http) own = undefined
     // A truncated poll usually means the server restarted, possibly with other event types.
     if (res.truncated) listAt = 0
     sub.hasPolled = true
     for (const event of res.events) {
       if (seen.has(event.eventId)) continue
+      // Another session's server may own the endpoint, and its events are for that session.
+      if (ownOnly && !(own && event.eventId.startsWith(own.source))) continue
       seen.add(event.eventId)
       held.set(event.name, event)
     }
@@ -135,7 +157,7 @@ async function pollOne($: EngineInterface, url: string, sub: Subscription) {
   }
 }
 
-async function tick($: EngineInterface, url: string, wanted: readonly string[]) {
+async function tick($: EngineInterface, url: string, wanted: readonly string[], ownOnly: boolean) {
   if (isTicking) return
   isTicking = true
   try {
@@ -149,7 +171,7 @@ async function tick($: EngineInterface, url: string, wanted: readonly string[]) 
       subscriptions = await subscribe($, url, wanted, subscriptions)
     }
     for (const sub of subscriptions) {
-      if (Date.now() >= sub.nextAt) await pollOne($, url, sub)
+      if (Date.now() >= sub.nextAt) await pollOne($, url, sub, ownOnly)
     }
     lastError = undefined
   } catch (err) {
@@ -173,17 +195,21 @@ export const register: Register = (on, options) => {
   // call returns no game state, and counting it dropped an event the model had not seen.
   const stateTools = list(options.stateTools, 'forge_status,forge_wait,forge_game_state,forge_game_act,forge_game_decide')
   const waitTools = list(options.waitTools, 'forge_wait')
+  const ownOnly = String(options.ownOnly ?? true) !== 'false'
+  const statusTool = String(options.statusTool ?? 'forge_status')
 
   on('prompt.compose', async ($, e, next) => {
     const composed = await next(e)
     if (!subscriptions?.length) return composed
+    // A session whose server does not own the endpoint is not woken, and keeps its wait tool.
+    if (ownOnly && !own?.http) return composed
     const text = standingNote(server, subscriptions.map(s => s.name), waitTools)
     return { sections: [...composed.sections, { id: 'mcp-events:standing', text, scope: 'session' as const }] }
   })
 
   on('session.start', async ($, e, next) => {
     await $.command.register({ name: 'mcp-events', description: 'Poll MCP events now and show the subscriptions' })
-    $.clock.every(POLL_FLOOR_MS, () => void tick($, url, wanted).then(() => flush($, server, superseded)))
+    $.clock.every(POLL_FLOOR_MS, () => void tick($, url, wanted, ownOnly).then(() => flush($, server, superseded)))
     return next(e)
   })
 
@@ -191,6 +217,7 @@ export const register: Register = (on, options) => {
     const result = await next(e)
     const tool = String(e.tool)
     if (tool.startsWith(toolPrefix) && stateTools.includes(tool.slice(toolPrefix.length))) lastToolAt = Date.now() - TOOL_MARGIN_MS
+    if (tool === toolPrefix + statusTool && result.deny === undefined && result.isError !== true) own = eventsOf(result.result, result.text) ?? own
     return result
   })
 
@@ -210,11 +237,12 @@ export const register: Register = (on, options) => {
   on('command.run', { command: 'mcp-events' }, async $ => {
     for (const sub of subscriptions ?? []) sub.nextAt = 0
     listAt = 0
-    await tick($, url, wanted)
+    await tick($, url, wanted, ownOnly)
     if (lastError) return { text: `MCP events at ${url}: ${lastError}` }
     if (!subscriptions?.length) return { text: `MCP events at ${url}: the server lists no events with poll delivery.` }
+    const whose = !ownOnly ? [] : [own ? `  own events only: ids from ${own.source}${own.http ? '' : `, which ${statusTool} says are not served over HTTP`}` : `  own events only: none until ${statusTool} has been called`]
     return {
-      text: [`MCP events at ${url}, ${fired} fired this session, ${held.size} waiting:`, ...subscriptions.map(s => `  ${s.name}  cursor ${s.cursor ?? 'none'}`)].join('\n'),
+      text: [`MCP events at ${url}, ${fired} fired this session, ${held.size} waiting:`, ...subscriptions.map(s => `  ${s.name}  cursor ${s.cursor ?? 'none'}`), ...whose].join('\n'),
     }
   })
 }

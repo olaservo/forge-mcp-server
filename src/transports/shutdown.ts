@@ -1,5 +1,5 @@
 /**
- * Runs `stop` and exits on SIGINT or SIGTERM, and with `stdin` also when the client closes the pipe.
+ * Runs `stop` and exits on SIGINT, SIGTERM or SIGHUP, and with `stdin` also when the client closes the pipe.
  * `stop` ends the bridge this process spawned, which would otherwise outlive it.
  */
 export function exitOn(stop: () => void, { stdin = false } = {}): void {
@@ -12,5 +12,6 @@ export function exitOn(stop: () => void, { stdin = false } = {}): void {
   };
   process.on("SIGINT", exit);
   process.on("SIGTERM", exit);
+  process.on("SIGHUP", exit);
   if (stdin) process.stdin.on("end", exit).on("close", exit);
 }

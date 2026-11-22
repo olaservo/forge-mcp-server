@@ -72,7 +72,7 @@ export function listenHttp({ bridge, skills, events, port, ...opts }: HttpOption
     (token || proxyToken ? new WebhookHub(events, { file: process.env.FORGE_MCP_SUBSCRIPTIONS, insecure: process.env.FORGE_MCP_WEBHOOK_INSECURE === "1", retryDelaysMs: retryDelays(process.env.FORGE_MCP_WEBHOOK_RETRY_MS), log }) : undefined);
   const tokenAuth: AuthInfo | undefined = token ? { token, clientId: `token:${digest(token).toString("hex").slice(0, 8)}`, scopes: [] } : undefined;
   const bus = new InMemoryServerEventBus((e) => console.error(`[forge-mcp-server] ${e.message}`));
-  const handler = createMcpHandler((ctx) => createServer({ bridge, skills, events, webhooks, principal: ctx.authInfo?.clientId, log: ctx.authInfo ? log : toFile }), { bus });
+  const handler = createMcpHandler((ctx) => createServer({ bridge, skills, events, servesHttp: () => true, webhooks, principal: ctx.authInfo?.clientId, log: ctx.authInfo ? log : toFile }), { bus });
   const nodeHandler = toNodeHandler({ fetch: async (request, options) => (await eventNameMismatch(request)) ?? handler.fetch(request, options) });
   const guard = hostHeaderValidation(allowedHosts);
 
@@ -111,7 +111,7 @@ export function listenHttp({ bridge, skills, events, port, ...opts }: HttpOption
   });
   http.listen(port, host, () => {
     const mode = token || proxyToken ? "bearer token required" : "no authentication";
-    console.error(`forge-mcp-server on http://${host}:${(http.address() as AddressInfo).port}/mcp (${mode}); bridge at ${bridge.url}`);
+    console.error(`forge-mcp-server on http://${host}:${(http.address() as AddressInfo).port}/mcp (${mode}); bridge at ${bridge.place}`);
     settle(true);
   });
 

@@ -30,6 +30,11 @@ export class EventLog {
 
   constructor(private readonly capacity = 1000) {}
 
+  /** What every event id of this process starts with. */
+  get source(): string {
+    return this.epoch;
+  }
+
   /** Calls `listener` with each event as it is emitted. Returns a function that stops it. */
   onEmit(listener: (event: EventOccurrence) => void): () => void {
     this.listeners.push(listener);

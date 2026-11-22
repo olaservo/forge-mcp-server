@@ -1,4 +1,5 @@
 import { spawn, type ChildProcess } from "node:child_process";
+import { createServer, type AddressInfo } from "node:net";
 import { delimiter } from "node:path";
 
 /**
@@ -6,7 +7,7 @@ import { delimiter } from "node:path";
  * with a loopback JSON API. One bridge is one seat.
  */
 export interface BridgeOptions {
-  /** Base URL of a running bridge. Default http://127.0.0.1:36744 */
+  /** Base URL of a bridge other processes may use too. Default: FORGE_BRIDGE_URL. With neither, this process spawns a bridge of its own on a free loopback port. */
   baseUrl?: string;
   /** Path to the Forge desktop jar-with-dependencies. Default: FORGE_JAR. */
   jar?: string;
@@ -17,6 +18,22 @@ export interface BridgeOptions {
   /** JVM args for the spawned bridge. Default: `-Xmx2048m`. */
   javaArgs?: string[];
   fetch?: typeof fetch;
+  /** Picks the port for a bridge of its own. Default: a free loopback port. */
+  freePort?: () => Promise<number>;
+  /** Starts the Java process. Default: `spawn` from node:child_process. */
+  spawn?: typeof spawn;
+}
+
+/** A loopback port that is free now. */
+function freePort(): Promise<number> {
+  return new Promise((resolve, reject) => {
+    const probe = createServer();
+    probe.once("error", reject);
+    probe.listen(0, "127.0.0.1", () => {
+      const { port } = probe.address() as AddressInfo;
+      probe.close(() => resolve(port));
+    });
+  });
 }
 
 /**
@@ -38,21 +55,40 @@ export class BridgeError extends Error {
 }
 
 export class Bridge {
-  private readonly baseUrl: string;
+  /** Unset until a bridge of its own has been spawned. */
+  private baseUrl?: string;
+  /** Whether the bridge is this process's alone, on a port chosen when it is spawned. */
+  private readonly own: boolean;
   private readonly fetchImpl: typeof fetch;
   private child?: ChildProcess;
   private starting?: Promise<"already-running" | "started" | "not-configured">;
 
   constructor(private readonly opts: BridgeOptions = {}) {
-    this.baseUrl = (opts.baseUrl ?? process.env.FORGE_BRIDGE_URL ?? "http://127.0.0.1:36744").replace(/\/$/, "");
+    this.baseUrl = (opts.baseUrl ?? process.env.FORGE_BRIDGE_URL)?.replace(/\/$/, "");
+    this.own = this.baseUrl === undefined;
     this.fetchImpl = opts.fetch ?? fetch;
   }
 
-  get url(): string {
+  /** The bridge's base URL. Undefined while a bridge of its own has not been spawned. */
+  get url(): string | undefined {
     return this.baseUrl;
   }
 
+  /** Where the bridge is, for a log line. */
+  get place(): string {
+    return this.baseUrl ?? "a port of its own, chosen when it starts";
+  }
+
+  private notReachable(why: string): BridgeError {
+    return new BridgeError(
+      `Forge bridge not reachable at ${this.place} (${why}). ` +
+        `Set FORGE_JAR, FORGE_BRIDGE_JAR and FORGE_HOME so this server can start it, ` +
+        `or start it yourself as the forge-agent-bridge README describes and set FORGE_BRIDGE_URL.`,
+    );
+  }
+
   async get<T = unknown>(path: string, query?: Record<string, string | number | undefined>): Promise<T> {
+    if (!this.baseUrl) throw this.notReachable("not started");
     const u = new URL(this.baseUrl + path);
     for (const [k, v] of Object.entries(query ?? {})) {
       if (v !== undefined) u.searchParams.set(k, String(v));
@@ -61,6 +97,7 @@ export class Bridge {
   }
 
   async post<T = unknown>(path: string, body: unknown = {}): Promise<T> {
+    if (!this.baseUrl) throw this.notReachable("not started");
     return this.request<T>(this.baseUrl + path, {
       method: "POST",
       headers: { "content-type": "application/json" },
@@ -73,11 +110,7 @@ export class Bridge {
     try {
       res = await this.fetchImpl(url, init);
     } catch (e) {
-      throw new BridgeError(
-        `Forge bridge not reachable at ${this.baseUrl} (${(e as Error).message}). ` +
-          `Set FORGE_JAR, FORGE_BRIDGE_JAR and FORGE_HOME so this server can start it, ` +
-          `or start it yourself as the forge-agent-bridge README describes.`,
-      );
+      throw this.notReachable((e as Error).message);
     }
     const text = await res.text();
     let json: unknown;
@@ -102,7 +135,10 @@ export class Bridge {
     }
   }
 
-  /** Starts the Java bridge if both jars are configured and nothing answers yet. Resolves when /status answers. */
+  /**
+   * Starts the Java bridge if both jars are configured and nothing answers yet. Resolves when /status answers.
+   * Without a configured URL the bridge gets a free port, so no other process's server finds it.
+   */
   ensureStarted(timeoutMs = 180_000): Promise<"already-running" | "started" | "not-configured"> {
     // The bridge answers only after its card load, so a second caller in that time waits for the first start
     this.starting ??= this.start(timeoutMs).finally(() => (this.starting = undefined));
@@ -115,7 +151,11 @@ export class Bridge {
     const bridgeJar = this.opts.bridgeJar ?? process.env.FORGE_BRIDGE_JAR;
     if (!jar || !bridgeJar) return "not-configured";
     const cwd = this.opts.cwd ?? process.env.FORGE_HOME ?? process.cwd();
-    const port = new URL(this.baseUrl).port || "36744";
+    if (this.own) {
+      this.stop();
+      this.baseUrl = `http://127.0.0.1:${await (this.opts.freePort ?? freePort)()}`;
+    }
+    const port = new URL(this.baseUrl!).port || "36744";
     const args = [
       "-Djava.awt.headless=true",
       "-Dfile.encoding=UTF-8",
@@ -128,7 +168,7 @@ export class Bridge {
       port,
       ...autoJoinArgs(),
     ];
-    this.child = spawn("java", args, { cwd, stdio: ["ignore", "pipe", "pipe"] });
+    this.child = (this.opts.spawn ?? spawn)("java", args, { cwd, stdio: ["ignore", "pipe", "pipe"] });
     this.child.stdout?.on("data", (d: Buffer) => process.stderr.write(`[forge-bridge] ${d}`));
     this.child.stderr?.on("data", (d: Buffer) => process.stderr.write(`[forge-bridge] ${d}`));
     const deadline = Date.now() + timeoutMs;

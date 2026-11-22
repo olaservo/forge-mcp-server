@@ -1,8 +1,11 @@
 import { describe, expect, it } from "vitest";
 import { SkillsClient } from "@modelcontextprotocol/client/ext/skills";
 import { InMemoryServerEventBus } from "@modelcontextprotocol/server";
+import { Client, StreamableHTTPClientTransport } from "@modelcontextprotocol/client";
 import { Bridge } from "../src/bridge.js";
-import { STATUS_URI } from "../src/server.js";
+import { EventLog } from "../src/event-log.js";
+import { STATUS_URI, skillCatalog } from "../src/server.js";
+import { listenHttp } from "../src/transports/http.js";
 import { StatusWatcher } from "../src/watcher.js";
 import { connect, fakeBridge } from "./helpers.js";
 
@@ -60,6 +63,25 @@ describe("forge-mcp-server", () => {
     expect(pick.isError).toBeFalsy();
     expect(calls.find((c) => c.path === "/draft/pick")?.body).toEqual({ card: "Lightning Bolt" });
     await client.close();
+  });
+
+  it("forge_status names the prefix of this process's event ids, and says whether it serves /mcp over HTTP", async () => {
+    const { bridge } = fakeBridge({ "GET /status": status });
+    const log = new EventLog();
+    const client = await connect(bridge, undefined, log);
+    const st = await client.callTool({ name: "forge_status", arguments: {} });
+    expect(st.structuredContent).toMatchObject({ events: { source: log.source, http: false }, revision: 3 });
+    expect(log.emit("forge.your_move", {}).eventId).toBe(`${log.source}-1`);
+    await client.close();
+
+    const server = listenHttp({ bridge, skills: await skillCatalog(), events: log, port: 0 });
+    expect(await server.listening).toBe(true);
+    const overHttp = new Client({ name: "test", version: "0.0.0" }, { versionNegotiation: { mode: "auto" } });
+    await overHttp.connect(new StreamableHTTPClientTransport(new URL(`http://127.0.0.1:${server.port()}/mcp`)));
+    const served = await overHttp.callTool({ name: "forge_status", arguments: {} });
+    expect(served.structuredContent).toMatchObject({ events: { source: log.source, http: true } });
+    await overHttp.close();
+    server.close();
   });
 
   it("pushes resources/updated for forge://status to subscriptions/listen subscribers", async () => {

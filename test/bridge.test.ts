@@ -1,5 +1,17 @@
-import { describe, expect, it } from "vitest";
+import type { spawn } from "node:child_process";
+import { afterEach, describe, expect, it, vi } from "vitest";
 import { Bridge, autoJoinArgs } from "../src/bridge.js";
+
+/** Stands in for `spawn`: records each command line and starts no process. */
+function fakeSpawn() {
+  const spawned: string[][] = [];
+  let killed = 0;
+  const spawnImpl = ((_command: string, args: string[]) => {
+    spawned.push(args);
+    return { exitCode: null, kill: () => killed++ };
+  }) as unknown as typeof spawn;
+  return { spawned, spawnImpl, killed: () => killed };
+}
 
 describe("autoJoinArgs", () => {
   it("is empty unless FORGE_AUTO_JOIN is set", () => {
@@ -34,5 +46,77 @@ describe("ensureStarted", () => {
     answer();
     expect(await Promise.all([first, second])).toEqual(["already-running", "already-running"]);
     expect(probes).toBe(1);
+  });
+});
+
+describe("a bridge of its own", () => {
+  afterEach(() => vi.unstubAllEnvs());
+
+  it("is spawned on a free port when no URL is configured, and stopped with the server", async () => {
+    vi.stubEnv("FORGE_BRIDGE_URL", undefined);
+    const { spawned, spawnImpl, killed } = fakeSpawn();
+    const asked: string[] = [];
+    const fetchImpl = (async (input: string) => {
+      asked.push(input);
+      return new Response("{}", { status: 200 });
+    }) as typeof fetch;
+    const bridge = new Bridge({ jar: "forge.jar", bridgeJar: "bridge.jar", fetch: fetchImpl, freePort: async () => 40123, spawn: spawnImpl });
+    expect(bridge.url).toBeUndefined();
+    await expect(bridge.get("/status")).rejects.toThrow("not started");
+    expect(asked).toEqual([]);
+
+    expect(await bridge.ensureStarted()).toBe("started");
+    expect(bridge.url).toBe("http://127.0.0.1:40123");
+    expect(spawned).toHaveLength(1);
+    expect(spawned[0]!.slice(spawned[0]!.indexOf("--port"))).toEqual(["--port", "40123"]);
+    expect(asked).toEqual(["http://127.0.0.1:40123/status"]);
+    expect(await bridge.ensureStarted()).toBe("already-running");
+    expect(spawned).toHaveLength(1);
+
+    bridge.stop();
+    expect(killed()).toBe(1);
+  });
+
+  it("is not spawned without the jars", async () => {
+    vi.stubEnv("FORGE_BRIDGE_URL", undefined);
+    vi.stubEnv("FORGE_JAR", undefined);
+    vi.stubEnv("FORGE_BRIDGE_JAR", undefined);
+    const { spawned, spawnImpl } = fakeSpawn();
+    const bridge = new Bridge({ freePort: async () => 40123, spawn: spawnImpl });
+    expect(await bridge.ensureStarted()).toBe("not-configured");
+    expect(spawned).toEqual([]);
+    expect(bridge.url).toBeUndefined();
+  });
+});
+
+describe("FORGE_BRIDGE_URL", () => {
+  afterEach(() => vi.unstubAllEnvs());
+
+  it("names a bridge that is used when it answers", async () => {
+    vi.stubEnv("FORGE_BRIDGE_URL", "http://127.0.0.1:36744/");
+    const { spawned, spawnImpl } = fakeSpawn();
+    const asked: string[] = [];
+    const fetchImpl = (async (input: string) => {
+      asked.push(input);
+      return new Response("{}", { status: 200 });
+    }) as typeof fetch;
+    const bridge = new Bridge({ jar: "forge.jar", bridgeJar: "bridge.jar", fetch: fetchImpl, freePort: async () => 40123, spawn: spawnImpl });
+    expect(bridge.url).toBe("http://127.0.0.1:36744");
+    expect(await bridge.ensureStarted()).toBe("already-running");
+    expect(asked).toEqual(["http://127.0.0.1:36744/status"]);
+    expect(spawned).toEqual([]);
+  });
+
+  it("is where the bridge is spawned when nothing answers", async () => {
+    vi.stubEnv("FORGE_BRIDGE_URL", "http://127.0.0.1:36744");
+    const { spawned, spawnImpl } = fakeSpawn();
+    const fetchImpl = (async () => {
+      if (spawned.length === 0) throw new Error("connection refused");
+      return new Response("{}", { status: 200 });
+    }) as typeof fetch;
+    const bridge = new Bridge({ jar: "forge.jar", bridgeJar: "bridge.jar", fetch: fetchImpl, freePort: async () => 40123, spawn: spawnImpl });
+    expect(await bridge.ensureStarted()).toBe("started");
+    expect(spawned[0]!.slice(spawned[0]!.indexOf("--port"))).toEqual(["--port", "36744"]);
+    expect(bridge.url).toBe("http://127.0.0.1:36744");
   });
 });

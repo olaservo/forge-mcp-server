@@ -38,6 +38,18 @@
       "title": "State tools",
       "description": "Comma-separated tool names (without the server prefix) whose results show the server's state; a call to one of them means the model has seen everything up to then",
       "default": "forge_status,forge_wait,forge_game_state,forge_game_act,forge_game_decide"
+    },
+    "ownOnly": {
+      "type": "boolean",
+      "title": "Own events only",
+      "description": "Start a turn only for an event whose id starts with the prefix the session's own server reports in its status tool, and tell the model to stop waiting only when that server says it serves events over HTTP",
+      "default": true
+    },
+    "statusTool": {
+      "type": "string",
+      "title": "Status tool",
+      "description": "Tool name (without the server prefix) whose result has events.source, the prefix of the server's event ids, and events.http, whether it serves events over HTTP",
+      "default": "forge_status"
     }
   }
 }
