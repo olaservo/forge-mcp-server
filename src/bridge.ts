@@ -166,6 +166,7 @@ export class Bridge {
       "forge.agent.AgentMain",
       "--port",
       port,
+      "--exit-with-parent",
       ...autoJoinArgs(),
     ];
     this.child = (this.opts.spawn ?? spawn)("java", args, { cwd, stdio: ["ignore", "pipe", "pipe"] });

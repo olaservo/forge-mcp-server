@@ -11,7 +11,7 @@ describe("LobbyHost", () => {
     const state = await host.start(settings);
     expect(state).toEqual({ running: true, ...settings, addresses: ["192.0.2.10"] });
     const args = spawned[0];
-    expect(args.slice(args.indexOf("-cp") + 1)).toEqual([`bridge.jar${delimiter}forge.jar`, "forge.agent.MatchHost", "--port", "36750", "--seats", "2", "--limited"]);
+    expect(args.slice(args.indexOf("-cp") + 1)).toEqual([`bridge.jar${delimiter}forge.jar`, "forge.agent.MatchHost", "--port", "36750", "--seats", "2", "--limited", "--exit-with-parent"]);
   });
 
   it("answers the running host for the same settings and refuses others", async () => {

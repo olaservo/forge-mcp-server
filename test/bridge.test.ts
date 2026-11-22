@@ -68,7 +68,7 @@ describe("a bridge of its own", () => {
     expect(await bridge.ensureStarted()).toBe("started");
     expect(bridge.url).toBe("http://127.0.0.1:40123");
     expect(spawned).toHaveLength(1);
-    expect(spawned[0]!.slice(spawned[0]!.indexOf("--port"))).toEqual(["--port", "40123"]);
+    expect(spawned[0]!.slice(spawned[0]!.indexOf("--port"))).toEqual(["--port", "40123", "--exit-with-parent"]);
     expect(asked).toEqual(["http://127.0.0.1:40123/status"]);
     expect(await bridge.ensureStarted()).toBe("already-running");
     expect(spawned).toHaveLength(1);
@@ -116,7 +116,7 @@ describe("FORGE_BRIDGE_URL", () => {
     }) as typeof fetch;
     const bridge = new Bridge({ jar: "forge.jar", bridgeJar: "bridge.jar", fetch: fetchImpl, freePort: async () => 40123, spawn: spawnImpl });
     expect(await bridge.ensureStarted()).toBe("started");
-    expect(spawned[0]!.slice(spawned[0]!.indexOf("--port"))).toEqual(["--port", "36744"]);
+    expect(spawned[0]!.slice(spawned[0]!.indexOf("--port"))).toEqual(["--port", "36744", "--exit-with-parent"]);
     expect(bridge.url).toBe("http://127.0.0.1:36744");
   });
 });

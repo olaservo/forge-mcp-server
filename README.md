@@ -20,7 +20,7 @@ Download the [Forge 2.0.16 desktop release](https://github.com/Card-Forge/forge/
 - `FORGE_BRIDGE_JAR`: the bridge jar.
 - `FORGE_HOME`: the folder that holds Forge's `res/`. That is the unpacked folder for a release download and `forge-gui` in a checkout.
 
-Loading cards takes about 40 s. Each server process starts a bridge of its own on a free loopback port and stops it on exit, so two agent sessions on one machine hold two seats. `forge_status` shows the URL as `bridge.url`.
+Loading cards takes about 40 s. Each server process starts a bridge of its own on a free loopback port and stops it on exit, so two agent sessions on one machine hold two seats. It starts the bridge with `--exit-with-parent`, and a bridge that has the flag also exits when the server process ends without stopping it. An older bridge ignores the flag. `forge_status` shows the URL as `bridge.url`.
 
 To start the bridge yourself, follow its README and set `FORGE_BRIDGE_URL` to its address, for example `http://127.0.0.1:36744`. The server then uses the bridge at that URL, and starts one there only when nothing answers. Every server with the same `FORGE_BRIDGE_URL` drives the same seat. The repo owner's own `.mcp.json` sets `FORGE_BRIDGE_URL`, and that line has to be removed there to get one bridge per session.
 

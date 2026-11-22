@@ -84,6 +84,7 @@ export class LobbyHost {
       "--seats",
       String(settings.seats),
       ...(settings.limited ? ["--limited"] : []),
+      "--exit-with-parent",
     ];
     const cwd = this.opts.cwd ?? process.env.FORGE_HOME ?? process.cwd();
     const child = (this.opts.spawn ?? spawn)("java", args, { cwd, stdio: ["ignore", "pipe", "pipe"] });
