@@ -18,7 +18,7 @@ Report once per problem, not once per failed call. Finish the game or draft firs
 
 ## Writing it
 
-Title: `[agent feedback] ` and one line naming the problem, for example `[agent feedback] forge_game_decide rejects choices for an order decision`.
+Title: `[agent feedback] ` and one line naming the problem, for example `[agent feedback] forge_draft_pick reports a pick that the pack does not show`.
 
 Body, with every heading kept and "Not known" where you have nothing:
 
@@ -38,7 +38,7 @@ What you expected instead, and why: the tool description, the skill, or the card
 
 ## Steps
 
-The calls that led to it, in order, with their arguments.
+The calls that led to it, in order, with their arguments. List only the calls you made; if you know just the one that failed, say so.
 
 ## Environment
 
@@ -47,18 +47,18 @@ The calls that led to it, in order, with their arguments.
 - Game phase: lobby, draft or match, with the format
 ```
 
-Kinds: `bug` is wrong behaviour, `tool` is a tool whose arguments or answer are hard to use, `docs` is a description or skill that is wrong or missing, `idea` is something to add.
+Write only what you saw or were told, and "Not known" for the rest. Kinds: `bug` is wrong behaviour, `tool` is a tool whose arguments or answer are hard to use, `docs` is a description or skill that is wrong or missing, `idea` is something to add.
 
 The issue is public. Leave out player names other than your own seat's, chat lines, deck files the user did not ask to share, file paths with a user name in them, and anything personal. Write `@` names only in backticks, so no one is notified.
 
 ## Filing it
 
-Search first, and add a comment to an open issue that already covers the problem instead of opening another.
+Search first, on the tool name and a few words of the error, and add a comment to an open issue that already covers the problem instead of opening another. Write the body to a file in a temporary folder for `--body-file`.
 
 With the gh CLI:
 
 ```
-gh issue list --repo olaservo/forge-mcp-server --state open --search "<a few words>"
+gh issue list --repo olaservo/forge-mcp-server --state open --search "<tool name> <words from the error>"
 gh issue create --repo olaservo/forge-mcp-server --title "<title>" --body-file <file holding the body>
 ```
 
