@@ -84,6 +84,18 @@ describe("forge-mcp-server", () => {
     server.close();
   });
 
+  it("forge://status has the same payload as forge_status", async () => {
+    const { bridge } = fakeBridge({ "GET /status": status });
+    const log = new EventLog();
+    const client = await connect(bridge, undefined, log);
+    const st = await client.callTool({ name: "forge_status", arguments: {} });
+    const { contents } = await client.readResource({ uri: STATUS_URI });
+    const read = JSON.parse((contents[0] as { text: string }).text) as unknown;
+    expect(read).toEqual(st.structuredContent);
+    expect(read).toMatchObject({ bridge: { url: "http://bridge.test", startup: "already-running" }, events: { source: log.source, http: false }, revision: 3 });
+    await client.close();
+  });
+
   it("pushes resources/updated for forge://status to subscriptions/listen subscribers", async () => {
     const { bridge } = fakeBridge({ "GET /status": status });
     const bus = new InMemoryServerEventBus();

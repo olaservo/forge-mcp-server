@@ -24,6 +24,13 @@ async function lobbyChange(bridge: Bridge, path: string, body: unknown): Promise
   return (await bridge.get<{ lobby?: unknown }>("/status")).lobby ?? answer;
 }
 
+/** What forge_status and the forge://status resource return. Starts the bridge when it is down. */
+export async function seatStatus(bridge: Bridge, events?: () => { source: string; http: boolean }): Promise<Record<string, unknown>> {
+  const started = await bridge.ensureStarted().catch((e: Error) => `error: ${e.message}`);
+  const status = await bridge.get<Record<string, unknown>>("/status");
+  return { bridge: { url: bridge.url, startup: started }, events: events?.(), ...status };
+}
+
 export function registerTools(
   server: McpServer,
   bridge: Bridge,
@@ -60,12 +67,7 @@ export function registerTools(
       outputSchema: out.StatusWithBridge,
       annotations: readOnly,
     },
-    async () =>
-      run(async () => {
-        const started = await bridge.ensureStarted().catch((e: Error) => `error: ${e.message}`);
-        const status = await bridge.get<Record<string, unknown>>("/status");
-        return { bridge: { url: bridge.url, startup: started }, events: events?.(), ...status };
-      }),
+    async () => run(() => seatStatus(bridge, events)),
   );
 
   tool(

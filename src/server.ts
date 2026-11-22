@@ -11,7 +11,7 @@ import { registerEvents } from "./events.js";
 import type { ActivityLog } from "./log.js";
 import type { LobbyHost } from "./host.js";
 import type { GetText } from "./names.js";
-import { registerTools } from "./tools/index.js";
+import { registerTools, seatStatus } from "./tools/index.js";
 import type { WebhookHub } from "./webhooks.js";
 
 /** `package.json` sits next to `dist/` (or `src/`), like `skills/`. */
@@ -75,7 +75,8 @@ export function createServer(opts: CreateServerOptions = {}): McpServer {
       "Otherwise call forge_wait instead of polling, or subscribe to forge://status through subscriptions/listen.",
   });
 
-  registerTools(server, bridge, opts.log, opts.decks, opts.names, opts.deckSearch, opts.host, () => ({ source: events.source, http: opts.servesHttp?.() ?? false }));
+  const eventsInfo = () => ({ source: events.source, http: opts.servesHttp?.() ?? false });
+  registerTools(server, bridge, opts.log, opts.decks, opts.names, opts.deckSearch, opts.host, eventsInfo);
   registerEvents(server, events, opts.webhooks && { hub: opts.webhooks, principal: opts.principal }, opts.log);
 
   server.registerResource(
@@ -87,7 +88,7 @@ export function createServer(opts: CreateServerOptions = {}): McpServer {
       mimeType: "application/json",
     },
     async (uri) => ({
-      contents: [{ uri: uri.href, mimeType: "application/json", text: JSON.stringify(await bridge.get("/status"), null, 2) }],
+      contents: [{ uri: uri.href, mimeType: "application/json", text: JSON.stringify(await seatStatus(bridge, eventsInfo), null, 2) }],
     }),
   );
   server.registerResource(
