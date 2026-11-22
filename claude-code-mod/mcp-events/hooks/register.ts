@@ -17,6 +17,9 @@ const LIST_REFRESH_MS = 60_000
 const MAX_AGE_MS = 300_000
 /** A tool result may predate its return by this much, so an event this close to it is still delivered. */
 const TOOL_MARGIN_MS = 100
+const DEFAULT_STATE_TOOLS =
+  'forge_status,forge_connect,forge_wait,forge_game_state,forge_game_act,forge_game_decide,' +
+  'forge_lobby_ready:lobby,forge_lobby_deck:lobby,forge_lobby_name:lobby,forge_lobby_avatar:lobby'
 
 let subscriptions: Subscription[] | undefined
 let listAt = 0
@@ -25,8 +28,10 @@ let isTurnRunning = false
 let lastError: string | undefined
 let fired = 0
 let nextId = 1
-/** When the model last got a result from one of the server's tools. */
+/** When the model last got a result from one of the server's state tools. */
 let lastToolAt = 0
+/** When the model last got a result from a tool that shows one kind of event's state, by the event's `kind`. */
+const lastKindAt = new Map<string, number>()
 const seen = new Set<string>()
 /** Events not yet submitted, newest per name: a burst, or what arrived during a turn, wakes the model once. */
 const held = new Map<string, Occurrence>()
@@ -123,7 +128,9 @@ function flush($: EngineInterface, server: string, superseded: readonly string[]
   }
   for (const event of held.values()) {
     // The model has read the server's state since this event, so it has already seen what the event reports.
-    if (superseded.includes(event.name) && Date.parse(event.timestamp) <= lastToolAt) continue
+    const kind = (event.data as { kind?: unknown } | null)?.kind
+    const seenAt = Math.max(lastToolAt, (typeof kind === 'string' && lastKindAt.get(kind)) || 0)
+    if (superseded.includes(event.name) && Date.parse(event.timestamp) <= seenAt) continue
     fired++
     $.ui.toast(`Event triggered: ${server} ${event.name}`)
     submit($, eventPrompt(server, event))
@@ -199,7 +206,13 @@ export const register: Register = (on, options) => {
   const toolPrefix = `mcp__${server}__`
   // Only a tool whose result shows the server's state counts as the model having seen it. A chat or lobby
   // call returns no game state, and counting it dropped an event the model had not seen.
-  const stateTools = list(options.stateTools, 'forge_status,forge_wait,forge_game_state,forge_game_act,forge_game_decide')
+  // `tool:kind` counts only for events whose data has that `kind`: a lobby tool shows the lobby, not a game.
+  const stateTools = new Map<string, string | undefined>(
+    list(options.stateTools, DEFAULT_STATE_TOOLS).map(entry => {
+      const [tool, kind] = entry.split(':').map(s => s.trim())
+      return [tool, kind || undefined]
+    }),
+  )
   const waitTools = list(options.waitTools, 'forge_wait')
   const ownOnly = String(options.ownOnly ?? true) !== 'false'
   const statusTool = String(options.statusTool ?? 'forge_status')
@@ -223,7 +236,12 @@ export const register: Register = (on, options) => {
   on('tool.call', async ($, e, next) => {
     const result = await next(e)
     const tool = String(e.tool)
-    if (tool.startsWith(toolPrefix) && stateTools.includes(tool.slice(toolPrefix.length))) lastToolAt = Date.now() - TOOL_MARGIN_MS
+    const name = tool.startsWith(toolPrefix) ? tool.slice(toolPrefix.length) : undefined
+    if (name !== undefined && stateTools.has(name)) {
+      const kind = stateTools.get(name)
+      if (kind) lastKindAt.set(kind, Date.now() - TOOL_MARGIN_MS)
+      else lastToolAt = Date.now() - TOOL_MARGIN_MS
+    }
     if (tool === toolPrefix + statusTool && result.deny === undefined && result.isError !== true) own = eventsOf(result.result, result.text) ?? own
     return result
   })

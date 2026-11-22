@@ -207,3 +207,34 @@ test('the status tool is named by an option', { options: { statusTool: 'seat_sta
   await $.tool.call({ tool: 'mcp__forge__seat_status' } as never)
   expect((await $.prompt.compose(composing)).sections.map(s => s.id)).toEqual(['intro', 'mcp-events:standing'])
 })
+
+const pause = (ms: number) => new Promise(resolve => setTimeout(resolve, ms))
+
+/** Holds one event of `kind` during a turn, then calls `tool` and ends the turn. Returns the prompts submitted. */
+async function heldThenCalled($: Parameters<Parameters<typeof test>[1]>[0], on: On, kind: string, tool: string) {
+  const polls: Poll[] = [{ events: [], cursor: 'c:0' }]
+  const { prompts } = session(on, polls)
+  on('turn.start', (_, e) => ({ turnId: e.turnId }) as never)
+  await $.tool.call(callStatus)
+  await $.command.run({ command: 'mcp-events' })
+  await pause(200)
+  polls.push({ events: [{ eventId: 'c-1', name: 'forge.your_move', timestamp: new Date().toISOString(), data: { kind, prompt: 'p' } }], cursor: 'c:1' })
+  await $.turn.start({ turnId: 't1' } as never)
+  await $.command.run({ command: 'mcp-events' })
+  await pause(200)
+  await $.tool.call({ tool: `mcp__forge__${tool}` } as never)
+  await $.turn.complete({ turnId: 't1', reason: 'answer', answer: 'ok' } as never)
+  return prompts
+}
+
+test('a lobby tool called after a held lobby event drops it', async ($, on) => {
+  expect(await heldThenCalled($, on, 'lobby', 'forge_lobby_ready')).toHaveLength(0)
+})
+
+test('a lobby tool called after a held game event does not drop it', async ($, on) => {
+  expect(await heldThenCalled($, on, 'priority', 'forge_lobby_ready')).toHaveLength(1)
+})
+
+test('a state tool called after a held event drops it', async ($, on) => {
+  expect(await heldThenCalled($, on, 'priority', 'forge_game_state')).toHaveLength(0)
+})
