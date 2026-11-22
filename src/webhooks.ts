@@ -41,6 +41,8 @@ const MAX_TTL_MS = 24 * 60 * 60 * 1000;
 const VERIFIED_FOR_MS = 24 * 60 * 60 * 1000;
 const ROTATION_GRACE_MS = 5 * 60 * 1000;
 const MAX_SUBSCRIPTIONS = 100;
+/** Subscription ids whose abandoned deliveries are remembered for a later subscribe. */
+const MAX_UNREPORTED = 1000;
 
 /** Addresses a callback must not resolve to: the IANA special-purpose ranges. */
 const notPublic = new BlockList();
@@ -221,6 +223,8 @@ export class WebhookHub {
   private readonly subs = new Map<string, Subscription>();
   /** `(principal, url)` pairs that passed the verification handshake, with the time the result lapses. */
   private readonly verified = new Map<string, number>();
+  /** Subscription ids with a verification request under way, which count towards the limit. */
+  private readonly verifying = new Map<string, number>();
   private readonly inFlight = new Set<Promise<void>>();
   /** Per subscription, the deliveries that have failed and are still being retried. */
   private readonly retrying = new Map<string, number>();
@@ -275,13 +279,21 @@ export class WebhookHub {
     const id = subscriptionId(principal, url, params.name, args);
     const now = this.now();
     this.dropExpired(now);
-    if (!this.subs.has(id) && this.subs.size >= MAX_SUBSCRIPTIONS) {
+    const claimed = this.subs.size + [...this.verifying.keys()].filter((key) => !this.subs.has(key)).length;
+    if (!this.subs.has(id) && !this.verifying.has(id) && claimed >= MAX_SUBSCRIPTIONS) {
       throw new ProtocolError(RESOURCE_EXHAUSTED, "ResourceExhausted", { limit: "subscriptions", max: MAX_SUBSCRIPTIONS });
     }
 
     const pair = `${principal}\n${url}`;
     if ((this.verified.get(pair) ?? 0) <= now) {
-      await this.verify(id, url, secret);
+      this.verifying.set(id, (this.verifying.get(id) ?? 0) + 1);
+      try {
+        await this.verify(id, url, secret);
+      } finally {
+        const left = this.verifying.get(id)! - 1;
+        if (left > 0) this.verifying.set(id, left);
+        else this.verifying.delete(id);
+      }
       this.verified.set(pair, now + VERIFIED_FOR_MS);
     }
     // Read after the handshake, during which the subscription can be removed or deliveries can fail.
@@ -404,6 +416,13 @@ export class WebhookHub {
   private abandon(sub: Subscription, event: EventOccurrence): void {
     sub.abandoned = (sub.abandoned ?? 0) + 1;
     this.unreported.set(sub.id, Math.min(this.unreported.get(sub.id) ?? Infinity, seqOf(event)));
+    if (this.unreported.size <= MAX_UNREPORTED) return;
+    // Past the limit, the oldest record of a subscription that no longer exists is dropped.
+    for (const id of this.unreported.keys()) {
+      if (this.subs.has(id)) continue;
+      this.unreported.delete(id);
+      return;
+    }
   }
 
   /** The position at or before which every event has been delivered to this subscription or given up on. */
@@ -417,7 +436,7 @@ export class WebhookHub {
 
   /**
    * One event to one subscription. Each attempt is signed again. 410 and 413 are not retried.
-   * A delivery given up on is counted in `abandoned`, except after 410, which the receiver sends to refuse an event.
+   * A delivery given up on is counted in `abandoned`.
    */
   private async deliver(sub: Subscription, event: EventOccurrence): Promise<void> {
     const { name, eventId } = event;
@@ -466,7 +485,7 @@ export class WebhookHub {
         latest.failedSince ??= new Date(this.now()).toISOString();
         const wait = this.retryDelaysMs[attempt];
         if (status === 410 || status === 413 || wait === undefined) {
-          if (status !== 410) this.abandon(latest, event);
+          this.abandon(latest, event);
           console.error(`[forge-mcp-server] webhook delivery of ${eventId} to ${id} failed: ${error}`);
           return;
         }

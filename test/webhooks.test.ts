@@ -139,7 +139,16 @@ describe("webhook delivery", () => {
     await hub.idle();
     expect(events()).toHaveLength(3);
     const status = (await hub.subscribe("ola", subscribeParams(newSecret()))).deliveryStatus;
-    expect(status).toMatchObject({ lastError: "http_4xx" });
+    expect(status).toMatchObject({ lastError: "http_4xx", abandoned: 1 });
+  });
+
+  it("counts subscriptions being verified towards the limit", async () => {
+    const hub = new WebhookHub(new EventLog(), { post: receiver().post });
+    const secret = newSecret();
+    const at = (n: number) => subscribeParams(secret, { delivery: { mode: "webhook", url: `${URL_A}/${n}`, secret } });
+    const results = await Promise.allSettled(Array.from({ length: 101 }, (_, n) => hub.subscribe("ola", at(n))));
+    expect(results.filter((r) => r.status === "rejected")).toHaveLength(1);
+    expect(hub.size).toBe(100);
   });
 
   it("reports an abandoned delivery until a refresh has returned it", async () => {
