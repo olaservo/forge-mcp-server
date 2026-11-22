@@ -8,7 +8,7 @@ import { Webhook } from "standardwebhooks";
 import { describe, expect, it, vi } from "vitest";
 import { z } from "zod";
 import { EventLog } from "../src/event-log.js";
-import { CHAT, YOUR_MOVE } from "../src/seat-events.js";
+import { CHAT, MoveTracker, YOUR_MOVE } from "../src/seat-events.js";
 import { skillCatalog } from "../src/server.js";
 import { listenHttp } from "../src/transports/http.js";
 import { type SubscribeResult, WebhookHub, type WebhookPost, isPublicAddress, isSigningSecret, retryDelays, subscriptionId, webhookPost } from "../src/webhooks.js";
@@ -251,6 +251,46 @@ describe("webhook delivery", () => {
     expect(await hub.subscribe("ola", subscribeParams(secret, { cursor: "0ldepoch:3" }))).toMatchObject({ cursor: log.head(), truncated: true });
     await hub.idle();
     expect(events()).toHaveLength(2);
+  });
+
+  it("sends a new subscription the event of the pending ask, and a refresh nothing", async () => {
+    const file = join(mkdtempSync(join(tmpdir(), "forge-subs-")), "subscriptions.json");
+    const log = new EventLog();
+    const moves = new MoveTracker(log);
+    log.onPending(YOUR_MOVE, () => moves.current());
+    const { post, events } = receiver();
+    const hub = new WebhookHub(log, { post, file });
+    const secret = newSecret();
+    const game = (promptCount: number, more = {}) => ({
+      revision: promptCount,
+      game: { inGame: true, prompt: "Claude is going first.\nDo you want to keep your hand?", promptCount, waiting: false, buttons: { okEnabled: true, cancelEnabled: true }, ...more },
+    });
+
+    // no ask pending, nothing to send
+    moves.observe(game(1, { waiting: true, prompt: "Waiting for Ola...", buttons: { okEnabled: false, cancelEnabled: false } }));
+    await hub.subscribe("ola", subscribeParams(secret));
+    await hub.idle();
+    expect(events()).toHaveLength(0);
+    hub.unsubscribe("ola", subscribeParams(secret));
+
+    const ask = moves.observe(game(2))!;
+    await hub.subscribe("ola", subscribeParams(secret, { ttlMs: null }));
+    await hub.idle();
+    expect(events().map((p) => p.headers["webhook-id"])).toEqual([ask.eventId]);
+    expect(new Webhook(secret).verify(events()[0]!.body, events()[0]!.headers)).toEqual({ ...ask, cursor: log.cursorAfter(ask) });
+
+    // the subscriber refreshes every few minutes, and a subscription read from the file after a restart is not new either
+    await hub.subscribe("ola", subscribeParams(secret));
+    await new WebhookHub(log, { post, file }).subscribe("ola", subscribeParams(secret));
+    await hub.idle();
+    expect(events()).toHaveLength(1);
+
+    // a new subscription whose cursor is past the ask has it already, and forge.chat has no pending ask
+    hub.unsubscribe("ola", subscribeParams(secret));
+    await hub.subscribe("ola", subscribeParams(secret, { cursor: log.cursorAfter(ask) }));
+    await hub.subscribe("ola", { ...subscribeParams(secret), name: CHAT });
+    await hub.idle();
+    expect(events()).toHaveLength(1);
   });
 
   it("keeps the cursor behind replayed events when an older delivery is still under way", async () => {

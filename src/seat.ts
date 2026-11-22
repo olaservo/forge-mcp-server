@@ -23,6 +23,8 @@ export function createSeat(log?: ActivityLog) {
   events.onFirstPoll((name) => {
     if (name === YOUR_MOVE) void bridge.get<SeatStatus>("/status").then((status) => moves.replay(status), () => undefined);
   });
+  // A new webhook subscription is sent the event that reported the pending ask, with its eventId
+  events.onPending(YOUR_MOVE, () => moves.current());
   let watcher: StatusWatcher | undefined;
 
   return {

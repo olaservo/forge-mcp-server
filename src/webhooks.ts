@@ -216,7 +216,7 @@ export interface WebhookOptions {
  * Holds webhook subscriptions and POSTs each emitted event to the ones that match.
  * Cursors are the event log's. The one in a payload or a subscribe result is the SEP's watermark: every event
  * at or before it has been delivered to this subscription or given up on. A new or lapsed subscription that
- * names a cursor gets the retained events after it. A refresh is `truncated` when a delivery was abandoned
+ * names a cursor gets the retained events after it, and a new one gets the event of the pending ask. A refresh is `truncated` when a delivery was abandoned
  * since the last one, or when its cursor is from before a restart.
  */
 export class WebhookHub {
@@ -327,6 +327,10 @@ export class WebhookHub {
       truncated = replay.truncated || (lost !== undefined && Number(cursor.split(":")[1]) >= lost);
       for (const event of replay.events) this.start(sub, event);
     }
+    // A new subscription is sent the ask that is still pending, unless its cursor is past it. A subscription
+    // read from the file is not new. The event keeps its eventId, so a receiver that has it already can drop it.
+    const ask = existing ? undefined : this.events.pending(params.name);
+    if (ask && !(cursor !== null && this.events.issued(cursor) && Number(cursor.split(":")[1]) >= seqOf(ask))) this.start(sub, ask);
     this.log(`webhook ${existing ? "refresh" : "subscribe"} ${id} ${params.name} principal=${principal} expires=${expiresAt === null ? "never" : new Date(expiresAt).toISOString()}`);
 
     return {

@@ -26,6 +26,7 @@ export class EventLog {
   private readonly entries: { seq: number; event: EventOccurrence }[] = [];
   private readonly listeners: ((event: EventOccurrence) => void)[] = [];
   private readonly firstPollListeners: ((name: string) => void)[] = [];
+  private readonly pendingSources = new Map<string, () => EventOccurrence | undefined>();
   private seq = 0;
 
   constructor(private readonly capacity = 1000) {}
@@ -69,6 +70,16 @@ export class EventLog {
   /** Calls `listener` after a poll without a cursor, which is a client starting to follow `name`. */
   onFirstPoll(listener: (name: string) => void): void {
     this.firstPollListeners.push(listener);
+  }
+
+  /** Sets where `pending(name)` reads from. */
+  onPending(name: string, source: () => EventOccurrence | undefined): void {
+    this.pendingSources.set(name, source);
+  }
+
+  /** The event that reported what is still pending for `name`, for a client that starts following after it was emitted. */
+  pending(name: string): EventOccurrence | undefined {
+    return this.pendingSources.get(name)?.();
   }
 
   emit(name: string, data: Record<string, unknown>): EventOccurrence {

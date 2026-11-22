@@ -78,6 +78,8 @@ export class MoveTracker {
   /** The finished game already reported. Its result stays in the status under later asks. */
   private reported: string | undefined;
   private replayed: { key: string; at: number } | undefined;
+  /** The event that last reported the ask in `last`. */
+  private lastEvent: EventOccurrence | undefined;
 
   constructor(private readonly log: EventLog) {}
 
@@ -90,7 +92,16 @@ export class MoveTracker {
     const changed = move !== undefined && move.key !== this.last;
     this.last = move?.key;
     if (changed && move.data.kind === "game_over") this.reported = move.key;
-    return changed ? this.log.emit(YOUR_MOVE, move.data) : undefined;
+    if (!changed) {
+      if (move === undefined) this.lastEvent = undefined;
+      return undefined;
+    }
+    return (this.lastEvent = this.log.emit(YOUR_MOVE, move.data));
+  }
+
+  /** The event that reported the ask pending at the last status, or undefined when there is none. A game result is not an ask here. */
+  current(): EventOccurrence | undefined {
+    return this.lastEvent?.data.kind === "game_over" ? undefined : this.lastEvent;
   }
 
   /**
@@ -106,7 +117,7 @@ export class MoveTracker {
     this.replayed = { key: move.key, at: now };
     this.last = move.key;
     if (move.data.kind === "game_over") this.reported = move.key;
-    return this.log.emit(YOUR_MOVE, move.data);
+    return (this.lastEvent = this.log.emit(YOUR_MOVE, move.data));
   }
 }
 
