@@ -16,9 +16,9 @@ You are one seat in a Forge online lobby. A headless Forge client (the bridge) h
 5. Play: alternate `forge_game_state` and one action until `game.gameOver` is true. `winner` then names who won.
 6. Leave with `forge_game_act {action: "quit"}`, or `continue` for the next game of a multi-game match. The host waits for this; until you answer, the lobby stays in the match.
 
-Use `forge_wait` instead of calling `forge_status` in a tight loop. It returns as soon as a pack, a prompt or a decision appears.
+If `forge.your_move` events wake your seat, never call `forge_wait`. Act on what the status shows, then end your turn. Wherever these steps say `forge_wait`, or the prompt reads "Waiting for ...", end your turn. The next event starts a new turn when the seat has to act. A game played by waiting inside one long turn keeps the whole game in one growing context.
 
-If your client delivers `forge.your_move` events, do not wait at all. Act on what the status shows, and wherever these steps say `forge_wait`, or the prompt reads "Waiting for ...", end your turn. The next event starts a new turn when the seat has to act. A game played by waiting inside one long turn keeps the whole game in one growing context.
+`forge_wait` is for a client with no event subscription. Use it instead of calling `forge_status` in a tight loop. It returns as soon as a pack, a prompt or a decision appears.
 
 A `forge.chat` event means another player said something. Answer with `forge_chat`, and act only if the prompt is also yours.
 
@@ -40,10 +40,11 @@ A `forge.chat` event means another player said something. Answer with `forge_cha
 - Play a land or cast a spell: `forge_game_act {action: "selectCard", id}` on a card in your hand while the prompt says you may play spells. Forge then pays costs automatically where it can; if it needs a target it changes the prompt and you `selectCard` or `selectPlayer` again, then `ok`.
 - Activate an ability: `selectCard` on the permanent. If it has several abilities a decision dialog lists them.
 - Attack: when the prompt says declare attackers, `selectCard` each attacker, then `ok`. `alphaStrike` selects every creature that can attack.
-- Block: when the prompt says declare blockers, `selectCard` the blocker then `selectCard` the attacker it blocks; `ok` when done.
+- Block: the prompt names the attacker being blocked, for example "Select creatures to block Archangel (11) or select another attacker to declare blockers for." `selectCard` a blocker to block that attacker. To block another attacker, `selectCard` that attacker first, then its blocker. `ok` when done.
+- Optional triggers ("Use triggered ability of Borderland Ranger?") arrive as a prompt with Yes and No buttons, not as a `pendingDecision`. Answer with `forge_game_act` `ok` for yes or `cancel` for no.
 - Mulligan, scry, discard, mode choice, ordering triggers: these arrive as `pendingDecision`. Answer with option indices; for `order` kinds give every index in the order you want; for `text`/`number` kinds set `text`. For kind `assign` (combat damage among blockers and the defender, or a divided amount) set `amounts` to one number per option, adding up to the decision's `amount`; `default` shows a legal split.
 - Concede: `forge_game_act {action: "concede"}`.
-- After an action, `forge_wait` with the last `revision` returns when the host has reacted. Act once per change: resending `ok` or `selectCard` while the prompt still reads "Waiting for ..." does nothing useful and floods the host.
+- Without events, `forge_wait` with the last `revision` after an action returns when the host has reacted. Act once per change: resending `ok` or `selectCard` while the prompt still reads "Waiting for ..." does nothing useful and floods the host.
 
 ## Priority, auto-pass and yielding
 
@@ -52,7 +53,7 @@ The bridge asks the host to pass priority for you on an opponent's turn whenever
 - When the prompt reads "Waiting for ...", end your turn. Do not press `ok` on a prompt that is not live: if a `Priority: ...` prompt names a phase other than the summary's `phase`, or `hasPriority` is false, the host has already passed for you.
 - The cancel button changes meaning. Labelled "End Turn" it yields until the end of the turn; labelled "Undo" it takes back your last action. Read `buttons.cancel` before pressing it.
 - Holding an instant on an opponent's turn: you have an available action, so the host offers every priority. Press cancel while it reads "End Turn" at their upkeep. The host interrupts the yield when they cast a spell or attack you, which are the moments to respond. After an interruption the yield is over, so press "End Turn" again once you have responded or declined.
-- Cards an opponent reveals appear as a line in `messages`. There is nothing to answer.
+- Cards an opponent reveals appear as a line in `messages`. There is nothing to answer. A card revealed from an opponent's hand can instead arrive as a prompt such as "Looking at cards in Claude's hand", with OK and End Turn, which holds the game until you press `ok`.
 - The summary returned straight after `forge_game_decide` or an "Auto" payment can show the previous prompt. If it looks unchanged, read the state again before acting on it.
 - Combat damage for a blocked trampler or a creature with several blockers is an `assign` decision. A split that breaks a rule is replaced by the decision's `default`, and a line in `messages` says so.
 

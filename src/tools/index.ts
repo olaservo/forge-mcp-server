@@ -343,7 +343,8 @@ export function registerTools(
       title: "Wait for a change",
       description:
         "Block until something happens on our seat (a pack arrives, the lobby changes, a prompt or decision appears) or `timeout` seconds pass, " +
-        "then return the same payload as forge_status. Pass the `revision` from the last status so only newer changes wake it.",
+        "then return the same payload as forge_status. Pass the `revision` from the last status so only newer changes wake it. " +
+        "For a client with no event subscription. A seat woken by forge.your_move events ends its turn and does not call this.",
       inputSchema: z.object({
         since: z.number().int().default(-1).describe("Last seen revision; -1 returns immediately"),
         timeout: z.number().int().min(1).max(120).default(30),
