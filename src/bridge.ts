@@ -169,15 +169,19 @@ export class Bridge {
       "--exit-with-parent",
       ...autoJoinArgs(),
     ];
-    this.child = (this.opts.spawn ?? spawn)("java", args, { cwd, stdio: ["ignore", "pipe", "pipe"] });
-    this.child.stdout?.on("data", (d: Buffer) => process.stderr.write(`[forge-bridge] ${d}`));
-    this.child.stderr?.on("data", (d: Buffer) => process.stderr.write(`[forge-bridge] ${d}`));
+    const child = (this.opts.spawn ?? spawn)("java", args, { cwd, stdio: ["ignore", "pipe", "pipe"] });
+    this.child = child;
+    child.stdout?.on("data", (d: Buffer) => process.stderr.write(`[forge-bridge] ${d}`));
+    child.stderr?.on("data", (d: Buffer) => process.stderr.write(`[forge-bridge] ${d}`));
     const deadline = Date.now() + timeoutMs;
     while (Date.now() < deadline) {
-      if (this.child.exitCode !== null) {
-        throw new BridgeError(`Forge bridge exited with code ${this.child.exitCode} before it was ready`);
+      if (child.exitCode !== null) {
+        throw new BridgeError(`Forge bridge exited with code ${child.exitCode} before it was ready`);
       }
-      if (await this.isUp()) return "started";
+      const up = await this.isUp();
+      // stop() ran during the wait
+      if (this.child !== child) throw new BridgeError("Forge bridge was stopped before it was ready");
+      if (up) return "started";
       await new Promise((r) => setTimeout(r, 1000));
     }
     throw new BridgeError("Forge bridge did not come up in time");

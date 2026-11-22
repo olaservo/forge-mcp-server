@@ -77,6 +77,20 @@ describe("a bridge of its own", () => {
     expect(killed()).toBe(1);
   });
 
+  it("fails a start that is waiting when it is stopped", async () => {
+    vi.stubEnv("FORGE_BRIDGE_URL", undefined);
+    const { spawned, spawnImpl, killed } = fakeSpawn();
+    // Stops the bridge on its first probe after the spawn, while the card load would still be running.
+    const fetchImpl = (async () => {
+      if (spawned.length === 1) bridge.stop();
+      throw new Error("connection refused");
+    }) as typeof fetch;
+    const bridge = new Bridge({ jar: "forge.jar", bridgeJar: "bridge.jar", fetch: fetchImpl, freePort: async () => 40123, spawn: spawnImpl });
+    await expect(bridge.ensureStarted()).rejects.toThrow("Forge bridge was stopped before it was ready");
+    expect(killed()).toBe(1);
+    expect(spawned).toHaveLength(1);
+  });
+
   it("is not spawned without the jars", async () => {
     vi.stubEnv("FORGE_BRIDGE_URL", undefined);
     vi.stubEnv("FORGE_JAR", undefined);
