@@ -182,7 +182,8 @@ async function tick($: EngineInterface, url: string, wanted: readonly string[], 
   } finally {
     isTicking = false
   }
-  $.ui.status(subscriptions?.length ? `events: ${subscriptions.map(s => s.name).join(', ')}` : undefined)
+  // A session that is not woken shows nothing.
+  $.ui.status(subscriptions?.length && (!ownOnly || own?.http) ? `events: ${subscriptions.map(s => s.name).join(', ')}` : undefined)
 }
 
 export const register: Register = (on, options) => {

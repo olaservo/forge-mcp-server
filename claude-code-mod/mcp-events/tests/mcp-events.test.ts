@@ -5,13 +5,17 @@ type Poll = { events: unknown[]; cursor: string; truncated?: boolean }
 
 /**
  * Stands in for the engine and for a server that lists one event and answers polls from `polls`.
- * `status` is what the session's own server answers to forge_status.
+ * `status` is what the session's own server answers to forge_status. `shown` is each text set in the status bar.
  */
 function session(on: On, polls: Poll[], status: unknown = { structuredContent: { revision: 3, events: { source: 'c', http: true } } }) {
   const sent: { method: string; params: { cursor?: string | null } }[] = []
   const prompts: string[] = []
   const stored = new Map<string, unknown>()
-  on('ui.status', () => ({ value: undefined }))
+  const shown: (string | undefined)[] = []
+  on('ui.status', (_, e) => {
+    shown.push(e.text)
+    return { value: undefined }
+  })
   on('ui.toast', () => ({ value: undefined }))
   on('store.get', (_, e) => ({ value: stored.get(e.key) }))
   on('store.set', (_, e) => {
@@ -35,7 +39,7 @@ function session(on: On, polls: Poll[], status: unknown = { structuredContent: {
     const text = `event: message\ndata: ${JSON.stringify({ jsonrpc: '2.0', id: request.id, result })}\n\n`
     return { value: { status: 200, ok: true, headers: {}, text } }
   })
-  return { sent, prompts, stored }
+  return { sent, prompts, stored, shown }
 }
 
 const callStatus = { tool: 'mcp__forge__forge_status' } as never
@@ -85,6 +89,15 @@ test('the system prompt says to end the turn once events are being polled', asyn
   expect(sections[1]!.scope).toBe('session')
 })
 
+test('the status bar names the events once the session will be woken', async ($, on) => {
+  const { shown } = session(on, [{ events: [], cursor: 'c:0' }])
+  await $.command.run({ command: 'mcp-events' })
+  expect(shown).toEqual([undefined])
+  await $.tool.call(callStatus)
+  await $.command.run({ command: 'mcp-events' })
+  expect(shown).toEqual([undefined, 'events: forge.your_move'])
+})
+
 test('an event from another session\'s server starts no turn', async ($, on) => {
   const { sent, prompts, stored } = session(on, [
     { events: [], cursor: 'x:0' },
@@ -125,11 +138,12 @@ test('events are dropped until the status tool has named the server\'s own', asy
 
 test('a server that does not serve events over HTTP leaves the model its wait tool', async ($, on) => {
   // The result as text, which is how it comes when the engine keeps no structured content.
-  const { prompts } = session(on, [{ events: [], cursor: 'x:0' }, { events: [move('x-1')], cursor: 'x:1' }], JSON.stringify({ revision: 3, events: { source: 'c', http: false } }))
+  const { prompts, shown } = session(on, [{ events: [], cursor: 'x:0' }, { events: [move('x-1')], cursor: 'x:1' }], JSON.stringify({ revision: 3, events: { source: 'c', http: false } }))
   await $.tool.call(callStatus)
   await $.command.run({ command: 'mcp-events' })
   const second = await $.command.run({ command: 'mcp-events' })
   expect(second.text).toContain('ids from c, which forge_status says are not served over HTTP')
+  expect(shown).toEqual([undefined, undefined])
   expect((await $.prompt.compose(composing)).sections.map(s => s.id)).toEqual(['intro'])
   await $.turn.complete({ turnId: 't1', reason: 'answer', answer: 'ok' } as never)
   expect(prompts).toEqual([])
@@ -152,8 +166,9 @@ test('a truncated poll forgets the server\'s id prefix until the status tool is 
 })
 
 test('with ownOnly off, every event starts a turn and the note needs no status call', { options: { ownOnly: false } }, async ($, on) => {
-  const { prompts } = session(on, [{ events: [], cursor: 'x:0' }, { events: [move('x-1')], cursor: 'x:1' }])
+  const { prompts, shown } = session(on, [{ events: [], cursor: 'x:0' }, { events: [move('x-1')], cursor: 'x:1' }])
   await $.command.run({ command: 'mcp-events' })
+  expect(shown).toEqual(['events: forge.your_move'])
   expect((await $.command.run({ command: 'mcp-events' })).text).not.toContain('own events only')
   expect((await $.prompt.compose(composing)).sections.map(s => s.id)).toEqual(['intro', 'mcp-events:standing'])
   await $.turn.complete({ turnId: 't1', reason: 'answer', answer: 'ok' } as never)
