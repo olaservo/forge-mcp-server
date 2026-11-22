@@ -72,7 +72,8 @@ export function createServer(opts: CreateServerOptions = {}): McpServer {
       "before choosing one or importing a new one. While the seat has nothing to do, wait in one of two ways. " +
       "If your client starts a turn for you when forge.your_move fires (an MCP Events client, or Claude Code with the " +
       "mcp-events mod, which tells you so), end your turn after acting and do not call forge_wait. " +
-      "Otherwise call forge_wait instead of polling, or subscribe to forge://status through subscriptions/listen.",
+      "Otherwise call forge_wait instead of polling, or subscribe to forge://status through subscriptions/listen. " +
+      "To report a problem with the server or its skills, load forge-feedback.",
   });
 
   const eventsInfo = () => ({ source: events.source, http: opts.servesHttp?.() ?? false });
