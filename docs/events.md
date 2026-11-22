@@ -10,7 +10,7 @@ A watcher long-polls the bridge and pushes `notifications/resources/updated` for
 
 There are two event types:
 
-- `forge.your_move` is emitted when the seat's pending ask changes: a seat in the lobby that is not ready, a draft pick, a drafted or sealed pool with no deck built from it yet (`deck`), a priority prompt, a choice dialog, or the end of a game. It is not emitted while the seat waits on another player, including the moment when Forge has sent the next prompt's buttons and not yet its text. A client's first poll is told the ask that is pending then.
+- `forge.your_move` is emitted when the seat's pending ask changes: a seat in the lobby that is not ready, a draft pick, a drafted or sealed pool with no deck built from it yet (`deck`), a priority prompt, a choice dialog, or the end of a game. It is not emitted while the seat waits on another player, including the moment when Forge has sent the next prompt's buttons and not yet its text. A poll without a cursor returns the event that reported the ask still pending, with its original `eventId` and timestamp, so a client that opens several polls gets the same event each time and no other client is sent it again.
 - `forge.chat` is emitted for each chat line from another player.
 
 Both are delivered by poll and push, and by webhook when the HTTP endpoint has a token. Events are kept in memory (1000 entries), cursors are per process, and a cursor from before a restart polls as `truncated`. Over HTTP, a 2026-07-28 request that names an event must carry the same name in the `Mcp-Name` header, or it gets 400 `HeaderMismatch` (`-32020`).

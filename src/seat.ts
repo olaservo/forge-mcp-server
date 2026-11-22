@@ -19,11 +19,8 @@ export function createSeat(log?: ActivityLog) {
     moves.observe(status);
     chat.observe(status);
   };
-  // A client that starts following mid-ask is told the ask that is pending
-  events.onFirstPoll((name) => {
-    if (name === YOUR_MOVE) void bridge.get<SeatStatus>("/status").then((status) => moves.replay(status), () => undefined);
-  });
-  // A new webhook subscription is sent the event that reported the pending ask, with its eventId
+  // A client that starts following mid-ask, by a poll or stream without a cursor or a new webhook
+  // subscription, is sent the event that reported the pending ask, with its eventId
   events.onPending(YOUR_MOVE, () => moves.current());
   let watcher: StatusWatcher | undefined;
 

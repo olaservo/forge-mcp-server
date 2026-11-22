@@ -25,7 +25,6 @@ export class EventLog {
   private readonly epoch = randomUUID().slice(0, 8);
   private readonly entries: { seq: number; event: EventOccurrence }[] = [];
   private readonly listeners: ((event: EventOccurrence) => void)[] = [];
-  private readonly firstPollListeners: ((name: string) => void)[] = [];
   private readonly pendingSources = new Map<string, () => EventOccurrence | undefined>();
   private seq = 0;
 
@@ -67,11 +66,6 @@ export class EventLog {
     return epoch === this.epoch && Number.isInteger(seq) && seq >= 0 && seq <= this.seq;
   }
 
-  /** Calls `listener` after a poll without a cursor, which is a client starting to follow `name`. */
-  onFirstPoll(listener: (name: string) => void): void {
-    this.firstPollListeners.push(listener);
-  }
-
   /** Sets where `pending(name)` reads from. */
   onPending(name: string, source: () => EventOccurrence | undefined): void {
     this.pendingSources.set(name, source);
@@ -97,9 +91,9 @@ export class EventLog {
     const floor = maxAgeMs === undefined ? "" : new Date(Math.min(8.64e15, Math.max(0, Date.now() - maxAgeMs))).toISOString();
     const fresh = { events: [], cursor: head, hasMore: false, nextPollMs: POLL_MS };
     if (cursor == null) {
-      // After this poll's cursor is taken, so an event a listener emits reaches the new client
-      queueMicrotask(() => this.firstPollListeners.forEach((listener) => listener(name)));
-      return { ...fresh, truncated: false };
+      // A client starting to follow is given the ask still pending, with its eventId, and no other client is.
+      const ask = this.pending(name);
+      return { ...fresh, events: ask ? [ask] : [], truncated: false };
     }
 
     const [epoch, raw] = cursor.split(":");

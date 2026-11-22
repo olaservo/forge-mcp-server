@@ -118,23 +118,24 @@ describe("events", () => {
     expect(new MoveTracker(new EventLog()).observe({ revision: 6, game: { inGame: false }, lobby: constructed, draft: pool })).toBeUndefined();
   });
 
-  it("replays the pending ask to a client that polls without a cursor", async () => {
+  it("gives the pending ask to a client that polls without a cursor, and to no other client", () => {
     const log = new EventLog();
     const moves = new MoveTracker(log);
+    log.onPending(YOUR_MOVE, () => moves.current());
     const seat = { revision: 2, game: { inGame: false }, lobby: { mySlot: 1, slots: [{ index: 0, ready: true }, { index: 1, ready: false }] } };
-    log.onFirstPoll((name) => name === YOUR_MOVE && moves.replay(seat));
-    expect(moves.observe(seat)?.data).toMatchObject({ kind: "lobby" });
+    const ask = moves.observe(seat)!;
+    expect(ask.data).toMatchObject({ kind: "lobby" });
+    const follower = log.poll(YOUR_MOVE, log.cursorAfter(ask));
     const first = log.poll(YOUR_MOVE, null);
-    expect(first.events).toEqual([]);
-    await Promise.resolve();
-    expect(log.poll(YOUR_MOVE, first.cursor).events.map((e) => e.data.kind)).toEqual(["lobby"]);
-    // A second poll without a cursor a moment later is the same client opening another subscription
-    const second = log.poll(YOUR_MOVE, null);
-    await Promise.resolve();
-    expect(log.poll(YOUR_MOVE, second.cursor).events).toEqual([]);
-    expect(moves.replay(seat, 0)?.data).toMatchObject({ kind: "lobby" });
-    expect(moves.observe(seat)).toBeUndefined();
-    expect(moves.replay(priority(3, { waiting: true, prompt: "Waiting for Ola..." }))).toBeUndefined();
+    expect(first.events).toEqual([ask]);
+    expect(first.cursor).toBe(log.head());
+    // A second poll without a cursor is the same client opening another subscription, and gets the same eventId
+    expect(log.poll(YOUR_MOVE, null).events.map((e) => e.eventId)).toEqual([ask.eventId]);
+    // A client that was already following is sent nothing new
+    expect(log.poll(YOUR_MOVE, follower.cursor).events).toEqual([]);
+    // Once the seat is waiting, nothing is pending
+    moves.observe(priority(3, { waiting: true, prompt: "Waiting for Ola..." }));
+    expect(log.poll(YOUR_MOVE, null).events).toEqual([]);
   });
 
   it("emits game_over once when the seat is already back in the lobby", () => {

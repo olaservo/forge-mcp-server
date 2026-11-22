@@ -96,7 +96,8 @@ export function registerEvents(server: McpServer, log: EventLog, webhooks?: Webh
     activity?.(`stream ${params.name} ${id} opened`);
     try {
       // With events to replay, the stream starts at the client's cursor, so one that drops before the replay keeps them.
-      const cursor = start.events.length > 0 ? params.cursor : start.cursor;
+      // A stream without a cursor starts at the head, after the pending ask it is sent.
+      const cursor = start.events.length > 0 && params.cursor != null ? params.cursor : start.cursor;
       await send("notifications/events/active", { cursor, truncated: start.truncated, heartbeatMs });
       while (!signal.aborted) {
         const event = pending.shift();

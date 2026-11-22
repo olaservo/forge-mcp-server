@@ -81,7 +81,6 @@ export class MoveTracker {
   private last: string | undefined;
   /** The finished game already reported. Its result stays in the status under later asks. */
   private reported: string | undefined;
-  private replayed: { key: string; at: number } | undefined;
   /** The event that last reported the ask in `last`. */
   private lastEvent: EventOccurrence | undefined;
   /** The `promptCount` the seat was last seen waiting at, while the count stays there. */
@@ -115,22 +114,6 @@ export class MoveTracker {
   /** The event that reported the ask pending at the last status, or undefined when there is none. A game result is not an ask here. */
   current(): EventOccurrence | undefined {
     return this.lastEvent?.data.kind === "game_over" ? undefined : this.lastEvent;
-  }
-
-  /**
-   * Emits the ask that is pending now, for a client that started following after it was first reported.
-   * One client can open several polls as it starts (fast-agent opened five within four seconds on 2026-11-15),
-   * so the same ask is replayed once per `quietMs`.
-   */
-  replay(status: SeatStatus, quietMs = 15_000): EventOccurrence | undefined {
-    const move = this.pending(status);
-    if (!move ||(move.data.kind === "game_over" && move.key === this.reported)) return undefined;
-    const now = Date.now();
-    if (this.replayed?.key === move.key && now - this.replayed.at < quietMs) return undefined;
-    this.replayed = { key: move.key, at: now };
-    this.last = move.key;
-    if (move.data.kind === "game_over") this.reported = move.key;
-    return (this.lastEvent = this.log.emit(YOUR_MOVE, move.data));
   }
 }
 

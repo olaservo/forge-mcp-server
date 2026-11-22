@@ -285,6 +285,11 @@ describe("webhook delivery", () => {
     await hub.idle();
     expect(events()).toHaveLength(1);
 
+    // a client that starts polling is given the ask, and the webhook subscriber is not sent it again
+    expect(log.poll(YOUR_MOVE, null).events).toEqual([ask]);
+    await hub.idle();
+    expect(events()).toHaveLength(1);
+
     // a new subscription whose cursor is past the ask has it already, and forge.chat has no pending ask
     hub.unsubscribe("ola", subscribeParams(secret));
     await hub.subscribe("ola", subscribeParams(secret, { cursor: log.cursorAfter(ask) }));
