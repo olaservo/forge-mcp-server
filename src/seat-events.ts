@@ -134,6 +134,20 @@ export class MoveTracker {
   }
 }
 
+/**
+ * The names our own chat lines can carry: the name we connected with and our lobby slot's name. The host adds
+ * " (Host)" to the sender in slot 0 (`FServerManager`), which is a remote seat when the host has none of its own.
+ */
+function ownNames(status: SeatStatus): Set<string> {
+  const names = new Set<string>();
+  if (status.connection?.name) names.add(status.connection.name);
+  const mySlot = status.lobby?.mySlot ?? -1;
+  const slot = status.lobby?.slots?.find((s, i) => (s.index ?? i) === mySlot);
+  if (slot?.name) names.add(slot.name);
+  if (mySlot === 0) for (const n of [...names]) names.add(`${n} (Host)`);
+  return names;
+}
+
 /** Emits `forge.chat` for each new chat line from another player. Lines from the server and from our own seat are skipped. */
 export class ChatTracker {
   /** The bridge's count of chat lines at the last status. */
@@ -146,16 +160,16 @@ export class ChatTracker {
     const seen = this.count;
     this.count = status.chatCount ?? 0;
     const added = seen !== undefined && this.count > seen ? (status.chat ?? []).slice(seen - this.count) : [];
-    const me = status.connection?.name;
+    const me = ownNames(status);
     const emitted: EventOccurrence[] = [];
     for (const line of added) {
       if (typeof line === "string") {
         // Bridge 0.1.4 and earlier: `from: text`, so the sender is told from the host's lines by the seat names.
-        const others = new Set((status.lobby?.slots ?? []).map((s) => s.name).filter((n) => n && n !== me));
+        const others = new Set((status.lobby?.slots ?? []).map((s) => s.name).filter((n) => n && !me.has(n)));
         const at = line.indexOf(": ");
         const from = at > 0 ? line.slice(0, at) : "";
         if (others.has(from)) emitted.push(this.log.emit(CHAT, { from, text: line.slice(at + 2), revision: status.revision }));
-      } else if (line.from && line.from !== me) {
+      } else if (line.from && !me.has(line.from)) {
         emitted.push(this.log.emit(CHAT, { from: line.from, text: line.text ?? "", revision: status.revision }));
       }
     }
@@ -226,7 +240,8 @@ export async function waitForAsk(
   const chatted = (status: SeatStatus): boolean => {
     const count = status.chatCount ?? 0;
     const added = count > chatCount ? (status.chat ?? []).slice(chatCount - count) : [];
-    return added.some((line) => typeof line === "string" || (line.from != null && line.from !== status.connection?.name));
+    const me = ownNames(status);
+    return added.some((line) => typeof line === "string" || (line.from != null && !me.has(line.from)));
   };
   for (;;) {
     const revision = status.revision ?? since;

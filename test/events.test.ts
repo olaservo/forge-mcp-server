@@ -176,6 +176,14 @@ describe("events", () => {
     expect(chat.observe({ ...seat, chat: same, chatCount: 32 }).map((e) => e.data.text)).toEqual(["gg", "gg"]);
   });
 
+  it("skips the seat's own lines, renamed or sent from slot 0", () => {
+    const chat = new ChatTracker(new EventLog());
+    const seat = { connection: { name: "Agent" }, lobby: { mySlot: 0, slots: [{ index: 0, name: "Haiku (Host)" }, { index: 1, name: "Ola" }] } };
+    expect(chat.observe({ ...seat, chat: [], chatCount: 0 })).toEqual([]);
+    const lines = [{ from: "Haiku (Host)", text: "hello" }, { from: "Agent (Host)", text: "again" }, { from: "Ola", text: "hi" }];
+    expect(chat.observe({ ...seat, chat: lines, chatCount: 3 }).map((e) => e.data.from)).toEqual(["Ola"]);
+  });
+
   it("reads the chat lines of bridge 0.1.4, which are text", () => {
     const chat = new ChatTracker(new EventLog());
     const seat = { connection: { name: "Claude" }, lobby: { slots: [{ name: "Ola" }, { name: "Claude" }] } };

@@ -432,6 +432,10 @@ describe("deck tools", () => {
     expect(lobby.isError).toBeFalsy();
     expect(calls.find((c) => c.path === "/lobby/deck")?.body).toEqual({ dck: "[metadata]\nName=Burn\n[Main]\n4 Lightning Bolt\n20 Mountain\n" });
 
+    const byName = await client.callTool({ name: "forge_lobby_deck", arguments: { name: "constructed/Burn" } });
+    expect(byName.isError).toBeFalsy();
+    expect(calls.filter((c) => c.path === "/lobby/deck").at(-1)?.body).toEqual({ dck: "[metadata]\nName=Burn\n[Main]\n4 Lightning Bolt\n20 Mountain\n" });
+
     const found = await client.callTool({ name: "forge_deck_search", arguments: { query: "burn", site: "EDHREC" } });
     expect(found.structuredContent).toEqual({ query: "burn", sites: [{ site: "EDHREC", results: [] }] });
 

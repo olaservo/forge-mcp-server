@@ -192,7 +192,12 @@ export function registerTools(
       outputSchema: out.DeckResult,
       annotations: acting,
     },
-    async ({ id, name, dck }) => run(async () => bridge.post("/lobby/deck", id ? { dck: decks.read(id).dck } : { name, dck })),
+    async ({ id, name, dck }) =>
+      run(async () => {
+        // A deck id passed as `name`, as a seat did on 2026-11-22.
+        const deckId = id ?? (name?.includes("/") && !dck ? name : undefined);
+        return bridge.post("/lobby/deck", deckId ? { dck: decks.read(deckId).dck } : { name, dck });
+      }),
   );
 
   registerDeckTools(tool, decks, deckSearch);
@@ -308,6 +313,7 @@ export function registerTools(
       title: "Game action",
       description:
         "One click in the match UI. `ok` and `cancel` press the two prompt buttons (OK passes priority or confirms; Cancel declines). " +
+        "Read `buttons.cancel` before pressing cancel: \"End Turn\" passes until the end of the turn, \"Undo\" takes back the spell being cast. " +
         "`selectCard` with a card `id` from forge_game_state plays, activates, taps or targets that card, as the prompt allows. " +
         "`selectPlayer` targets a player by `id`. `useMana` pays with a floating mana color (color: 1=W 2=U 4=B 8=R 16=G 32=C). " +
         "`alphaStrike` attacks with everything, `undo` takes back the last action, `concede` ends the game. " +
