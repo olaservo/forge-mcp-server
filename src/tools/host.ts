@@ -13,7 +13,7 @@ export function registerHostTools(tool: RegisterTool, host: LobbyHost): void {
       description:
         "Start a Forge host with no window on this machine, for a match with no desktop host. The host has no seat of its own: " +
         "every slot is open, and it starts the match once every slot is taken and each seat is ready with a legal deck. " +
-        "Take your own seat with forge_connect at 127.0.0.1 and the port. Other players join from a Forge client at one of `addresses` and the port. " +
+        "Take your own seat with forge_connect at 127.0.0.1 and the port, and set its deck and avatar before forge_lobby_ready: the match starts 3 seconds after the last seat is ready. Other players join from a Forge client at one of `addresses` and the port. " +
         "The port is open to the local network with no password. Loading cards takes about 40 seconds. " +
         "Called while a host runs with the same settings, it answers that host's state.",
       inputSchema: z.object({
