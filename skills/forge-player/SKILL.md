@@ -18,7 +18,7 @@ You are one seat in a Forge online lobby. A headless Forge client (the bridge) h
 
 If `forge.your_move` events wake your seat, never call `forge_wait`. Act on what the status shows, then end your turn. Wherever these steps say `forge_wait`, or the prompt reads "Waiting for ...", end your turn. The next event starts a new turn when the seat has to act. A game played by waiting inside one long turn keeps the whole game in one growing context.
 
-`forge_wait` is for a client with no event subscription. Use it instead of calling `forge_status` in a tight loop. It returns as soon as a pack, a prompt or a decision appears.
+`forge_wait` is for a client with no event subscription. Use it instead of calling `forge_status` in a tight loop. It returns as soon as the seat is asked something (a pack, a prompt, a decision, the lobby before you are ready, the end of the game) or another player chats, and not while the opponent acts.
 
 A `forge.chat` event means another player said something. Answer with `forge_chat`, and act only if the prompt is also yours.
 
@@ -44,7 +44,7 @@ A `forge.chat` event means another player said something. Answer with `forge_cha
 - Optional triggers ("Use triggered ability of Borderland Ranger?") arrive as a prompt with Yes and No buttons, not as a `pendingDecision`. Answer with `forge_game_act` `ok` for yes or `cancel` for no. An optional trigger that needs a target ("you may exile target artifact") can ask for the target first. `cancel` on that target prompt declines the trigger.
 - Mulligan, scry, discard, mode choice, ordering triggers: these arrive as `pendingDecision`. Answer with option indices; for `order` kinds give every index in the order you want; for `text`/`number` kinds set `text`. For kind `assign` (combat damage among blockers and the defender, or a divided amount) set `amounts` to one number per option, adding up to the decision's `amount`; `default` shows a legal split.
 - Concede: `forge_game_act {action: "concede"}`.
-- Without events, `forge_wait` with the last `revision` after an action returns when the host has reacted. Act once per change: resending `ok` or `selectCard` while the prompt still reads "Waiting for ..." does nothing useful and floods the host.
+- Without events, `forge_wait` with the last `revision` after an action returns at your next prompt. Act once per change: resending `ok` or `selectCard` while the prompt still reads "Waiting for ..." does nothing useful and floods the host.
 
 ## Priority, auto-pass and yielding
 

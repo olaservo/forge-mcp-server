@@ -8,6 +8,7 @@ import type { ActivityLog } from "../log.js";
 import { sharedHost, type LobbyHost } from "../host.js";
 import type { GetText } from "../names.js";
 import * as out from "../schemas.js";
+import { waitForAsk, type SeatStatus } from "../seat-events.js";
 import { acting, failure, readOnly, run, type RegisterTool, type ToolConfig } from "./common.js";
 import { registerDeckTools } from "./decks.js";
 import { registerHostTools } from "./host.js";
@@ -342,8 +343,9 @@ export function registerTools(
     {
       title: "Wait for a change",
       description:
-        "Block until something happens on our seat (a pack arrives, the lobby changes, a prompt or decision appears) or `timeout` seconds pass, " +
-        "then return the same payload as forge_status. Pass the `revision` from the last status so only newer changes wake it. " +
+        "Block until the seat is asked something (a pick, a prompt, a decision, the lobby before it is ready, the end of a game), another player chats, or `timeout` seconds pass, " +
+        "then return the same payload as forge_status. A change that asks nothing of the seat, such as the opponent holding priority, does not return. " +
+        "Pass the `revision` from the last status so only newer changes wake it. " +
         "For a client with no event subscription. A seat woken by forge.your_move events ends its turn and does not call this.",
       inputSchema: z.object({
         since: z.number().int().default(-1).describe("Last seen revision; -1 returns immediately"),
@@ -352,6 +354,6 @@ export function registerTools(
       outputSchema: out.Status,
       annotations: readOnly,
     },
-    async ({ since, timeout }) => run(() => bridge.get("/wait", { since, timeout })),
+    async ({ since, timeout }) => run(() => waitForAsk((s, t) => bridge.get<SeatStatus>("/wait", { since: s, timeout: t }), since, timeout)),
   );
 }

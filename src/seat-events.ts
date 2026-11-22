@@ -201,3 +201,41 @@ export const EVENT_TYPES = [
     },
   },
 ];
+
+/**
+ * Waits on the bridge until the seat is asked something, another player chats, or `timeout` seconds pass, and
+ * returns the status then. A change that asks nothing of the seat, such as the opponent's priority, does not return.
+ */
+export async function waitForAsk(
+  wait: (since: number, timeout: number) => Promise<SeatStatus>,
+  since: number,
+  timeout: number,
+): Promise<SeatStatus> {
+  const deadline = Date.now() + timeout * 1000;
+  let awaited: number | undefined;
+  const asked = (status: SeatStatus): boolean => {
+    const game = status.game;
+    if (game?.inGame && game.waiting) awaited = game.promptCount ?? undefined;
+    else if (game?.promptCount !== awaited) awaited = undefined;
+    return pendingMove(status, awaited) !== undefined;
+  };
+  // The status now, which answers at once, gives the chat count to compare with.
+  let status = await wait(-1, 1);
+  if (since < 0) return status;
+  const chatCount = status.chatCount ?? 0;
+  const chatted = (status: SeatStatus): boolean => {
+    const count = status.chatCount ?? 0;
+    const added = count > chatCount ? (status.chat ?? []).slice(chatCount - count) : [];
+    return added.some((line) => typeof line === "string" || (line.from != null && line.from !== status.connection?.name));
+  };
+  for (;;) {
+    const revision = status.revision ?? since;
+    if (revision > since && (asked(status) || chatted(status))) return status;
+    since = Math.max(since, revision);
+    const left = Math.ceil((deadline - Date.now()) / 1000);
+    if (left <= 0) return status;
+    status = await wait(since, left);
+    // The bridge answers with an unchanged revision when its own timeout ran out.
+    if ((status.revision ?? since) <= since) return status;
+  }
+}

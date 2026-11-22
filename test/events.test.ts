@@ -3,7 +3,7 @@ import { InMemoryTransport } from "@modelcontextprotocol/server";
 import { describe, expect, it, vi } from "vitest";
 import { z } from "zod";
 import { EventLog } from "../src/event-log.js";
-import { CHAT, ChatTracker, MoveTracker, YOUR_MOVE } from "../src/seat-events.js";
+import { CHAT, ChatTracker, MoveTracker, waitForAsk, YOUR_MOVE } from "../src/seat-events.js";
 import { createServer, skillCatalog } from "../src/server.js";
 import { connect, fakeBridge } from "./helpers.js";
 
@@ -301,5 +301,49 @@ describe("events", () => {
     const { cursor } = log.poll(YOUR_MOVE, null);
     for (let i = 0; i < 4; i++) log.emit(YOUR_MOVE, { i });
     expect(log.poll(YOUR_MOVE, cursor)).toMatchObject({ events: [], truncated: true });
+  });
+});
+
+describe("waitForAsk", () => {
+  /** A bridge whose /wait answers with the next status in `seq`, or the last one once they run out. */
+  const bridge = (now: object, seq: object[]) => {
+    const calls: number[] = [];
+    const wait = async (since: number) => {
+      calls.push(since);
+      return (since < 0 ? now : (seq.shift() ?? { ...now })) as never;
+    };
+    return { wait, calls };
+  };
+  const theirs = (revision: number) => ({ revision, chatCount: 0, game: game(5, { prompt: "Waiting for Opponent...", waiting: true, buttons: {} }) });
+
+  it("returns at once for since -1", async () => {
+    const { wait, calls } = bridge(priority(4), []);
+    expect((await waitForAsk(wait, -1, 5)).revision).toBe(4);
+    expect(calls).toEqual([-1]);
+  });
+
+  it("skips changes that ask nothing of the seat and returns at the next prompt", async () => {
+    const { wait, calls } = bridge(theirs(4), [theirs(5), theirs(6), { ...priority(6), revision: 7 }]);
+    const status = await waitForAsk(wait, 4, 5);
+    expect(status.revision).toBe(7);
+    expect(calls).toEqual([-1, 4, 5, 6]);
+  });
+
+  it("returns a pending ask newer than since without waiting", async () => {
+    const { wait, calls } = bridge({ ...priority(6), revision: 9 }, []);
+    expect((await waitForAsk(wait, 4, 5)).revision).toBe(9);
+    expect(calls).toEqual([-1]);
+  });
+
+  it("returns on another player's chat line, not on the seat's own", async () => {
+    const me = { connection: { name: "Agent" } };
+    const said = (revision: number, from: string) => ({ ...theirs(revision), ...me, chatCount: 1, chat: [{ from, text: "hi" }] });
+    const { wait } = bridge({ ...theirs(4), ...me }, [said(5, "Agent"), { ...said(6, "Agent"), chatCount: 2, chat: [{ from: "Agent", text: "hi" }, { from: "Opponent", text: "gl" }] }]);
+    expect((await waitForAsk(wait, 4, 5)).revision).toBe(6);
+  });
+
+  it("returns when the bridge times out with no change", async () => {
+    const { wait } = bridge(theirs(4), [theirs(4)]);
+    expect((await waitForAsk(wait, 4, 5)).revision).toBe(4);
   });
 });
