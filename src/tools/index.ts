@@ -25,7 +25,7 @@ async function lobbyChange(bridge: Bridge, path: string, body: unknown): Promise
 }
 
 /** What forge_status and the forge://status resource return. Starts the bridge when it is down. */
-export async function seatStatus(bridge: Bridge, events?: () => { source: string; http: boolean }): Promise<Record<string, unknown>> {
+export async function seatStatus(bridge: Bridge, events?: () => { source: string; http: boolean; url?: string }): Promise<Record<string, unknown>> {
   const started = await bridge.ensureStarted().catch((e: Error) => `error: ${e.message}`);
   const status = await bridge.get<Record<string, unknown>>("/status");
   return { bridge: { url: bridge.url, startup: started }, events: events?.(), ...status };
@@ -39,7 +39,7 @@ export function registerTools(
   names?: GetText,
   deckSearch?: SearchIo,
   host: LobbyHost = sharedHost(),
-  events?: () => { source: string; http: boolean },
+  events?: () => { source: string; http: boolean; url?: string },
 ): void {
   /** Registers a tool and logs each call. */
   const tool: RegisterTool = <In extends z.ZodType>(name: string, config: ToolConfig<In>, handler: (args: z.output<In>) => Promise<CallToolResult>) => {
@@ -61,7 +61,7 @@ export function registerTools(
       description:
         "Everything about this seat in one call: bridge connection to the Forge host, lobby slots and event, " +
         "draft progress (whether a pick is pending), game summary (prompt, buttons, pending decision) and recent chat. " +
-        "`events` has the prefix of this process's event ids (`source`) and whether it serves them over HTTP (`http`). " +
+        "`events` has the prefix of this process's event ids (`source`) and whether it serves them over HTTP (`http`) and at which address (`url`). " +
         "Call this first, and after forge_wait.",
       inputSchema: z.object({}),
       outputSchema: out.StatusWithBridge,

@@ -37,6 +37,8 @@ export interface CreateServerOptions {
   events?: EventLog;
   /** Whether this process serves `/mcp` over HTTP, where a client can poll `events`. Default: it does not. */
   servesHttp?: () => boolean;
+  /** The URL of that endpoint, once the process listens. */
+  httpUrl?: () => string | undefined;
   /** Webhook subscriptions, shared like `events`. Without it the event types offer poll only. */
   webhooks?: WebhookHub;
   /** The authenticated caller of the request this instance serves. */
@@ -76,7 +78,10 @@ export function createServer(opts: CreateServerOptions = {}): McpServer {
       "To report a problem with the server or its skills, load forge-feedback.",
   });
 
-  const eventsInfo = () => ({ source: events.source, http: opts.servesHttp?.() ?? false });
+  const eventsInfo = () => {
+    const url = opts.httpUrl?.();
+    return { source: events.source, http: opts.servesHttp?.() ?? false, ...(url && { url }) };
+  };
   registerTools(server, bridge, opts.log, opts.decks, opts.names, opts.deckSearch, opts.host, eventsInfo);
   registerEvents(server, events, opts.webhooks && { hub: opts.webhooks, principal: opts.principal }, opts.log);
 

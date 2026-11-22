@@ -32,8 +32,12 @@ const seen = new Set<string>()
 const held = new Map<string, Occurrence>()
 /** Event names whose poll came back truncated. */
 const missed = new Set<string>()
-/** What the session's own server said of its events in its status tool: the prefix of its event ids, and whether the polled endpoint can be its own. */
-let own: { source: string; http: boolean } | undefined
+/** What the session's own server said of its events in its status tool: the prefix of its event ids, whether it serves them over HTTP, and at which address. */
+let own: { source: string; http: boolean; url?: string } | undefined
+/** Whether the polled endpoint relays the events of every server on the machine. */
+let relays = false
+/** Whether the polled endpoint has the events of the session's own server. A server that names no address is taken to be at the polled one. */
+const reachesOwn = (url: string) => own?.http === true && (relays || own.url === undefined || own.url === url)
 
 const storeKey = (url: string, name: string) => `mcp-events:cursor:${url}:${name}`
 
@@ -88,7 +92,7 @@ function standingNote(server: string, names: readonly string[], waitTools: reado
 }
 
 /** The `events` object in a status tool's result, which carries the tool's JSON as structuredContent or as text. */
-function eventsOf(result: unknown, text: string | undefined): { source: string; http: boolean } | undefined {
+function eventsOf(result: unknown, text: string | undefined): { source: string; http: boolean; url?: string } | undefined {
   const record = result as { structuredContent?: { events?: unknown }; events?: unknown } | null | undefined
   let events = record?.structuredContent?.events ?? record?.events
   for (const json of [text, result]) {
@@ -99,8 +103,8 @@ function eventsOf(result: unknown, text: string | undefined): { source: string; 
       // Not JSON: an error text
     }
   }
-  const { source, http } = (events ?? {}) as { source?: unknown; http?: unknown }
-  return typeof source === 'string' && source ? { source, http: http === true } : undefined
+  const { source, http, url } = (events ?? {}) as { source?: unknown; http?: unknown; url?: unknown }
+  return typeof source === 'string' && source ? { source, http: http === true, ...(typeof url === 'string' && { url }) } : undefined
 }
 
 /** Starts a turn. Not awaited: the prompt runs once the session is idle, and a command.run hook may not wait on it. */
@@ -139,9 +143,10 @@ async function pollOne($: EngineInterface, url: string, sub: Subscription, ownOn
       else await $.store.set(storeKey(url, sub.name), cursor)
     }
     // A stale cursor on the first poll is a restart of either side: nothing this session was missed.
-    if (res.truncated && sub.hasPolled && (!ownOnly || own?.http)) missed.add(sub.name)
+    if (res.truncated && sub.hasPolled && (!ownOnly || reachesOwn(url))) missed.add(sub.name)
     // The session's server may have restarted with another id prefix: its status tool is read again.
-    if (res.truncated && sub.hasPolled && own?.http) own = undefined
+    // A relay's truncated poll is the relay restarting, which changes no prefix.
+    if (res.truncated && sub.hasPolled && reachesOwn(url) && !relays) own = undefined
     // A truncated poll usually means the server restarted, possibly with other event types.
     if (res.truncated) listAt = 0
     sub.hasPolled = true
@@ -183,7 +188,7 @@ async function tick($: EngineInterface, url: string, wanted: readonly string[], 
     isTicking = false
   }
   // A session that is not woken shows nothing.
-  $.ui.status(subscriptions?.length && (!ownOnly || own?.http) ? `events: ${subscriptions.map(s => s.name).join(', ')}` : undefined)
+  $.ui.status(subscriptions?.length && (!ownOnly || reachesOwn(url)) ? `events: ${subscriptions.map(s => s.name).join(', ')}` : undefined)
 }
 
 export const register: Register = (on, options) => {
@@ -198,12 +203,13 @@ export const register: Register = (on, options) => {
   const waitTools = list(options.waitTools, 'forge_wait')
   const ownOnly = String(options.ownOnly ?? true) !== 'false'
   const statusTool = String(options.statusTool ?? 'forge_status')
+  relays = String(options.relay ?? false) === 'true'
 
   on('prompt.compose', async ($, e, next) => {
     const composed = await next(e)
     if (!subscriptions?.length) return composed
-    // A session whose server does not own the endpoint is not woken, and keeps its wait tool.
-    if (ownOnly && !own?.http) return composed
+    // A session whose server's events are not at the endpoint is not woken, and keeps its wait tool.
+    if (ownOnly && !reachesOwn(url)) return composed
     const text = standingNote(server, subscriptions.map(s => s.name), waitTools)
     return { sections: [...composed.sections, { id: 'mcp-events:standing', text, scope: 'session' as const }] }
   })
@@ -241,7 +247,7 @@ export const register: Register = (on, options) => {
     await tick($, url, wanted, ownOnly)
     if (lastError) return { text: `MCP events at ${url}: ${lastError}` }
     if (!subscriptions?.length) return { text: `MCP events at ${url}: the server lists no events with poll delivery.` }
-    const whose = !ownOnly ? [] : [own ? `  own events only: ids from ${own.source}${own.http ? '' : `, which ${statusTool} says are not served over HTTP`}` : `  own events only: none until ${statusTool} has been called`]
+    const whose = !ownOnly ? [] : [own ? `  own events only: ids from ${own.source}${reachesOwn(url) ? '' : own.http ? `, which ${statusTool} says are served at ${own.url}` : `, which ${statusTool} says are not served over HTTP`}` : `  own events only: none until ${statusTool} has been called`]
     return {
       text: [`MCP events at ${url}, ${fired} fired this session, ${held.size} waiting:`, ...subscriptions.map(s => `  ${s.name}  cursor ${s.cursor ?? 'none'}`), ...whose].join('\n'),
     }

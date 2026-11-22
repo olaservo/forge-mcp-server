@@ -149,6 +149,30 @@ test('a server that does not serve events over HTTP leaves the model its wait to
   expect(prompts).toEqual([])
 })
 
+const elsewhere = { structuredContent: { revision: 3, events: { source: 'c', http: true, url: 'http://127.0.0.1:50123/mcp' } } }
+
+test('a server that serves its events at another address leaves the model its wait tool', async ($, on) => {
+  const { prompts, shown } = session(on, [{ events: [], cursor: 'x:0' }, { events: [move('x-1')], cursor: 'x:1' }], elsewhere)
+  await $.tool.call(callStatus)
+  await $.command.run({ command: 'mcp-events' })
+  const second = await $.command.run({ command: 'mcp-events' })
+  expect(second.text).toContain('ids from c, which forge_status says are served at http://127.0.0.1:50123/mcp')
+  expect(shown).toEqual([undefined, undefined])
+  expect((await $.prompt.compose(composing)).sections.map(s => s.id)).toEqual(['intro'])
+  await $.turn.complete({ turnId: 't1', reason: 'answer', answer: 'ok' } as never)
+  expect(prompts).toEqual([])
+})
+
+test('with relay on, a server at another address is reached through the endpoint', { options: { relay: true } }, async ($, on) => {
+  const { prompts } = session(on, [{ events: [], cursor: 'r:0' }, { events: [move('x-1'), move('c-1')], cursor: 'r:2' }], elsewhere)
+  await $.tool.call(callStatus)
+  await $.command.run({ command: 'mcp-events' })
+  await $.command.run({ command: 'mcp-events' })
+  expect((await $.prompt.compose(composing)).sections.map(s => s.id)).toEqual(['intro', 'mcp-events:standing'])
+  await $.turn.complete({ turnId: 't1', reason: 'answer', answer: 'ok' } as never)
+  expect(prompts).toHaveLength(1)
+})
+
 test('a truncated poll forgets the server\'s id prefix until the status tool is called again', async ($, on) => {
   const { prompts } = session(on, [
     { events: [], cursor: 'c:0' },

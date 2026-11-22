@@ -1,4 +1,4 @@
-import { createHash, timingSafeEqual } from "node:crypto";
+import { createHash, randomBytes, timingSafeEqual } from "node:crypto";
 import { type IncomingMessage, createServer as createHttpServer } from "node:http";
 import type { AddressInfo } from "node:net";
 import { hostHeaderValidation, toNodeHandler } from "@modelcontextprotocol/node";
@@ -8,6 +8,7 @@ import { STATUS_URI, createServer } from "../server.js";
 import type { Bridge } from "../bridge.js";
 import type { EventLog } from "../event-log.js";
 import { fileLog, stderrLog } from "../log.js";
+import { register } from "../registry.js";
 import { WebhookHub, retryDelays } from "../webhooks.js";
 
 export interface HttpOptions {
@@ -21,6 +22,13 @@ export interface HttpOptions {
   proxyToken?: string;
   /** Defaults to a hub configured from `FORGE_MCP_SUBSCRIPTIONS` and `FORGE_MCP_WEBHOOK_INSECURE` when there is a token. */
   webhooks?: WebhookHub;
+  /** Binds a free port when `port` is taken, so every server process on a machine has an endpoint. */
+  fallbackToFreePort?: boolean;
+  /**
+   * Directory where this process writes its URL once it listens, see `registry.ts`. With it, a process on a
+   * fallback port that has no `FORGE_MCP_TOKEN` makes up a token and writes it there.
+   */
+  registry?: string;
 }
 
 export const PRINCIPAL_HEADER = "x-forge-principal";
@@ -59,20 +67,33 @@ export async function eventNameMismatch(request: Request): Promise<Response | un
  * With a token, a request without `Authorization: Bearer <token>` gets 401, and the caller's principal is
  * `token:` and the first 8 hex digits of the token's SHA-256. A request with the proxy token is from a proxy
  * that has authenticated the caller, and its principal is the `x-forge-principal` header the proxy set.
+ *
+ * `FORGE_MCP_SUBSCRIPTIONS` is read only by the process that got `port`. A process on a fallback port keeps its
+ * subscriptions in memory: the file holds one process's subscriptions and each save replaces it whole.
  */
 export function listenHttp({ bridge, skills, events, port, ...opts }: HttpOptions) {
   const host = process.env.FORGE_MCP_HOST ?? "127.0.0.1";
   const allowedHosts = (process.env.FORGE_MCP_ALLOWED_HOSTS ?? `${host},localhost,127.0.0.1`).split(",").map((s) => s.trim());
-  const token = opts.token ?? process.env.FORGE_MCP_TOKEN;
+  let token = opts.token ?? process.env.FORGE_MCP_TOKEN;
+  // Set on a fallback port when no token is configured
+  let madeUpToken: string | undefined;
   const proxyToken = opts.proxyToken ?? process.env.FORGE_MCP_PROXY_TOKEN;
   const toFile = fileLog();
   const log = toFile ?? stderrLog;
-  const webhooks =
-    opts.webhooks ??
-    (token || proxyToken ? new WebhookHub(events, { file: process.env.FORGE_MCP_SUBSCRIPTIONS, insecure: process.env.FORGE_MCP_WEBHOOK_INSECURE === "1", retryDelaysMs: retryDelays(process.env.FORGE_MCP_WEBHOOK_RETRY_MS), log }) : undefined);
-  const tokenAuth: AuthInfo | undefined = token ? { token, clientId: `token:${digest(token).toString("hex").slice(0, 8)}`, scopes: [] } : undefined;
+  let fellBack = false;
+  let url: string | undefined;
+  let unregister: (() => void) | undefined;
+  // Made once the port is known: only the process that got `port` reads the subscriptions file
+  let hub: WebhookHub | undefined;
+  const webhooks = (): WebhookHub | undefined => {
+    if (opts.webhooks) return opts.webhooks;
+    if (!token && !proxyToken) return undefined;
+    const file = fellBack ? undefined : process.env.FORGE_MCP_SUBSCRIPTIONS;
+    return (hub ??= new WebhookHub(events, { file, insecure: process.env.FORGE_MCP_WEBHOOK_INSECURE === "1", retryDelaysMs: retryDelays(process.env.FORGE_MCP_WEBHOOK_RETRY_MS), log }));
+  };
+  const tokenAuth = (given: string): AuthInfo => ({ token: given, clientId: `token:${digest(given).toString("hex").slice(0, 8)}`, scopes: [] });
   const bus = new InMemoryServerEventBus((e) => console.error(`[forge-mcp-server] ${e.message}`));
-  const handler = createMcpHandler((ctx) => createServer({ bridge, skills, events, servesHttp: () => true, webhooks, principal: ctx.authInfo?.clientId, log: ctx.authInfo ? log : toFile }), { bus });
+  const handler = createMcpHandler((ctx) => createServer({ bridge, skills, events, servesHttp: () => true, httpUrl: () => url, webhooks: webhooks(), principal: ctx.authInfo?.clientId, log: ctx.authInfo ? log : toFile }), { bus });
   const nodeHandler = toNodeHandler({ fetch: async (request, options) => (await eventNameMismatch(request)) ?? handler.fetch(request, options) });
   const guard = hostHeaderValidation(allowedHosts);
 
@@ -84,7 +105,7 @@ export function listenHttp({ bridge, skills, events, port, ...opts }: HttpOption
     if (proxyToken && same(given, proxyToken) && typeof principal === "string" && principal.trim()) {
       return { token: given, clientId: principal.trim(), scopes: [] };
     }
-    return token && same(given, token) ? tokenAuth : false;
+    return token && same(given, token) ? tokenAuth(token) : false;
   };
 
   const http = createHttpServer((req, res) => {
@@ -106,14 +127,32 @@ export function listenHttp({ bridge, skills, events, port, ...opts }: HttpOption
   const listening = new Promise<boolean>((resolve) => (settle = resolve));
   // A port that is already taken (another session's server) must not take the stdio server down with it.
   http.on("error", (err: NodeJS.ErrnoException) => {
+    if (err.code === "EADDRINUSE" && opts.fallbackToFreePort && !fellBack && port !== 0) {
+      fellBack = true;
+      // The port the user configured keeps the authentication they configured. This one they did not ask for, so it is never open.
+      if (!token && opts.registry) token = madeUpToken = randomBytes(24).toString("hex");
+      http.listen(0, host);
+      return;
+    }
     console.error(`forge-mcp-server: no HTTP endpoint on ${host}:${port} (${err.code ?? err.message}); events over HTTP are unavailable in this process`);
     settle(false);
   });
-  http.listen(port, host, () => {
+  http.on("listening", () => {
     const mode = token || proxyToken ? "bearer token required" : "no authentication";
-    console.error(`forge-mcp-server on http://${host}:${(http.address() as AddressInfo).port}/mcp (${mode}); bridge at ${bridge.place}`);
+    url = `http://${host}:${(http.address() as AddressInfo).port}/mcp`;
+    console.error(`forge-mcp-server on ${url} (${mode})${fellBack ? `, port ${port} being taken` : ""}; bridge at ${bridge.place}`);
+    // Restored subscriptions deliver from the start, before any request
+    webhooks();
+    if (opts.registry) {
+      try {
+        unregister = register(opts.registry, { url, source: events.source, pid: process.pid, startedAt: new Date().toISOString(), ...(madeUpToken && { token: madeUpToken }) });
+      } catch (err) {
+        console.error(`forge-mcp-server: could not write to ${opts.registry}: ${(err as Error).message}`);
+      }
+    }
     settle(true);
   });
+  http.listen(port, host);
 
   return {
     /** Resolves once the port is open, or with false when it could not be opened. */
@@ -121,7 +160,10 @@ export function listenHttp({ bridge, skills, events, port, ...opts }: HttpOption
     statusChanged: () => bus.publish({ kind: "resource_updated", uri: STATUS_URI }),
     /** The port in use, once listening. */
     port: () => (http.address() as AddressInfo).port,
+    /** The endpoint's URL, once listening. */
+    url: () => url,
     close: () => {
+      unregister?.();
       http.close();
       void handler.close();
     },

@@ -48,8 +48,14 @@
     "statusTool": {
       "type": "string",
       "title": "Status tool",
-      "description": "Tool name (without the server prefix) whose result has events.source, the prefix of the server's event ids, and events.http, whether it serves events over HTTP",
+      "description": "Tool name (without the server prefix) whose result has events.source, the prefix of the server's event ids, events.http, whether it serves events over HTTP, and events.url, where",
       "default": "forge_status"
+    },
+    "relay": {
+      "type": "boolean",
+      "title": "Endpoint relays every server",
+      "description": "The endpoint is a reader that relays the events of every server on the machine, so the session's own server is reached there whatever address it serves at",
+      "default": false
     }
   }
 }

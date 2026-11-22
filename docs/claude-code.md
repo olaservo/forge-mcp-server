@@ -12,7 +12,15 @@ The mod starts a turn only for the session's own server. `forge_status` returns 
 
 Once `events.http` is true, the mod tells the agent in its system prompt to end its turn when the seat has nothing to do and not to call `forge_wait`.
 
-The mod polls one URL. With several sessions on one machine, the first server gets `FORGE_MCP_PORT` and its session is woken by events. The other servers log that the port is taken and report `events.http: false`, and their sessions wait with `forge_wait`.
+## Several sessions on one machine
+
+The first server gets `FORGE_MCP_PORT`. Each later one binds a free port on `127.0.0.1`. Every server reports its address as `events.url` in `forge_status` and writes it to a registry, one file per process: `~/.forge-seat/servers/<pid>.json`, or the directory in `FORGE_MCP_REGISTRY`. The file has `url`, `source`, `pid` and `startedAt`. The server deletes it on exit, and each server deletes the files of processes that have ended when it starts.
+
+With `FORGE_MCP_TOKEN` set, every endpoint needs that token. Without it, the server at `FORGE_MCP_PORT` has no authentication, as before, and a server on a free port makes up a token for the life of the process and writes it to its registry file as `token`. A port the configuration did not name is never open without one. The file and a directory the server creates are readable by the user only.
+
+The mod polls one URL and sends no token, so on its own it reaches only the server at that URL. A session whose server reports another `events.url` keeps `forge_wait`. To wake every session, run a reader that subscribes to each server in the registry and serves all their events at one address ([mcp-mailbox](https://github.com/olaservo/mcp-mailbox) has one), point the mod's `url` at it and turn `relay` on. The mod still starts a turn only for the session's own events.
+
+`FORGE_MCP_SUBSCRIPTIONS` is read only by the server that got `FORGE_MCP_PORT`. A server on a free port keeps its subscriptions in memory.
 
 ## Options
 
@@ -23,7 +31,8 @@ The mod polls one URL. With several sessions on one machine, the first server ge
 - `stateTools`: the tools whose results show the server's state. Default `forge_status,forge_wait,forge_game_state,forge_game_act,forge_game_decide`.
 - `waitTools`: the tools the agent is told not to call. Default `forge_wait`.
 - `ownOnly`: start turns only for the session's own server, as above. Default on. Turned off, every event at the URL starts a turn and the system prompt note is added as soon as the mod is polling.
-- `statusTool`: the tool whose result has `events.source` and `events.http`. Default `forge_status`.
+- `statusTool`: the tool whose result has `events.source`, `events.http` and `events.url`. Default `forge_status`.
+- `relay`: the endpoint is a reader that relays every server's events, so the session is woken whatever `events.url` its server reports. Default off.
 
 ## Installing the mod
 
