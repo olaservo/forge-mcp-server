@@ -41,8 +41,9 @@ export function pendingMove(status: SeatStatus): Move | undefined {
     return undefined;
   }
   if (draft?.pickPending) {
-    const prompt = `Pack ${draft.packNumber}, pick ${draft.pickNumber}`;
-    return { key: `draft_pick:${draft.packNumber}:${draft.pickNumber}`, data: { kind: "draft_pick", prompt, revision } };
+    const clock = typeof draft.secondsLeft === "number" ? { secondsLeft: draft.secondsLeft } : {};
+    const prompt = `Pack ${draft.packNumber}, pick ${draft.pickNumber}` + ("secondsLeft" in clock ? `, ${clock.secondsLeft} s on the clock` : "");
+    return { key: `draft_pick:${draft.packNumber}:${draft.pickNumber}`, data: { kind: "draft_pick", prompt, revision, ...clock } };
   }
   // The host can return the seat to the lobby as the game ends, so the result arrives with inGame false.
   // It stays in the status afterwards. The key does not change, so it fires once.
@@ -50,10 +51,23 @@ export function pendingMove(status: SeatStatus): Move | undefined {
   // A seat that sits unready has its name, portrait and deck still to set, for example after auto-join without a deck.
   const mySlot = status.lobby?.mySlot ?? -1;
   const seat = status.lobby?.slots?.find((s, i) => (s.index ?? i) === mySlot);
+  const lobby = status.lobby;
+  // The pool of a draft or sealed event is not a deck. The seat keeps its ready flag from before the draft,
+  // so nothing else asks it to build one. `myDeck` needs forge-agent-bridge 0.1.6.
+  const poolEvent = draft?.poolReceived ? draft.poolEventId : undefined;
+  const poolIsForThisLobby = poolEvent != null && lobby?.limitedMode === true && (lobby.activeEventId === poolEvent || lobby.event?.eventId === poolEvent);
+  if (seat && poolIsForThisLobby && !((lobby?.myDeck?.mainSize ?? 0) > 0)) {
+    const prompt = "Your pool has arrived. Build a deck of at least 40 cards from it with forge_draft_deck, then check that you are ready.";
+    return { key: `deck:${poolEvent}`, data: { kind: "deck", prompt, revision } };
+  }
   const drafting = (draft?.packNumber ?? 0) > 0 && !draft?.poolReceived;
   if (seat && seat.ready === false && !drafting) {
-    const prompt = "You are seated in the lobby and not ready. Set your name, portrait and deck, then ready up.";
-    return { key: "lobby", data: { kind: "lobby", prompt, revision } };
+    // Before a draft or sealed event starts there is no pool to build from, and the host cannot start until every seat is ready.
+    const beforeEvent = lobby?.limitedMode === true && lobby.event?.phase === "LOBBY_GATHER" && lobby.event.eventId !== poolEvent;
+    const prompt = beforeEvent
+      ? "You are seated in a Limited lobby with an event set up and you are not ready. Ready up so the host can start it. No deck is needed yet."
+      : "You are seated in the lobby and not ready. Set your name, portrait and deck, then ready up.";
+    return { key: beforeEvent ? `lobby:${lobby.event?.eventId}` : "lobby", data: { kind: "lobby", prompt, revision } };
   }
   return undefined;
 }
@@ -131,16 +145,17 @@ export const EVENT_TYPES = [
   {
     name: YOUR_MOVE,
     description:
-      "Fires when the Forge seat is asked to act: a seat in the lobby that is not ready yet, a draft pick, a priority prompt, a choice dialog, or the end of a game. " +
+      "Fires when the Forge seat is asked to act: a seat in the lobby that is not ready yet, a draft pick, a drafted or sealed pool to build a deck from, a priority prompt, a choice dialog, or the end of a game. " +
       "The payload is a summary. Read the full state with forge_status before acting.",
     inputSchema: NO_ARGUMENTS,
     payloadSchema: {
       type: "object",
       properties: {
-        kind: { type: "string", enum: ["lobby", "draft_pick", "priority", "decision", "game_over"] },
+        kind: { type: "string", enum: ["lobby", "draft_pick", "deck", "priority", "decision", "game_over"] },
         prompt: { type: "string" },
         decisionKind: { type: "string" },
         revision: { type: "integer", description: "Bridge revision the ask was seen at" },
+        secondsLeft: { type: "integer", description: "Left on the pick clock when a draft pick was asked for, if the host set one" },
         turn: { type: "integer" },
         phase: { type: "string" },
       },

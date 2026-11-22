@@ -84,6 +84,8 @@ export const Lobby = z.looseObject({
   activeEventId: str,
   formatName: str,
   slots: z.array(LobbySlot).nullish(),
+  /** The deck the seat last sent to the host. Bridge 0.1.6. */
+  myDeck: z.looseObject({ name: str, mainSize: num, sideboardSize: num }).nullish(),
   event: EventView.nullish(),
 });
 
@@ -92,6 +94,8 @@ export const Draft = z.looseObject({
   packNumber: num,
   pickNumber: num,
   timerSeconds: num,
+  /** Left on the pick clock. Sent while a pick is pending and the host set a clock. Bridge 0.1.6. */
+  secondsLeft: num,
   pickPending: bool,
   packSize: num,
   pack: z.array(PaperCard).nullish(),
@@ -109,6 +113,7 @@ export const Pool = z.looseObject({
   name: str,
   path: str,
   tags: strings,
+  landSet: str,
   size: num,
   mainSize: num,
   sideboardSize: num,
@@ -195,6 +200,7 @@ export const StatusWithBridge = Status.extend({
 
 export const PickResult = z.looseObject({ picked: PaperCard.nullish(), packNumber: num, pickNumber: num });
 export const DeckResult = z.looseObject({ deck: str, size: num });
+export const BuiltDeck = z.looseObject({ deck: str, size: num, lands: num, sideboardSize: num, path: str, problem: str });
 export const OkResult = z.looseObject({ ok: bool });
 export const LogResult = z.looseObject({ log: strings });
 

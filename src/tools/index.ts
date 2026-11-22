@@ -172,7 +172,7 @@ export function registerTools(
     {
       title: "Set lobby deck",
       description:
-        "Choose the deck for our lobby slot. With no arguments, uses the pool delivered by the draft. " +
+        "Choose the deck for our lobby slot. After a draft or sealed event, build the deck with forge_draft_deck instead. " +
         "`id` picks any deck listed by forge_decks. `name` picks a deck from Forge's network-events or constructed folders; " +
         "`dck` submits deck-file text ([metadata]/[Main]/[Sideboard] sections).",
       inputSchema: z.object({
@@ -206,7 +206,7 @@ export function registerTools(
     {
       title: "Current draft pack",
       description:
-        "The pack in front of us: pack and pick numbers, the pick timer, and every card with mana cost, type, colors, P/T and oracle text. " +
+        "The pack in front of us: pack and pick numbers (both from 1), the pick timer with `secondsLeft` when the host set one, and every card with mana cost, type, colors, P/T and oracle text. " +
         "`pickPending` false means we have already picked and the next pack has not arrived; use forge_wait.",
       inputSchema: z.object({}),
       outputSchema: out.Draft,
@@ -231,12 +231,31 @@ export function registerTools(
     "forge_draft_pool",
     {
       title: "Drafted pool",
-      description: "The card pool delivered when the draft ended, its event tags, and the .dck path it was saved to.",
+      description: "The card pool delivered when the draft ended or the sealed event started, its event tags, and the .dck path it was saved to.",
       inputSchema: z.object({}),
       outputSchema: out.Pool,
       annotations: readOnly,
     },
     async () => run(() => bridge.get("/draft/pool")),
+  );
+
+  tool(
+    "forge_draft_deck",
+    {
+      title: "Build the deck from the pool",
+      description:
+        "Build the deck for the Limited match from the delivered pool and set it on our lobby slot. `main` names the pool cards to play, one entry per copy. " +
+        "`lands` adds basic lands, which are free in Limited. The rest of the pool becomes the sideboard, and the deck keeps the pool's name and event tags. " +
+        "`problem` is null when the deck is legal, which needs at least 40 cards in `size`. Call it again to change the deck.",
+      inputSchema: z.object({
+        main: z.array(z.string().min(1)).describe("Pool card names, repeated for each copy played"),
+        lands: z.record(z.string(), z.number().int().min(0)).default({}).describe('Basic lands to add, for example {"Swamp": 9, "Mountain": 8}'),
+        landSet: z.string().optional().describe("Set code for the basic lands. Default: the set most of the pool comes from"),
+      }),
+      outputSchema: out.BuiltDeck,
+      annotations: acting,
+    },
+    async ({ main, lands, landSet }) => run(() => bridge.post("/draft/deck", { main, lands, landSet })),
   );
 
   tool(

@@ -7,7 +7,7 @@
     {
       "index": 0,
       "type": "LOCAL",
-      "name": "HostAI",
+      "name": "Ola",
       "ready": false,
       "avatar": 12,
       "team": 0,
@@ -25,25 +25,30 @@
       "hasDeck": false
     }
   ],
+  "myDeck": {
+    "name": "Draft - Block  Set - 2026-11-21",
+    "mainSize": 40,
+    "sideboardSize": 22
+  },
   "event": {
-    "eventId": "70ead0bf",
+    "eventId": "a84564e5",
     "format": "BOOSTER_DRAFT",
     "phase": "LOBBY_GATHER",
     "product": "Block / Set",
     "podSize": 2,
     "numRounds": 3,
-    "pickTimerSeconds": 0,
+    "pickTimerSeconds": 120,
     "participants": [
       {
-        "name": "HostAI",
+        "name": "Ola",
         "type": "HUMAN",
-        "seat": 0,
+        "seat": 1,
         "lobbySlot": 0
       },
       {
         "name": "AgentBot",
         "type": "HUMAN",
-        "seat": 1,
+        "seat": 0,
         "lobbySlot": 1
       }
     ]

@@ -18,6 +18,7 @@
   "draft POST /chat": "draft-POST_chat.json",
   "draft POST /connect": "draft-POST_connect.json",
   "draft POST /disconnect": "draft-POST_disconnect.json",
+  "draft POST /draft/deck": "draft-POST_draft_deck.json",
   "draft POST /draft/pick": "draft-POST_draft_pick.json",
   "draft POST /lobby/deck": "draft-POST_lobby_deck.json",
   "draft POST /lobby/ready": "draft-POST_lobby_ready.json",

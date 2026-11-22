@@ -63,6 +63,36 @@ describe("events", () => {
     expect(new MoveTracker(new EventLog()).observe(drafting)).toBeUndefined();
   });
 
+  it("asks for a deck once the pool arrives, and for a ready flag before the event starts", () => {
+    const moves = new MoveTracker(new EventLog());
+    const seat = (ready: boolean, phase: string, more = {}) => ({
+      mySlot: 1,
+      limitedMode: true,
+      slots: [{ index: 0, name: "Ola", ready: true }, { index: 1, name: "Agent", ready }],
+      event: { eventId: "e1", phase },
+      ...more,
+    });
+    const none = { packNumber: 0, pickPending: false, poolReceived: false };
+    // No deck is needed to ready up before a draft, and the ask says so.
+    const waiting = moves.observe({ revision: 1, game: { inGame: false }, lobby: seat(false, "LOBBY_GATHER"), draft: none });
+    expect(waiting?.data).toMatchObject({ kind: "lobby", prompt: expect.stringContaining("No deck is needed yet") });
+    const pick = { packNumber: 1, pickNumber: 1, pickPending: true, poolReceived: false, secondsLeft: 58 };
+    expect(moves.observe({ revision: 2, game: { inGame: false }, lobby: seat(true, "DRAFTING"), draft: pick })?.data).toMatchObject({
+      kind: "draft_pick",
+      prompt: "Pack 1, pick 1, 58 s on the clock",
+      secondsLeft: 58,
+    });
+    // The seat is still ready from before the draft, so the pool itself is the ask.
+    const pool = { packNumber: 3, pickNumber: 15, pickPending: false, poolReceived: true, poolEventId: "e1" };
+    expect(moves.observe({ revision: 3, game: { inGame: false }, lobby: seat(true, "DRAFTING"), draft: pool })?.data).toMatchObject({ kind: "deck" });
+    expect(moves.observe({ revision: 4, game: { inGame: false }, lobby: seat(true, "DRAFTING"), draft: pool })).toBeUndefined();
+    const built = seat(true, "DRAFTING", { myDeck: { name: "Draft", mainSize: 40, sideboardSize: 22 } });
+    expect(moves.observe({ revision: 5, game: { inGame: false }, lobby: built, draft: pool })).toBeUndefined();
+    // The same pool in a later lobby that is not for that event asks for nothing.
+    const constructed = { mySlot: 1, limitedMode: false, slots: [{ index: 1, name: "Agent", ready: true }] };
+    expect(new MoveTracker(new EventLog()).observe({ revision: 6, game: { inGame: false }, lobby: constructed, draft: pool })).toBeUndefined();
+  });
+
   it("replays the pending ask to a client that polls without a cursor", async () => {
     const log = new EventLog();
     const moves = new MoveTracker(log);

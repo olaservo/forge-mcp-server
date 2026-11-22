@@ -14,7 +14,7 @@ This repo is one of three parts. Cloning it alone is not enough to play.
 
 ## Run
 
-Download the [Forge 2.0.16 desktop release](https://github.com/Card-Forge/forge/releases/tag/forge-2.0.16) and `forge-agent-bridge-0.1.5-forge-2.0.16.jar` from the [forge-agent-bridge releases](https://github.com/olaservo/forge-agent-bridge/releases). The events need bridge 0.1.3 or later. From 0.1.4 the bridge marks the priority prompt, and before it the server matches the prompt's English text. From 0.1.5 a chat line names its sender, and before it the server splits the line on the seat names. For another Forge version, build the bridge jar against that version's jar, as the forge-agent-bridge README describes. Then set three variables and the server starts the bridge on first use:
+Download the [Forge 2.0.16 desktop release](https://github.com/Card-Forge/forge/releases/tag/forge-2.0.16) and `forge-agent-bridge-0.1.5-forge-2.0.16.jar` from the [forge-agent-bridge releases](https://github.com/olaservo/forge-agent-bridge/releases). The events need bridge 0.1.3 or later. From 0.1.4 the bridge marks the priority prompt, and before it the server matches the prompt's English text. From 0.1.5 a chat line names its sender, and before it the server splits the line on the seat names. `forge_draft_deck`, the pick clock's `secondsLeft` and the end of the `deck` ask once a deck is built need 0.1.6, which is not released yet. For another Forge version, build the bridge jar against that version's jar, as the forge-agent-bridge README describes. Then set three variables and the server starts the bridge on first use:
 
 - `FORGE_JAR`: the Forge `forge-gui-desktop-<version>-jar-with-dependencies.jar`.
 - `FORGE_BRIDGE_JAR`: the bridge jar.
@@ -33,6 +33,8 @@ npm start                 # stdio
 npm run start:http        # Streamable HTTP on http://127.0.0.1:3080/mcp (FORGE_MCP_HOST, FORGE_MCP_PORT, FORGE_MCP_ALLOWED_HOSTS)
 ```
 
+`node scripts/call.mjs <tool> '<json arguments>'` calls one tool on a server running over HTTP and prints the result, and `node scripts/call.mjs --poll forge.your_move [cursor]` polls an event. `FORGE_MCP_URL` names the endpoint.
+
 Claude Code: `claude mcp add forge -- node <path>/dist/index.js`. To have the agent woken on its turn, also install the `mcp-events` mod, as [Claude Code](docs/claude-code.md) describes. Without the mod the agent waits with `forge_wait`.
 
 ## More
@@ -49,7 +51,7 @@ Claude Code: `claude mcp add forge -- node <path>/dist/index.js`. To have the ag
 
 ## Status
 
-Lobby, draft and full matches work end to end. The bridge's tests run a draft and a match against an in-process host, and on 2026-11-11 the agent seat played three Constructed matches against a human host in the Forge desktop client on the same machine, woken by events. Not yet run across machines. Skills are first drafts.
+Lobby, draft and full matches work end to end. The bridge's tests run a draft and a match against an in-process host, on 2026-11-21 a seat drafted a four-seat pod through this server over HTTP against the bridge's windowless `DraftHost`, built its deck with `forge_draft_deck` and was started into the match, and on 2026-11-11 the agent seat played three Constructed matches against a human host in the Forge desktop client on the same machine, woken by events. Not yet run across machines. Skills are first drafts.
 
 ## Security
 
