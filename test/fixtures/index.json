@@ -28,6 +28,7 @@
   "scry GET /game#order": "scry-GET_game_order.json",
   "surveil GET /game#order": "surveil-GET_game_order.json",
   "reveal GET /game#revealed": "reveal-GET_game_revealed.json",
+  "attached GET /game#attachedTo": "attached-GET_game_attachedTo.json",
   "combat GET /game#assign": "combat-GET_game_assign.json",
   "combat GET /game#plannedBlock": "combat-GET_game_plannedBlock.json",
   "phasing GET /game#phasedOut": "phasing-GET_game_phasedOut.json",

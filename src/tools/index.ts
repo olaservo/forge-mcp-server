@@ -283,6 +283,7 @@ export function registerTools(
         "`selection` lists the cards and `players` the prompt offers, including cards in a zone the state does not show, such as the library during a search, and what is `chosen` so far. " +
         "`actionable`, when the bridge reports it, lists the cards the host marks as able to act now: playable cards with priority, creatures that can attack or block while declaring, mana sources while paying. It is a hint, so a card missing from it may still be usable. " +
         "A battlefield card with `phasedOut: true` is phased out and is treated as though it does not exist until it phases in. " +
+        "An Aura, Equipment or Fortification has `attachedTo`, the card or player it is attached to. " +
         "Card fields at their default (untapped, no damage, not attacking, and so on) are left out, and each card's rules text is in `cardText` under its name. " +
         "A card keeps its own `text` when it differs from its name's entry. `full: true` returns every field with the text on each card.",
       inputSchema: z.object({ full: z.boolean().default(false).describe("Every card field, with the rules text on each card") }),

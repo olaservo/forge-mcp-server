@@ -25,6 +25,9 @@ export const PaperCard = z.looseObject({
   section: str,
 });
 
+/** A card or player a game object refers to. */
+const EntityRef = z.looseObject({ type: str, id: num, name: str });
+
 export const BoardCard = z.looseObject({
   id: num,
   name: str,
@@ -38,6 +41,7 @@ export const BoardCard = z.looseObject({
   token: bool,
   faceDown: bool,
   phasedOut: bool,
+  attachedTo: EntityRef.nullish(),
   type: str,
   manaCost: str,
   power: num,

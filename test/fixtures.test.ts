@@ -4,7 +4,7 @@ import type { z } from "zod";
 import * as out from "../src/schemas.js";
 import { avatarSheet, connect, fakeBridge } from "./helpers.js";
 
-/** Real bridge payloads, recorded by forge-agent-bridge's tests (`BridgeHttp.saveFixtures`) while a draft and a match ran in-process. The rigged, scry, surveil, reveal, combat, phasing, target and nextgame recordings come from its one-situation tests. */
+/** Real bridge payloads, recorded by forge-agent-bridge's tests (`BridgeHttp.saveFixtures`) while a draft and a match ran in-process. The rigged, scry, surveil, reveal, combat, phasing, attached, target and nextgame recordings come from its one-situation tests. */
 const dir = new URL("./fixtures/", import.meta.url);
 const index = JSON.parse(readFileSync(new URL("index.json", dir), "utf8")) as Record<string, string>;
 const fixture = (file: string) => JSON.parse(readFileSync(new URL(file, dir), "utf8")) as Record<string, unknown>;
