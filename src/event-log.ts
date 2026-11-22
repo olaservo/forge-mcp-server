@@ -91,9 +91,11 @@ export class EventLog {
     const floor = maxAgeMs === undefined ? "" : new Date(Math.min(8.64e15, Math.max(0, Date.now() - maxAgeMs))).toISOString();
     const fresh = { events: [], cursor: head, hasMore: false, nextPollMs: POLL_MS };
     if (cursor == null) {
-      // A client starting to follow is given the ask still pending, with its eventId, and no other client is.
+      // A client starting to follow is given the ask still pending, and no other client is. It keeps its eventId,
+      // so a client that has it drops it. The timestamp is now: a client's maxAgeMs, and the mcp-events mod's check
+      // against its last state read, would otherwise drop an ask that has waited a while.
       const ask = this.pending(name);
-      return { ...fresh, events: ask ? [ask] : [], truncated: false };
+      return { ...fresh, events: ask ? [{ ...ask, timestamp: new Date().toISOString() }] : [], truncated: false };
     }
 
     const [epoch, raw] = cursor.split(":");

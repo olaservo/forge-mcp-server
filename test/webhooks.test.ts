@@ -286,7 +286,7 @@ describe("webhook delivery", () => {
     expect(events()).toHaveLength(1);
 
     // a client that starts polling is given the ask, and the webhook subscriber is not sent it again
-    expect(log.poll(YOUR_MOVE, null).events).toEqual([ask]);
+    expect(log.poll(YOUR_MOVE, null).events.map((e) => e.eventId)).toEqual([ask.eventId]);
     await hub.idle();
     expect(events()).toHaveLength(1);
 

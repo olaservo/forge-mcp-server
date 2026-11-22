@@ -127,7 +127,8 @@ describe("events", () => {
     expect(ask.data).toMatchObject({ kind: "lobby" });
     const follower = log.poll(YOUR_MOVE, log.cursorAfter(ask));
     const first = log.poll(YOUR_MOVE, null);
-    expect(first.events).toEqual([ask]);
+    expect(first.events).toMatchObject([{ eventId: ask.eventId, data: ask.data }]);
+    expect(first.events[0]!.timestamp >= ask.timestamp).toBe(true);
     expect(first.cursor).toBe(log.head());
     // A second poll without a cursor is the same client opening another subscription, and gets the same eventId
     expect(log.poll(YOUR_MOVE, null).events.map((e) => e.eventId)).toEqual([ask.eventId]);
