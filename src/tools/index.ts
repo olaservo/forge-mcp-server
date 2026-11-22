@@ -102,7 +102,7 @@ export function registerTools(
     {
       title: "Set lobby ready",
       description:
-        "Toggle the Ready flag on our lobby slot. In a Limited lobby, set a deck first with forge_lobby_deck (the drafted pool is the default).",
+        "Toggle the Ready flag on our lobby slot. Before a draft or sealed event starts, ready up with no deck. For the match after it, build the deck with forge_draft_deck first.",
       inputSchema: z.object({ ready: z.boolean().default(true) }),
       outputSchema: out.Lobby,
       annotations: acting,
