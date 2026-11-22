@@ -5,10 +5,12 @@ import { Bridge } from "../bridge.js";
 import { sharedLibrary, type DeckLibrary } from "../decks/library.js";
 import type { SearchIo } from "../decks/search.js";
 import type { ActivityLog } from "../log.js";
+import { sharedHost, type LobbyHost } from "../host.js";
 import type { GetText } from "../names.js";
 import * as out from "../schemas.js";
 import { acting, failure, readOnly, run, type RegisterTool, type ToolConfig } from "./common.js";
 import { registerDeckTools } from "./decks.js";
+import { registerHostTools } from "./host.js";
 import { registerNameTools } from "./names.js";
 
 /**
@@ -29,6 +31,7 @@ export function registerTools(
   decks: DeckLibrary = sharedLibrary(),
   names?: GetText,
   deckSearch?: SearchIo,
+  host: LobbyHost = sharedHost(),
 ): void {
   /** Registers a tool and logs each call. */
   const tool: RegisterTool = <In extends z.ZodType>(name: string, config: ToolConfig<In>, handler: (args: z.output<In>) => Promise<CallToolResult>) => {
@@ -188,6 +191,7 @@ export function registerTools(
 
   registerDeckTools(tool, decks, deckSearch);
   registerNameTools(tool, names);
+  registerHostTools(tool, host);
 
   tool(
     "forge_chat",

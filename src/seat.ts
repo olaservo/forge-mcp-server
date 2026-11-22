@@ -1,5 +1,6 @@
 import { Bridge } from "./bridge.js";
 import { EventLog } from "./event-log.js";
+import { sharedHost } from "./host.js";
 import { ChatTracker, MoveTracker, type SeatStatus, YOUR_MOVE } from "./seat-events.js";
 import { logEmitted, type ActivityLog } from "./log.js";
 import { StatusWatcher } from "./watcher.js";
@@ -45,6 +46,7 @@ export function createSeat(log?: ActivityLog) {
     stop(): void {
       watcher?.stop();
       bridge.stop();
+      sharedHost().stop();
     },
   };
 }

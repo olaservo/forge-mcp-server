@@ -132,6 +132,8 @@ describe("bridge fixtures", () => {
       forge_game_act: [{ action: "ok" }, "POST /game/act"],
       forge_game_decide: [{ id: 1, choices: [0] }, "POST /game/decide"],
       forge_wait: [{ since: 3, timeout: 5 }, "GET /wait"],
+      forge_host: [{ port: 36750 }, null],
+      forge_host_stop: [{}, null],
     };
     const { tools } = await client.listTools();
     expect(tools.map((t) => t.name).sort()).toEqual(Object.keys(cases).sort());

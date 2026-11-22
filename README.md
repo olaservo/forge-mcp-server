@@ -9,7 +9,7 @@ This project is independent. It is not affiliated with, endorsed by or sponsored
 This repo is one of three parts. Cloning it alone is not enough to play.
 
 - **Forge and the agent bridge.** The server talks to a headless Forge client, the agent bridge, which is not part of Forge. It is a small jar from [forge-agent-bridge](https://github.com/olaservo/forge-agent-bridge) (GPL-3.0) that runs beside a Forge desktop jar, built against the Forge version you run. Its [releases](https://github.com/olaservo/forge-agent-bridge/releases) have a jar for the Forge 2.0.16 desktop release. Set `FORGE_JAR`, `FORGE_HOME` and `FORGE_BRIDGE_JAR` and the server starts it.
-- **A Forge host.** Someone hosts an online lobby in a Forge desktop client and the agent joins it as an ordinary remote player. The host runs the same Forge version as the bridge. Played against a host on the official Forge 2.0.16 desktop release, with the bridge jar built against it.
+- **A Forge host.** Someone hosts an online lobby in a Forge desktop client and the agent joins it as an ordinary remote player. The host runs the same Forge version as the bridge. Played against a host on the official Forge 2.0.16 desktop release, with the bridge jar built against it. Without a desktop host, `forge_host` starts one with no window on the server's machine; see [Hosting](#hosting).
 - **Node 24 or newer** for this server, and an MCP client that speaks protocol revision 2026-07-28. The skills are served through the MCP skills extension, so a client without it will not load them by itself.
 
 ## Run
@@ -37,6 +37,12 @@ npm run start:http        # Streamable HTTP on http://127.0.0.1:3080/mcp (FORGE_
 
 Claude Code: `claude mcp add forge -- node <path>/dist/index.js`. To have the agent woken on its turn, also install the `mcp-events` mod, as [Claude Code](docs/claude-code.md) describes. Without the mod the agent waits with `forge_wait`.
 
+## Hosting
+
+`forge_host` starts the bridge jar's `MatchHost`, a Forge host with no window and no seat of its own, and `forge_host_stop` ends it. It needs bridge 0.1.7 or later and the same three variables. Every slot is open: the agent takes a seat with `forge_connect` at `127.0.0.1`, and other players join from a Forge desktop or mobile client at one of the addresses the tool returns. The match starts once every slot is taken and each seat is ready with a legal deck. Arguments are `port` (default 36743), `seats` (default 2) and `limited` for 40-card decks. One host per server process, stopped when the server stops. `FORGE_HOSTING=0` removes both tools.
+
+A seat with `FORGE_AUTO_JOIN` set to the hosted port sits down by itself, and so does every other seat on the machine with the same setting, so host on another port when a slot is meant for someone else. Run on 2026-11-21 with one bridge seat joining a host started by the tool. A Forge client as the other player has not been run.
+
 ## More
 
 - [Decks](docs/decks.md): the deck tools, the folders they read, and the deck sites `forge_deck_save` can fetch from and `forge_deck_search` can search.
@@ -58,6 +64,8 @@ Lobby, draft and full matches work end to end. The bridge's tests run a draft an
 The HTTP endpoint has no authentication unless `FORGE_MCP_TOKEN` is set. It binds to `127.0.0.1` by default. Without a token, do not set `FORGE_MCP_HOST` to an address reachable from outside a network you trust: anyone who can reach the port can act as the seat. With a token, anyone who holds it can act as the seat, and the token is the only credential, so serve it over HTTPS only. The same holds for `FORGE_MCP_PROXY_TOKEN`, and its holder can also name any principal, so only the Worker should have it.
 
 Whoever can call the tools can also read the deck files in Forge's folders and, through `forge_deck_save`, write `.dck` files into them and make the server fetch from the deck sites listed in [Decks](docs/decks.md#sites). `forge_deck_search` makes it send search requests to three of those sites. File names are stripped of path characters and deck ids are confined to their folder. `FORGE_DECKS_READONLY=1` removes both tools.
+
+Whoever can call the tools can also start a Forge host with `forge_host`. It listens on every network interface of the server's machine with no password, so anyone who can reach that port can take a seat in the lobby. `FORGE_HOSTING=0` removes it.
 
 ## License
 

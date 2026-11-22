@@ -215,6 +215,8 @@ export const DeckSummary = z.looseObject({
   description: str,
   tags: str,
 });
+export const Host = z.looseObject({ running: z.boolean(), port: z.number().optional(), seats: z.number().optional(), limited: z.boolean().optional(), addresses: z.array(z.string()) });
+
 export const Names = z.looseObject({ type: z.string(), names: z.array(z.string()), source: z.string() });
 
 export const DeckList = z.looseObject({

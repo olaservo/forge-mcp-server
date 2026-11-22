@@ -1,3 +1,5 @@
+import type { spawn } from "node:child_process";
+import { EventEmitter } from "node:events";
 import { mkdirSync, mkdtempSync, writeFileSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { dirname, join } from "node:path";
@@ -8,6 +10,7 @@ import { Bridge } from "../src/bridge.js";
 import { DeckLibrary, type ForgeDirs } from "../src/decks/library.js";
 import type { SearchIo } from "../src/decks/search.js";
 import type { EventLog } from "../src/event-log.js";
+import { LobbyHost } from "../src/host.js";
 import { createServer, skillCatalog } from "../src/server.js";
 import type { WebhookHub } from "../src/webhooks.js";
 
@@ -17,6 +20,27 @@ export const generatedNames = async (url: string): Promise<string> =>
 
 /** Stands in for the deck sites: every search finds nothing. */
 export const noDecksFound: SearchIo = { get: async () => "[]", sleep: async () => {} };
+
+/**
+ * A host whose Java process is a stand-in: `spawned` records each command line, and the process prints `output`
+ * on its standard output, or exits with code 1 after writing `errors` when given.
+ */
+export function fakeHost(output = "MATCH_HOST_READY port=36743\n", errors?: string) {
+  const spawned: string[][] = [];
+  const killed: number[] = [];
+  const fakeSpawn = ((_command: string, args: string[]) => {
+    spawned.push(args);
+    const child = Object.assign(new EventEmitter(), { stdout: new EventEmitter(), stderr: new EventEmitter(), kill: () => killed.push(spawned.length) });
+    setImmediate(() => {
+      if (errors === undefined) return child.stdout.emit("data", Buffer.from(output));
+      child.stderr.emit("data", Buffer.from(errors));
+      child.emit("exit", 1);
+    });
+    return child;
+  }) as unknown as typeof spawn;
+  const host = new LobbyHost({ jar: "forge.jar", bridgeJar: "bridge.jar", cwd: ".", spawn: fakeSpawn, addresses: () => ["192.0.2.10"] });
+  return { host, spawned, killed };
+}
 
 /** A fake Forge bridge: records calls and answers with canned JSON keyed by `METHOD /path`. */
 export function fakeBridge(responses: Record<string, unknown>) {
@@ -84,7 +108,7 @@ export async function connect(
 ) {
   const skills = await skillCatalog();
   const factory = (ctx: { authInfo?: { clientId: string } }) =>
-    createServer({ bridge, skills, events, webhooks: webhooks?.hub, principal: ctx.authInfo?.clientId, decks, names: generatedNames, deckSearch: noDecksFound });
+    createServer({ bridge, skills, events, webhooks: webhooks?.hub, principal: ctx.authInfo?.clientId, decks, names: generatedNames, deckSearch: noDecksFound, host: fakeHost().host });
   const handler = createMcpHandler(factory, bus ? { bus } : {});
   const authInfo = webhooks?.principal ? { token: "test", clientId: webhooks.principal, scopes: [] } : undefined;
   const transport = new StreamableHTTPClientTransport(new URL("http://test.local/mcp"), {
