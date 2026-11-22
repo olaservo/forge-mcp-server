@@ -181,6 +181,9 @@ export const Game = z.looseObject({
   actionable: z.array(z.looseObject({ id: num, name: str })).nullish(),
 });
 
+/** What forge_game_state returns: the game with rules text by card name in `cardText`, unless asked for in full. */
+export const GameState = Game.extend({ cardText: z.record(z.string(), z.string()).nullish() });
+
 /** `from` is null for a line from the host itself. Before forge-agent-bridge 0.1.5 a line was the text `from: text`. */
 export const ChatLine = z.looseObject({ from: str, text: str });
 

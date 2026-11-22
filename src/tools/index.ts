@@ -2,6 +2,7 @@ import type { CallToolResult, McpServer, ToolCallback } from "@modelcontextproto
 import { z } from "zod";
 import { avatarPage, avatarSheetPath, AVATARS_PER_PAGE } from "../avatars.js";
 import { Bridge } from "../bridge.js";
+import { compactGame } from "../game-state.js";
 import { sharedLibrary, type DeckLibrary } from "../decks/library.js";
 import type { SearchIo } from "../decks/search.js";
 import type { ActivityLog } from "../log.js";
@@ -276,12 +277,17 @@ export function registerTools(
         "the stack, combat, the current prompt text, the OK/Cancel buttons, and any pending decision that must be answered with forge_game_decide. " +
         "`selection` lists the cards and `players` the prompt offers, including cards in a zone the state does not show, such as the library during a search, and what is `chosen` so far. " +
         "`actionable`, when the bridge reports it, lists the cards the host marks as able to act now: playable cards with priority, creatures that can attack or block while declaring, mana sources while paying. It is a hint, so a card missing from it may still be usable. " +
-        "A battlefield card with `phasedOut: true` is phased out and is treated as though it does not exist until it phases in.",
-      inputSchema: z.object({}),
-      outputSchema: out.Game,
+        "A battlefield card with `phasedOut: true` is phased out and is treated as though it does not exist until it phases in. " +
+        "Card fields at their default (untapped, no damage, not attacking, and so on) are left out, and each card's rules text is in `cardText` under its name. " +
+        "A card keeps its own `text` when it differs from its name's entry. `full: true` returns every field with the text on each card.",
+      inputSchema: z.object({ full: z.boolean().default(false).describe("Every card field, with the rules text on each card") }),
+      outputSchema: out.GameState,
       annotations: readOnly,
     },
-    async () => run(() => bridge.get("/game")),
+    async ({ full }) => run(async () => {
+      const game = await bridge.get<Record<string, unknown>>("/game");
+      return full ? game : compactGame(game);
+    }),
   );
 
   tool(
