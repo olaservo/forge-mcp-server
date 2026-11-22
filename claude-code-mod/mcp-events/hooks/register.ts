@@ -41,6 +41,8 @@ const missed = new Set<string>()
 let own: { source: string; http: boolean; url?: string } | undefined
 /** Whether the polled endpoint relays the events of every server on the machine. */
 let relays = false
+/** Event names that report a state, so only the latest matters. */
+let latestOnly: readonly string[] = []
 /** Whether the polled endpoint has the events of the session's own server. A server that names no address is taken to be at the polled one. */
 const reachesOwn = (url: string) => own?.http === true && (relays || own.url === undefined || own.url === url)
 
@@ -142,7 +144,10 @@ function flush($: EngineInterface, server: string, superseded: readonly string[]
 async function pollOne($: EngineInterface, url: string, sub: Subscription, ownOnly: boolean) {
   let hasMore = true
   while (hasMore) {
-    const res = await rpc<PollResult>($, url, 'events/poll', { name: sub.name, arguments: {}, cursor: sub.cursor, maxAgeMs: MAX_AGE_MS })
+    // On the first poll after loading, an event that reports a state is polled without the stored cursor, so the
+    // server sends the one pending now. Through the stored cursor, maxAgeMs drops one that has waited longer.
+    const cursor0 = !sub.hasPolled && latestOnly.includes(sub.name) ? null : sub.cursor
+    const res = await rpc<PollResult>($, url, 'events/poll', { name: sub.name, arguments: {}, cursor: cursor0, maxAgeMs: MAX_AGE_MS })
     const cursor = res.cursor ?? null
     if (cursor !== sub.cursor) {
       sub.cursor = cursor
@@ -203,6 +208,7 @@ export const register: Register = (on, options) => {
   const server = String(options.server ?? 'forge')
   const wanted = list(options.events)
   const superseded = list(options.superseded, 'forge.your_move')
+  latestOnly = superseded
   const toolPrefix = `mcp__${server}__`
   // Only a tool whose result shows the server's state counts as the model having seen it. A chat or lobby
   // call returns no game state, and counting it dropped an event the model had not seen.

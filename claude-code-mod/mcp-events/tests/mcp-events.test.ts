@@ -238,3 +238,12 @@ test('a lobby tool called after a held game event does not drop it', async ($, o
 test('a state tool called after a held event drops it', async ($, on) => {
   expect(await heldThenCalled($, on, 'priority', 'forge_game_state')).toHaveLength(0)
 })
+
+test('after a reload, the first poll of a state event sends no cursor, so the pending ask comes back', async ($, on) => {
+  const { sent, stored } = session(on, [{ events: [move('c-1')], cursor: 'c:5' }])
+  stored.set('mcp-events:cursor:http://127.0.0.1:3080/mcp:forge.your_move', 'c:4')
+  await $.tool.call(callStatus)
+  expect((await $.command.run({ command: 'mcp-events' })).text).toContain('1 waiting')
+  await $.command.run({ command: 'mcp-events' })
+  expect(sent.filter(r => r.method === 'events/poll').map(r => r.params.cursor)).toEqual([null, 'c:5'])
+})
