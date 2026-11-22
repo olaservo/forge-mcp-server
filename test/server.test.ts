@@ -29,7 +29,7 @@ describe("forge-mcp-server", () => {
     expect(skills.supported).toBe(true);
     const { skills: entries } = await skills.list();
     const skillNames = entries.map((e) => e.frontmatter.name).sort();
-    expect(skillNames).toEqual(["forge-deck", "forge-drafter", "forge-name", "forge-player"]);
+    expect(skillNames).toEqual(["forge-deck", "forge-drafter", "forge-feedback", "forge-name", "forge-player"]);
     const player = entries.find((e) => e.frontmatter.name === "forge-player")!;
     const manifest = await skills.read(player);
     expect(manifest.verified).toBe(true);
