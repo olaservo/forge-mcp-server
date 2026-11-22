@@ -19,7 +19,7 @@ Forge keeps decks as `.dck` files in folders on the machine the server runs on. 
 3. To look inside a deck before choosing, call `forge_decks` with its `id`.
 4. `forge_lobby_deck` with the `id`, then `forge_lobby_ready`.
 
-When nobody named a deck, pick one that fits the lobby and say in chat which one you took. Match the lobby's variant first:
+When nobody named a deck, pick one that fits the lobby. Do not say in chat which deck you took. Match the lobby's variant first:
 
 | Lobby | Folders | Size to expect |
 |---|---|---|
