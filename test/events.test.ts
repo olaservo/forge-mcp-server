@@ -47,6 +47,31 @@ describe("events", () => {
     expect(moves.observe(pick)?.data).toMatchObject({ kind: "draft_pick" });
   });
 
+  it("stays quiet for the prompts of a seat waiting on its opponent, and wakes it for the next one", () => {
+    // Statuses from the fast-agent seat of the game on 2026-11-22, cut down to the fields the tracker reads
+    const moves = new MoveTracker(new EventLog());
+    const okEndTurn = { ok: "OK", okEnabled: true, cancel: "End Turn", cancelEnabled: true };
+    const none = { ok: "OK", okEnabled: false, cancel: "Cancel", cancelEnabled: false };
+    const at = (promptCount: number, more: Record<string, unknown>) => ({ revision: promptCount, game: { ...game(promptCount), turn: 7, phase: "MAIN1", priorityPrompt: false, ...more } });
+    const waitingFor = { prompt: "Waiting for Claude...", waiting: true, hasPriority: false, buttons: none };
+    expect(moves.observe(at(30, waitingFor))).toBeUndefined();
+    // The next input's buttons arrive before its prompt and clear `waiting`
+    expect(moves.observe(at(30, { ...waitingFor, waiting: false, hasPriority: true, buttons: okEndTurn }))).toBeUndefined();
+    // The reveal of a card from the opponent's hand holds the game until the seat presses OK
+    const reveal = at(31, { prompt: "Looking at cards in Claude's hand", hasPriority: true, buttons: okEndTurn });
+    expect(moves.observe(reveal)?.data).toMatchObject({ kind: "priority", prompt: "Looking at cards in Claude's hand" });
+    expect(moves.observe(at(31, waitingFor))).toBeUndefined();
+    expect(moves.observe(at(31, { ...waitingFor, waiting: false, buttons: { ...none, okEnabled: true } }))).toBeUndefined();
+    const block = "Select creatures to block Archangel (11) or select another attacker to declare blockers for.";
+    expect(moves.observe(at(32, { prompt: block, phase: "COMBAT_DECLARE_BLOCKERS", buttons: { ...none, okEnabled: true } }))?.data).toMatchObject({ prompt: block });
+    expect(moves.observe(at(32, waitingFor))).toBeUndefined();
+    // An optional trigger is a prompt with Yes and No, without a pendingDecision
+    const trigger = { prompt: "Use triggered ability of Borderland Ranger?", hasPriority: true, buttons: { ok: "Yes", okEnabled: true, cancel: "No", cancelEnabled: true } };
+    expect(moves.observe(at(33, trigger))?.data).toMatchObject({ kind: "priority", prompt: trigger.prompt });
+    // Without the wait seen first, the same status is an ask
+    expect(new MoveTracker(new EventLog()).observe(at(30, { ...waitingFor, waiting: false, buttons: okEndTurn }))?.data).toMatchObject({ prompt: "Waiting for Claude..." });
+  });
+
   it("emits a lobby ask once while the seat sits unready", () => {
     const moves = new MoveTracker(new EventLog());
     const lobby = (ready: boolean, name = "Agent") => ({

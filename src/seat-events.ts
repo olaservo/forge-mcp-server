@@ -17,9 +17,10 @@ function gameOver(game: NonNullable<SeatStatus["game"]>, revision: SeatStatus["r
 
 /**
  * What the seat is being asked to do, or undefined when it is waiting on someone else. `key` identifies the ask.
+ * `awaited` is the `promptCount` of an earlier status that had the seat waiting.
  * `promptCount`, `waiting` and `chatCount` need forge-agent-bridge 0.1.3.
  */
-export function pendingMove(status: SeatStatus): Move | undefined {
+export function pendingMove(status: SeatStatus, awaited?: number): Move | undefined {
   const { draft, game, revision } = status;
   if (game?.inGame) {
     if (game.gameOver || game.finished) return gameOver(game, revision);
@@ -33,6 +34,9 @@ export function pendingMove(status: SeatStatus): Move | undefined {
     // Bridge 0.1.4 marks that prompt. Before it, the English text is matched.
     const priorityPrompt = game.priorityPrompt ?? prompt.startsWith("Priority:");
     if (priorityPrompt && game.hasPriority === false) return undefined;
+    // Forge sends the buttons of the next input before its prompt, and the buttons clear `waiting`. Until the
+    // prompt arrives the count is the one the seat waited at, and the text is still "Waiting for ...".
+    if (awaited !== undefined && game.promptCount === awaited) return undefined;
     // An empty prompt is the gap between two inputs, not an ask.
     if ((game.buttons?.okEnabled || game.buttons?.cancelEnabled) && prompt.trim() !== "" && !game.waiting) {
       // The bridge counts each prompt the host sends, so the same text twice in a turn is two asks.
@@ -80,14 +84,23 @@ export class MoveTracker {
   private replayed: { key: string; at: number } | undefined;
   /** The event that last reported the ask in `last`. */
   private lastEvent: EventOccurrence | undefined;
+  /** The `promptCount` the seat was last seen waiting at, while the count stays there. */
+  private awaited: number | undefined;
 
   constructor(private readonly log: EventLog) {}
+
+  private pending(status: SeatStatus): Move | undefined {
+    const game = status.game;
+    if (game?.inGame && game.waiting) this.awaited = game.promptCount ?? undefined;
+    else if (game?.promptCount !== this.awaited) this.awaited = undefined;
+    return pendingMove(status, this.awaited);
+  }
 
   observe(status: SeatStatus): EventOccurrence | undefined {
     // A game in progress means the reported result belongs to an earlier game. The next result is then
     // new, even when it ends on the same turn with the same winner.
     if (status.game?.inGame && !status.game.gameOver && !status.game.finished) this.reported = undefined;
-    const pending = pendingMove(status);
+    const pending = this.pending(status);
     const move = pending?.data.kind === "game_over" && pending.key === this.reported ? undefined : pending;
     const changed = move !== undefined && move.key !== this.last;
     this.last = move?.key;
@@ -110,8 +123,8 @@ export class MoveTracker {
    * so the same ask is replayed once per `quietMs`.
    */
   replay(status: SeatStatus, quietMs = 15_000): EventOccurrence | undefined {
-    const move = pendingMove(status);
-    if (!move || (move.data.kind === "game_over" && move.key === this.reported)) return undefined;
+    const move = this.pending(status);
+    if (!move ||(move.data.kind === "game_over" && move.key === this.reported)) return undefined;
     const now = Date.now();
     if (this.replayed?.key === move.key && now - this.replayed.at < quietMs) return undefined;
     this.replayed = { key: move.key, at: now };
