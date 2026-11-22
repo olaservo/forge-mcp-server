@@ -247,3 +247,11 @@ test('after a reload, the first poll of a state event sends no cursor, so the pe
   await $.command.run({ command: 'mcp-events' })
   expect(sent.filter(r => r.method === 'events/poll').map(r => r.params.cursor)).toEqual([null, 'c:5'])
 })
+
+test('after a reload, the server named before is still the session\'s own, so an event starts a turn with no status call', async ($, on) => {
+  on('state.get', () => ({ value: { value: { source: 'c', http: true }, version: 1 } }))
+  const { prompts } = session(on, [{ events: [move('c-1')], cursor: 'c:1' }])
+  await $.command.run({ command: 'mcp-events' })
+  await $.turn.complete({ turnId: 't1', reason: 'answer', answer: 'ok' } as never)
+  expect(prompts).toHaveLength(1)
+})

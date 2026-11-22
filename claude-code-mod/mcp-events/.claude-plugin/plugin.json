@@ -1,6 +1,7 @@
 {
   "name": "mcp-events",
   "version": "0.1.0",
+  "types": "./types/index.d.ts",
   "description": "Polls MCP Events (events/list, events/poll) on an MCP server's HTTP endpoint and starts a turn when one fires",
   "userConfig": {
     "url": {

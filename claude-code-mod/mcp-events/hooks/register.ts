@@ -1,4 +1,6 @@
+import { atom, read, update } from 'claude-code'
 import type { EngineInterface, Register } from 'claude-code'
+import type { Own } from '../types'
 
 /**
  * A client for MCP Events poll delivery (SEP-3415), for Claude Code builds without one.
@@ -38,7 +40,10 @@ const held = new Map<string, Occurrence>()
 /** Event names whose poll came back truncated. */
 const missed = new Set<string>()
 /** What the session's own server said of its events in its status tool: the prefix of its event ids, whether it serves them over HTTP, and at which address. */
-let own: { source: string; http: boolean; url?: string } | undefined
+let own: Own | undefined
+/** `own`, kept in the session's state so a reload of the mod, which does not restart the server, still knows it. */
+const savedOwn = atom({ plugin: 'mcp-events', key: 'own' } as const, null)
+let isRestored = false
 /** Whether the polled endpoint relays the events of every server on the machine. */
 let relays = false
 /** Event names that report a state, so only the latest matters. */
@@ -158,7 +163,10 @@ async function pollOne($: EngineInterface, url: string, sub: Subscription, ownOn
     if (res.truncated && sub.hasPolled && (!ownOnly || reachesOwn(url))) missed.add(sub.name)
     // The session's server may have restarted with another id prefix: its status tool is read again.
     // A relay's truncated poll is the relay restarting, which changes no prefix.
-    if (res.truncated && sub.hasPolled && reachesOwn(url) && !relays) own = undefined
+    if (res.truncated && sub.hasPolled && reachesOwn(url) && !relays) {
+      own = undefined
+      await update($, savedOwn, () => null)
+    }
     // A truncated poll usually means the server restarted, possibly with other event types.
     if (res.truncated) listAt = 0
     sub.hasPolled = true
@@ -178,6 +186,10 @@ async function tick($: EngineInterface, url: string, wanted: readonly string[], 
   if (isTicking) return
   isTicking = true
   try {
+    if (!isRestored) {
+      isRestored = true
+      own = own ?? (await read($, savedOwn)) ?? undefined
+    }
     if (subscriptions === undefined) {
       if (Date.now() < listAt) return
       listAt = Date.now() + LIST_RETRY_MS
@@ -248,7 +260,10 @@ export const register: Register = (on, options) => {
       if (kind) lastKindAt.set(kind, Date.now() - TOOL_MARGIN_MS)
       else lastToolAt = Date.now() - TOOL_MARGIN_MS
     }
-    if (tool === toolPrefix + statusTool && result.deny === undefined && result.isError !== true) own = eventsOf(result.result, result.text) ?? own
+    if (tool === toolPrefix + statusTool && result.deny === undefined && result.isError !== true) {
+      own = eventsOf(result.result, result.text) ?? own
+      if (own) await update($, savedOwn, () => own ?? null)
+    }
     return result
   })
 
