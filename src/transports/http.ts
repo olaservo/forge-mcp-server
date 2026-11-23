@@ -8,7 +8,7 @@ import { STATUS_URI, createServer } from "../server.js";
 import type { Bridge } from "../bridge.js";
 import type { EventLog } from "../event-log.js";
 import { fileLog, stderrLog } from "../log.js";
-import { register } from "../registry.js";
+import { register, registryFile } from "../registry.js";
 import { WebhookHub, retryDelays } from "../webhooks.js";
 
 export interface HttpOptions {
@@ -25,8 +25,9 @@ export interface HttpOptions {
   /** Binds a free port when `port` is taken, so every server process on a machine has an endpoint. */
   fallbackToFreePort?: boolean;
   /**
-   * Directory where this process writes its URL once it listens, see `registry.ts`. With it, a process on a
-   * fallback port that has no `FORGE_MCP_TOKEN` makes up a token and writes it there.
+   * Directory where this process writes its URL once it listens, see `registry.ts`. With it the process makes up
+   * a token, accepts it beside `FORGE_MCP_TOKEN` and writes it there, for a client on the same machine that
+   * subscribes by webhook.
    */
   registry?: string;
 }
@@ -67,6 +68,8 @@ export async function eventNameMismatch(request: Request): Promise<Response | un
  * With a token, a request without `Authorization: Bearer <token>` gets 401, and the caller's principal is
  * `token:` and the first 8 hex digits of the token's SHA-256. A request with the proxy token is from a proxy
  * that has authenticated the caller, and its principal is the `x-forge-principal` header the proxy set.
+ * A request with the registry token is authenticated like one with `FORGE_MCP_TOKEN`, and webhook delivery is
+ * offered to authenticated callers only.
  *
  * `FORGE_MCP_SUBSCRIPTIONS` is read only by the process that got `port`. A process on a fallback port keeps its
  * subscriptions in memory: the file holds one process's subscriptions and each save replaces it whole.
@@ -75,37 +78,39 @@ export function listenHttp({ bridge, skills, events, port, ...opts }: HttpOption
   const host = process.env.FORGE_MCP_HOST ?? "127.0.0.1";
   const allowedHosts = (process.env.FORGE_MCP_ALLOWED_HOSTS ?? `${host},localhost,127.0.0.1`).split(",").map((s) => s.trim());
   let token = opts.token ?? process.env.FORGE_MCP_TOKEN;
-  // Set on a fallback port when no token is configured
-  let madeUpToken: string | undefined;
+  const registryToken = opts.registry ? randomBytes(24).toString("hex") : undefined;
   const proxyToken = opts.proxyToken ?? process.env.FORGE_MCP_PROXY_TOKEN;
   const toFile = fileLog();
   const log = toFile ?? stderrLog;
   let fellBack = false;
   let url: string | undefined;
   let unregister: (() => void) | undefined;
+  /** This process's registry file, once written. */
+  const ownFile = () => (unregister && opts.registry ? registryFile(opts.registry) : undefined);
   // Made once the port is known: only the process that got `port` reads the subscriptions file
   let hub: WebhookHub | undefined;
   const webhooks = (): WebhookHub | undefined => {
     if (opts.webhooks) return opts.webhooks;
-    if (!token && !proxyToken) return undefined;
+    if (!token && !proxyToken && !registryToken) return undefined;
     const file = fellBack ? undefined : process.env.FORGE_MCP_SUBSCRIPTIONS;
     return (hub ??= new WebhookHub(events, { file, insecure: process.env.FORGE_MCP_WEBHOOK_INSECURE === "1", retryDelaysMs: retryDelays(process.env.FORGE_MCP_WEBHOOK_RETRY_MS), log }));
   };
   const tokenAuth = (given: string): AuthInfo => ({ token: given, clientId: `token:${digest(given).toString("hex").slice(0, 8)}`, scopes: [] });
   const bus = new InMemoryServerEventBus((e) => console.error(`[forge-mcp-server] ${e.message}`));
-  const handler = createMcpHandler((ctx) => createServer({ bridge, skills, events, servesHttp: () => true, httpUrl: () => url, webhooks: webhooks(), principal: ctx.authInfo?.clientId, log: ctx.authInfo ? log : toFile }), { bus });
+  const handler = createMcpHandler((ctx) => createServer({ bridge, skills, events, servesHttp: () => true, httpUrl: () => url, registryFile: ownFile, webhooks: ctx.authInfo ? webhooks() : undefined, principal: ctx.authInfo?.clientId, log: ctx.authInfo ? log : toFile }), { bus });
   const nodeHandler = toNodeHandler({ fetch: async (request, options) => (await eventNameMismatch(request)) ?? handler.fetch(request, options) });
   const guard = hostHeaderValidation(allowedHosts);
 
-  /** The caller of a request: undefined when no token is configured, false when the request must be refused. */
+  /** The caller of a request: undefined for an anonymous caller when no token is configured, false when the request must be refused. */
   const authenticate = (req: IncomingMessage): AuthInfo | undefined | false => {
-    if (!token && !proxyToken) return undefined;
     const given = /^Bearer (.+)$/i.exec(req.headers.authorization ?? "")?.[1] ?? "";
     const principal = req.headers[PRINCIPAL_HEADER];
     if (proxyToken && same(given, proxyToken) && typeof principal === "string" && principal.trim()) {
       return { token: given, clientId: principal.trim(), scopes: [] };
     }
-    return token && same(given, token) ? tokenAuth(token) : false;
+    if (token && same(given, token)) return tokenAuth(token);
+    if (registryToken && same(given, registryToken)) return tokenAuth(registryToken);
+    return token || proxyToken ? false : undefined;
   };
 
   const http = createHttpServer((req, res) => {
@@ -130,7 +135,7 @@ export function listenHttp({ bridge, skills, events, port, ...opts }: HttpOption
     if (err.code === "EADDRINUSE" && opts.fallbackToFreePort && !fellBack && port !== 0) {
       fellBack = true;
       // The port the user configured keeps the authentication they configured. This one they did not ask for, so it is never open.
-      if (!token && opts.registry) token = madeUpToken = randomBytes(24).toString("hex");
+      token ??= registryToken;
       http.listen(0, host);
       return;
     }
@@ -145,7 +150,7 @@ export function listenHttp({ bridge, skills, events, port, ...opts }: HttpOption
     webhooks();
     if (opts.registry) {
       try {
-        unregister = register(opts.registry, { url, source: events.source, pid: process.pid, startedAt: new Date().toISOString(), ...(madeUpToken && { token: madeUpToken }) });
+        unregister = register(opts.registry, { url, source: events.source, pid: process.pid, startedAt: new Date().toISOString(), ...(registryToken && { token: registryToken }) });
       } catch (err) {
         console.error(`forge-mcp-server: could not write to ${opts.registry}: ${(err as Error).message}`);
       }
@@ -162,6 +167,7 @@ export function listenHttp({ bridge, skills, events, port, ...opts }: HttpOption
     port: () => (http.address() as AddressInfo).port,
     /** The endpoint's URL, once listening. */
     url: () => url,
+    registryFile: ownFile,
     close: () => {
       unregister?.();
       http.close();

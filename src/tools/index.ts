@@ -27,7 +27,7 @@ async function lobbyChange(bridge: Bridge, path: string, body: unknown): Promise
 }
 
 /** What forge_status and the forge://status resource return. Starts the bridge when it is down. */
-export async function seatStatus(bridge: Bridge, events?: () => { source: string; http: boolean; url?: string }): Promise<Record<string, unknown>> {
+export async function seatStatus(bridge: Bridge, events?: () => { source: string; http: boolean; url?: string; registry?: string }): Promise<Record<string, unknown>> {
   const started = await bridge.ensureStarted().catch((e: Error) => `error: ${e.message}`);
   const status = await bridge.get<Record<string, unknown>>("/status");
   return { bridge: { url: bridge.url, startup: started }, events: events?.(), ...status };
@@ -41,7 +41,7 @@ export function registerTools(
   names?: GetText,
   deckSearch?: SearchIo,
   host: LobbyHost = sharedHost(),
-  events?: () => { source: string; http: boolean; url?: string },
+  events?: () => { source: string; http: boolean; url?: string; registry?: string },
 ): void {
   /** Registers a tool and logs each call. */
   const tool: RegisterTool = <In extends z.ZodType>(name: string, config: ToolConfig<In>, handler: (args: z.output<In>) => Promise<CallToolResult>) => {

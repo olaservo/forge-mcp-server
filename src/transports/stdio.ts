@@ -13,7 +13,7 @@ const { bridge, events } = seat;
 const skills = await skillCatalog();
 
 let server: McpServer | undefined;
-void serveStdio(() => (server = createServer({ bridge, skills, events, log, servesHttp: () => servesHttp, httpUrl: () => http?.url() })));
+void serveStdio(() => (server = createServer({ bridge, skills, events, log, servesHttp: () => servesHttp, httpUrl: () => http?.url(), registryFile: () => http?.registryFile() })));
 // FORGE_MCP_PORT also serves /mcp over HTTP, for a client that polls events outside the stdio connection.
 // When another session's server has the port this one takes a free port, and the registry says which.
 const http = process.env.FORGE_MCP_PORT

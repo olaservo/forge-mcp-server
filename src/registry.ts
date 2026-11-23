@@ -10,12 +10,15 @@ export interface RegistryEntry {
   source: string;
   pid: number;
   startedAt: string;
-  /** The bearer token for `url`, when the process made one up. Absent when it uses `FORGE_MCP_TOKEN`. */
+  /** A bearer token for `url` that the process made up. It is accepted beside `FORGE_MCP_TOKEN`. */
   token?: string;
 }
 
 /** The directory of `FORGE_MCP_REGISTRY`, or `~/.forge-seat/servers`. */
 export const registryDir = (env: NodeJS.ProcessEnv = process.env): string => env.FORGE_MCP_REGISTRY || join(homedir(), ".forge-seat", "servers");
+
+/** The file a process writes in `dir`. */
+export const registryFile = (dir: string, pid: number = process.pid): string => join(dir, `${pid}.json`);
 
 function alive(pid: number): boolean {
   try {
@@ -54,7 +57,7 @@ export function pruneRegistry(dir: string): void {
 export function register(dir: string, entry: RegistryEntry): () => void {
   mkdirSync(dir, { recursive: true, mode: 0o700 });
   pruneRegistry(dir);
-  const path = join(dir, `${entry.pid}.json`);
+  const path = registryFile(dir, entry.pid);
   const temp = join(dir, `${entry.pid}.tmp`);
   writeFileSync(temp, JSON.stringify(entry, null, 2), { mode: 0o600 });
   renameSync(temp, path);

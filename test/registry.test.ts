@@ -78,9 +78,13 @@ describe("an HTTP endpoint for every server process", () => {
     expect(server.url()).toBe(url);
     const entry = read(dir);
     expect(entry).toMatchObject({ url, source: events.source, pid: process.pid });
-    // The reader has the configured token already, so the file does not repeat it
-    expect(entry.token).toBeUndefined();
-    expect(await statusOver(url, "s3cret")).toMatchObject({ events: { source: events.source, http: true, url } });
+    // The file has the process's own token, never the configured one
+    expect(entry.token).toMatch(/^[0-9a-f]{48}$/);
+    const registry = join(dir, `${process.pid}.json`);
+    expect(await statusOver(url, "s3cret")).toMatchObject({ events: { source: events.source, http: true, url, registry } });
+    expect(await statusOver(url, entry.token)).toMatchObject({ events: { source: events.source, url } });
+    const refused = await fetch(url, { method: "POST", headers: { "content-type": "application/json", authorization: "Bearer wrong" }, body: "{}" });
+    expect(refused.status).toBe(401);
 
     server.close();
     expect(existsSync(join(dir, `${process.pid}.json`))).toBe(false);
@@ -93,7 +97,7 @@ describe("an HTTP endpoint for every server process", () => {
     expect(server.url()).toBeUndefined();
   });
 
-  it("leaves the configured port without a token when none is configured", async () => {
+  it("leaves the configured port open when no token is configured, and offers webhook delivery to a caller with the registry token", async () => {
     const dir = tempDir();
     const saved = process.env.FORGE_MCP_TOKEN;
     delete process.env.FORGE_MCP_TOKEN;
@@ -104,8 +108,21 @@ describe("an HTTP endpoint for every server process", () => {
     closers.push(() => server.close());
     expect(await server.listening).toBe(true);
     const { url, token } = read(dir);
-    expect(token).toBeUndefined();
+    expect(token).toMatch(/^[0-9a-f]{48}$/);
     expect(await statusOver(url)).toMatchObject({ events: { http: true, url } });
+
+    const deliveryModes = async (bearer?: string) => {
+      const res = await fetch(url, {
+        method: "POST",
+        headers: { "content-type": "application/json", accept: "application/json, text/event-stream", "mcp-method": "events/list", ...(bearer ? { authorization: `Bearer ${bearer}` } : {}) },
+        body: JSON.stringify({ jsonrpc: "2.0", id: 1, method: "events/list", params: {} }),
+      });
+      const text = await res.text();
+      const message = JSON.parse(text.split("\n").find((line) => line.startsWith("data:"))?.slice(5) ?? text) as { result: { events: { delivery: string[] }[] } };
+      return message.result.events[0]!.delivery;
+    };
+    expect(await deliveryModes()).not.toContain("webhook");
+    expect(await deliveryModes(token)).toContain("webhook");
   });
 
   it("on a fallback port with no token configured, makes one up, writes it to the registry and refuses a request without it", async () => {

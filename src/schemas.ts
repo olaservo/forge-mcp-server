@@ -203,7 +203,7 @@ export const Status = z.looseObject({
 
 export const StatusWithBridge = Status.extend({
   bridge: z.looseObject({ url: str, startup: str }).nullish(),
-  events: z.looseObject({ source: str, http: bool, url: str }).nullish(),
+  events: z.looseObject({ source: str, http: bool, url: str, registry: str }).nullish(),
 });
 
 export const PickResult = z.looseObject({ picked: PaperCard.nullish(), packNumber: num, pickNumber: num });

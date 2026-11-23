@@ -39,6 +39,8 @@ export interface CreateServerOptions {
   servesHttp?: () => boolean;
   /** The URL of that endpoint, once the process listens. */
   httpUrl?: () => string | undefined;
+  /** The process's registry file, which holds a token for that endpoint. */
+  registryFile?: () => string | undefined;
   /** Webhook subscriptions, shared like `events`. Without it the event types offer poll only. */
   webhooks?: WebhookHub;
   /** The authenticated caller of the request this instance serves. */
@@ -80,7 +82,8 @@ export function createServer(opts: CreateServerOptions = {}): McpServer {
 
   const eventsInfo = () => {
     const url = opts.httpUrl?.();
-    return { source: events.source, http: opts.servesHttp?.() ?? false, ...(url && { url }) };
+    const registry = opts.registryFile?.();
+    return { source: events.source, http: opts.servesHttp?.() ?? false, ...(url && { url }), ...(registry && { registry }) };
   };
   registerTools(server, bridge, opts.log, opts.decks, opts.names, opts.deckSearch, opts.host, eventsInfo);
   registerEvents(server, events, opts.webhooks && { hub: opts.webhooks, principal: opts.principal }, opts.log);
