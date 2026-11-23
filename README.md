@@ -37,7 +37,27 @@ npm run start:http        # Streamable HTTP on http://127.0.0.1:3080/mcp (FORGE_
 
 `node scripts/call.mjs <tool> '<json arguments>'` calls one tool on a server running over HTTP and prints the result, and `node scripts/call.mjs --poll forge.your_move [cursor]` polls an event. `FORGE_MCP_URL` names the endpoint.
 
-Claude Code: `claude mcp add forge -- node <path>/dist/index.js`. To have the agent woken on its turn, also install the `mcp-events` mod, as [Claude Code](docs/claude-code.md) describes. Without the mod the agent waits with `forge_wait`.
+The server is also on npm as `@olaservo/forge-mcp-server`, so a client can start it with `npx -y @olaservo/forge-mcp-server` and the same variables, with no clone. The Forge release and the bridge jar are still needed. For example, in a `.mcp.json`:
+
+```json
+{
+  "mcpServers": {
+    "forge": {
+      "command": "npx",
+      "args": ["-y", "@olaservo/forge-mcp-server"],
+      "env": {
+        "FORGE_JAR": "C:/tools/forge-2.0.16/forge-gui-desktop-2.0.16-jar-with-dependencies.jar",
+        "FORGE_HOME": "C:/tools/forge-2.0.16",
+        "FORGE_BRIDGE_JAR": "C:/tools/forge-agent-bridge/forge-agent-bridge-0.1.9-forge-2.0.16.jar"
+      }
+    }
+  }
+}
+```
+
+On Windows, Claude Code needs `"command": "cmd"` and `"args": ["/c", "npx", "-y", "@olaservo/forge-mcp-server"]`.
+
+Claude Code from a clone: `claude mcp add forge -- node <path>/dist/index.js`. To have the agent woken on its turn, also install the `mcp-events` mod, as [Claude Code](docs/claude-code.md) describes. Without the mod the agent waits with `forge_wait`.
 
 ## Hosting
 

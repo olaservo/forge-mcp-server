@@ -33,6 +33,7 @@
   },
   "scripts": {
     "build": "tsc",
+    "prepack": "npm run build",
     "typecheck": "tsc --noEmit && tsc -p test",
     "lint": "eslint .",
     "test": "vitest run --dir test",
