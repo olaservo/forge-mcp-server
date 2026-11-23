@@ -63,7 +63,7 @@ Say hello with `forge_chat` when you join. Keep chat short during a game. If you
 
 ## Other servers and references
 
-- Card lookups beyond the oracle text Forge sends: the Scryfall MCP server (`@olaservo/scryfall-mcp-server`, `search` and `fetch` tools).
-- Rules questions: the `mtg-rules` skill on this server when present, or the Comprehensive Rules at https://magic.wizards.com/en/rules.
+- Card lookups beyond the oracle text Forge sends: the Scryfall MCP server (`@olaservo/scryfall-mcp-server` 2.1.0 or later), `search` and `fetch` tools.
+- Rules questions: the same server. `get_rulings` gives a card's Oracle text and official rulings, `get_rule` looks up a Comprehensive Rules number such as 702.19b, and `search_rules` searches the rules and glossary by keyword. Forge still decides what is legal; use these to understand an interaction or to explain a play in chat, and quote the rule number and its `[cN]` link when you do. Without the server, the Comprehensive Rules are at https://magic.wizards.com/en/rules.
 - Limited pick and win-rate data: 17Lands (https://www.17lands.com/).
 - Cube lists we draft: CubeCobra (https://cubecobra.com/).
