@@ -1,14 +1,15 @@
 import { atom, read, update } from 'claude-code'
 import type { EngineInterface, Register } from 'claude-code'
 import type { Own } from '../types'
+import { configure, describe, end, fetchOnce, following as followingMailbox, pump, step } from './mailbox'
+import { rpc, type Occurrence } from './rpc'
 
 /**
  * A client for MCP Events poll delivery (SEP-3415), for Claude Code builds without one.
  * It polls the server over HTTP because a mod cannot send a custom method on the engine's
- * own MCP connection.
+ * own MCP connection. With a mailbox configured it takes webhook delivery through the mailbox, see `mailbox.ts`.
  */
 type EventType = { name: string; description?: string; delivery: string[] }
-type Occurrence = { eventId: string; name: string; timestamp: string; data: unknown }
 type PollResult = { events: Occurrence[]; cursor?: string | null; truncated?: boolean; hasMore?: boolean; nextPollMs?: number }
 type Subscription = { name: string; cursor: string | null; nextAt: number; hasPolled: boolean }
 
@@ -29,7 +30,8 @@ let isTicking = false
 let isTurnRunning = false
 let lastError: string | undefined
 let fired = 0
-let nextId = 1
+/** Whether a mailbox is configured. The poll loop then does not run. */
+let box = false
 /** When the model last got a result from one of the server's state tools. */
 let lastToolAt = 0
 /** When the model last got a result from a tool that shows one kind of event's state, by the event's `kind`. */
@@ -54,23 +56,6 @@ const reachesOwn = (url: string) => own?.http === true && (relays || own.url ===
 const storeKey = (url: string, name: string) => `mcp-events:cursor:${url}:${name}`
 
 const list = (value: unknown, fallback = '') => String(value ?? fallback).split(',').map(s => s.trim()).filter(Boolean)
-
-/** One JSON-RPC request as a bare POST. The server answers with JSON or a one-message SSE body. */
-async function rpc<T>($: EngineInterface, url: string, method: string, params: { name?: string }): Promise<T> {
-  // SEP-3415 routing headers: Mcp-Method always, Mcp-Name for requests that carry an event name.
-  const routing: Record<string, string> = { 'mcp-method': method }
-  if (params.name) routing['mcp-name'] = params.name
-  const res = await $.http.fetch(url, {
-    method: 'POST',
-    headers: { 'content-type': 'application/json', accept: 'application/json, text/event-stream', ...routing },
-    body: JSON.stringify({ jsonrpc: '2.0', id: nextId++, method, params }),
-  })
-  const data = res.text.split('\n').find(line => line.startsWith('data:'))
-  const message = JSON.parse(data ? data.slice(5) : res.text) as { result?: T; error?: { code: number; message: string } }
-  if (message.error) throw new Error(`${method}: ${message.error.message} (${message.error.code})`)
-  if (!res.ok || message.result === undefined) throw new Error(`${method}: HTTP ${res.status}`)
-  return message.result
-}
 
 /** Lists the server's poll events. A subscription already held keeps its cursor. */
 async function subscribe($: EngineInterface, url: string, wanted: readonly string[], current: readonly Subscription[] = []): Promise<Subscription[]> {
@@ -104,7 +89,7 @@ function standingNote(server: string, names: readonly string[], waitTools: reado
 }
 
 /** The `events` object in a status tool's result, which carries the tool's JSON as structuredContent or as text. */
-function eventsOf(result: unknown, text: string | undefined): { source: string; http: boolean; url?: string } | undefined {
+function eventsOf(result: unknown, text: string | undefined): Own | undefined {
   const record = result as { structuredContent?: { events?: unknown }; events?: unknown } | null | undefined
   let events = record?.structuredContent?.events ?? record?.events
   for (const json of [text, result]) {
@@ -115,8 +100,17 @@ function eventsOf(result: unknown, text: string | undefined): { source: string; 
       // Not JSON: an error text
     }
   }
-  const { source, http, url } = (events ?? {}) as { source?: unknown; http?: unknown; url?: unknown }
-  return typeof source === 'string' && source ? { source, http: http === true, ...(typeof url === 'string' && { url }) } : undefined
+  const { source, http, url, registry } = (events ?? {}) as { source?: unknown; http?: unknown; url?: unknown; registry?: unknown }
+  return typeof source === 'string' && source ? { source, http: http === true, ...(typeof url === 'string' && { url }), ...(typeof registry === 'string' && { registry }) } : undefined
+}
+
+/** Holds an event for the next flush, once. With `ownOnly`, only an event of the session's own server. */
+function accept(event: Occurrence, ownOnly: boolean) {
+  if (seen.has(event.eventId)) return
+  // Another session's server may own the endpoint, and its events are for that session.
+  if (ownOnly && !(own && event.eventId.startsWith(own.source))) return
+  seen.add(event.eventId)
+  held.set(event.name, event)
 }
 
 /** Starts a turn. Not awaited: the prompt runs once the session is idle, and a command.run hook may not wait on it. */
@@ -170,13 +164,7 @@ async function pollOne($: EngineInterface, url: string, sub: Subscription, ownOn
     // A truncated poll usually means the server restarted, possibly with other event types.
     if (res.truncated) listAt = 0
     sub.hasPolled = true
-    for (const event of res.events) {
-      if (seen.has(event.eventId)) continue
-      // Another session's server may own the endpoint, and its events are for that session.
-      if (ownOnly && !(own && event.eventId.startsWith(own.source))) continue
-      seen.add(event.eventId)
-      held.set(event.name, event)
-    }
+    for (const event of res.events) accept(event, ownOnly)
     hasMore = res.hasMore === true
     sub.nextAt = Date.now() + Math.max(res.nextPollMs ?? POLL_FLOOR_MS, POLL_FLOOR_MS)
   }
@@ -190,7 +178,10 @@ async function tick($: EngineInterface, url: string, wanted: readonly string[], 
       isRestored = true
       own = own ?? (await read($, savedOwn)) ?? undefined
     }
-    if (subscriptions === undefined) {
+    if (box) {
+      await step($)
+      lastError = undefined
+    } else if (subscriptions === undefined) {
       if (Date.now() < listAt) return
       listAt = Date.now() + LIST_RETRY_MS
       subscriptions = await subscribe($, url, wanted)
@@ -199,10 +190,10 @@ async function tick($: EngineInterface, url: string, wanted: readonly string[], 
       listAt = Date.now() + LIST_REFRESH_MS
       subscriptions = await subscribe($, url, wanted, subscriptions)
     }
-    for (const sub of subscriptions) {
+    for (const sub of box ? [] : (subscriptions ?? [])) {
       if (Date.now() >= sub.nextAt) await pollOne($, url, sub, ownOnly)
     }
-    lastError = undefined
+    if (!box) lastError = undefined
   } catch (err) {
     lastError = err instanceof Error ? err.message : String(err)
     // The server may have restarted with other event types: list again.
@@ -212,7 +203,15 @@ async function tick($: EngineInterface, url: string, wanted: readonly string[], 
     isTicking = false
   }
   // A session that is not woken shows nothing.
-  $.ui.status(subscriptions?.length && (!ownOnly || reachesOwn(url)) ? `events: ${subscriptions.map(s => s.name).join(', ')}` : undefined)
+  const names = following(url, ownOnly)
+  $.ui.status(names.length ? `events: ${names.join(', ')}${box ? ' (mailbox)' : ''}` : undefined)
+}
+
+/** The events that start a turn in this session now. */
+function following(url: string, ownOnly: boolean): readonly string[] {
+  if (box) return followingMailbox()
+  // A session whose server's events are not at the endpoint is not woken.
+  return subscriptions?.length && (!ownOnly || reachesOwn(url)) ? subscriptions.map(s => s.name) : []
 }
 
 export const register: Register = (on, options) => {
@@ -235,19 +234,45 @@ export const register: Register = (on, options) => {
   const ownOnly = String(options.ownOnly ?? true) !== 'false'
   const statusTool = String(options.statusTool ?? 'forge_status')
   relays = String(options.relay ?? false) === 'true'
+  const mailboxUrl = String(options.mailboxUrl ?? '')
+  const mailboxKey = String(options.mailboxKey ?? '')
+  box = mailboxUrl !== '' && mailboxKey !== ''
+  if (box) {
+    configure({
+      url: mailboxUrl,
+      key: mailboxKey,
+      serverToken: String(options.serverToken ?? '') || undefined,
+      wanted,
+      latestOnly: superseded,
+      own: () => own,
+      accept: event => accept(event, true),
+      missed: name => void missed.add(name),
+    })
+  }
+  const onFetchError = (message: string) => void (lastError = message)
 
   on('prompt.compose', async ($, e, next) => {
     const composed = await next(e)
-    if (!subscriptions?.length) return composed
-    // A session whose server's events are not at the endpoint is not woken, and keeps its wait tool.
-    if (ownOnly && !reachesOwn(url)) return composed
-    const text = standingNote(server, subscriptions.map(s => s.name), waitTools)
+    // A session that is not woken keeps its wait tool.
+    const names = following(url, ownOnly)
+    if (!names.length) return composed
+    const text = standingNote(server, names, waitTools)
     return { sections: [...composed.sections, { id: 'mcp-events:standing', text, scope: 'session' as const }] }
   })
 
   on('session.start', async ($, e, next) => {
     await $.command.register({ name: 'mcp-events', description: 'Poll MCP events now and show the subscriptions' })
-    $.clock.every(POLL_FLOOR_MS, () => void tick($, url, wanted, ownOnly).then(() => flush($, server, superseded)))
+    $.clock.every(POLL_FLOOR_MS, () =>
+      void tick($, url, wanted, ownOnly).then(() => {
+        if (box) pump($, onFetchError)
+        flush($, server, superseded)
+      }),
+    )
+    return next(e)
+  })
+
+  on('session.end', async ($, e, next) => {
+    if (box) await end($)
     return next(e)
   })
 
@@ -284,6 +309,13 @@ export const register: Register = (on, options) => {
     for (const sub of subscriptions ?? []) sub.nextAt = 0
     listAt = 0
     await tick($, url, wanted, ownOnly)
+    if (box) {
+      if (!lastError) await fetchOnce($, 0, 0).catch((err: unknown) => onFetchError(err instanceof Error ? err.message : String(err)))
+      const at = `MCP events through the mailbox at ${mailboxUrl}`
+      if (lastError) return { text: `${at}: ${lastError}` }
+      if (!own?.http || !own.url) return { text: `${at}: nothing until ${statusTool} has said where the server serves its events` }
+      return { text: [`${at} for ${own.url}, ${fired} fired this session, ${held.size} waiting:`, ...describe()].join('\n') }
+    }
     if (lastError) return { text: `MCP events at ${url}: ${lastError}` }
     if (!subscriptions?.length) return { text: `MCP events at ${url}: the server lists no events with poll delivery.` }
     const whose = !ownOnly ? [] : [own ? `  own events only: ids from ${own.source}${reachesOwn(url) ? '' : own.http ? `, which ${statusTool} says are served at ${own.url}` : `, which ${statusTool} says are not served over HTTP`}` : `  own events only: none until ${statusTool} has been called`]

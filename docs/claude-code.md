@@ -22,6 +22,14 @@ The mod polls one URL and sends no token, so on its own it reaches only the serv
 
 `FORGE_MCP_SUBSCRIPTIONS` is read only by the server that got `FORGE_MCP_PORT`. A server on a free port keeps its subscriptions in memory.
 
+## Through a mailbox, with no reader
+
+With `mailboxUrl` and `mailboxKey` set, the mod does the reader's work itself and nothing else has to run. Once `forge_status` has been called, the mod reads the server's token from the registry file named in `events.registry`, creates a hook in the mailbox, and subscribes the session's own server by webhook with that hook as the callback. It refreshes the subscription every minute. It keeps one waiting request open to the mailbox, checks each delivery's Standard Webhooks signature and age, drops repeats, orders what arrived together, and starts a turn as for a polled event. The signing secret is made in the session and the mailbox never has it. `url` and `relay` are not used.
+
+When the session ends the mod unsubscribes and removes its hook. A session that is killed leaves the hook, and a mailbox with hook limits removes it after a day without a fetch.
+
+After a `/mcp` reconnect the server is a new process. The session is woken again once `forge_status` has been called.
+
 ## Options
 
 - `url`: the endpoint to poll. Default `http://127.0.0.1:3080/mcp`.
@@ -33,6 +41,8 @@ The mod polls one URL and sends no token, so on its own it reaches only the serv
 - `ownOnly`: start turns only for the session's own server, as above. Default on. The prefix is kept in the session's state, so a `/reload-plugins` keeps it until the status tool reports another. Turned off, every event at the URL starts a turn and the system prompt note is added as soon as the mod is polling.
 - `statusTool`: the tool whose result has `events.source`, `events.http` and `events.url`. Default `forge_status`.
 - `relay`: the endpoint is a reader that relays every server's events, so the session is woken whatever `events.url` its server reports. Default off.
+- `mailboxUrl`, `mailboxKey`: the base URL and bearer key of an [mcp-mailbox](https://github.com/olaservo/mcp-mailbox). With both set the mod takes webhook delivery through the mailbox, as above. The key is kept in secure storage. Default: not set.
+- `serverToken`: the server's bearer token, for mailbox delivery from a server whose `forge_status` names no registry file. Default: not set.
 
 ## Installing the mod
 

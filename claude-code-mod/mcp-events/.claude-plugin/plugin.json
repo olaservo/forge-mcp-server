@@ -2,7 +2,7 @@
   "name": "mcp-events",
   "version": "0.1.0",
   "types": "./types/index.d.ts",
-  "description": "Polls MCP Events (events/list, events/poll) on an MCP server's HTTP endpoint and starts a turn when one fires",
+  "description": "Follows MCP Events on an MCP server (poll delivery, or webhook delivery through a mailbox) and starts a turn when one fires",
   "userConfig": {
     "url": {
       "type": "string",
@@ -57,6 +57,26 @@
       "title": "Endpoint relays every server",
       "description": "The endpoint is a reader that relays the events of every server on the machine, so the session's own server is reached there whatever address it serves at",
       "default": false
+    },
+    "mailboxUrl": {
+      "type": "string",
+      "title": "Mailbox URL",
+      "description": "Base URL of an mcp-mailbox. With this and the mailbox key set, the session subscribes its own server by webhook with the mailbox as the callback and fetches its events from the mailbox, and the endpoint above is not polled",
+      "default": ""
+    },
+    "mailboxKey": {
+      "type": "string",
+      "title": "Mailbox key",
+      "description": "The bearer key of the mailbox",
+      "sensitive": true,
+      "default": ""
+    },
+    "serverToken": {
+      "type": "string",
+      "title": "Server token",
+      "description": "Bearer token of the session's server, for mailbox delivery from a server whose status tool names no registry file with a token",
+      "sensitive": true,
+      "default": ""
     }
   }
 }
