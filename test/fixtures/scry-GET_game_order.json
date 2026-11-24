@@ -2,7 +2,7 @@
   "inGame": true,
   "finished": false,
   "prompt": "Move cards to top or bottom of library / Choose the cards to keep on top, the first one topmost. The rest go to the bottom.",
-  "promptCount": 6,
+  "promptCount": 5,
   "waiting": false,
   "priorityPrompt": false,
   "promptCard": null,
@@ -18,8 +18,8 @@
     "kind": "order",
     "prompt": "Move cards to top or bottom of library / Choose the cards to keep on top, the first one topmost. The rest go to the bottom.",
     "options": [
-      "Preordain (16)",
-      "Island (28)"
+      "Island (28)",
+      "Island (30)"
     ],
     "min": 0,
     "max": 2,
@@ -27,8 +27,8 @@
   },
   "messages": [],
   "messageCount": 0,
-  "logCount": 12,
-  "turn": 1,
+  "logCount": 27,
+  "turn": 2,
   "phase": "MAIN1",
   "activePlayer": "AgentBot",
   "gameOver": false,
@@ -45,14 +45,14 @@
       "life": 20,
       "hasPriority": false,
       "isMe": true,
-      "handSize": 5,
-      "librarySize": 33,
+      "handSize": 6,
+      "librarySize": 32,
       "graveyardSize": 0,
       "exileSize": 0,
       "mana": {},
       "battlefield": [
         {
-          "id": 36,
+          "id": 23,
           "name": "Island",
           "zone": "Battlefield",
           "controller": "AgentBot",
@@ -71,39 +71,7 @@
       "graveyard": [],
       "hand": [
         {
-          "id": 40,
-          "name": "Island",
-          "zone": "Hand",
-          "controller": "AgentBot",
-          "tapped": false,
-          "sick": false,
-          "attacking": false,
-          "blocking": false,
-          "damage": 0,
-          "token": false,
-          "faceDown": false,
-          "type": "Basic Land - Island",
-          "manaCost": "no cost",
-          "text": ""
-        },
-        {
-          "id": 33,
-          "name": "Island",
-          "zone": "Hand",
-          "controller": "AgentBot",
-          "tapped": false,
-          "sick": false,
-          "attacking": false,
-          "blocking": false,
-          "damage": 0,
-          "token": false,
-          "faceDown": false,
-          "type": "Basic Land - Island",
-          "manaCost": "no cost",
-          "text": ""
-        },
-        {
-          "id": 3,
+          "id": 17,
           "name": "Preordain",
           "zone": "Hand",
           "controller": "AgentBot",
@@ -119,8 +87,8 @@
           "text": "Scry 2, then draw a card. (To scry 2, look at the top two cards of your library, then put any number of them on the bottom and the rest on top in any order.) "
         },
         {
-          "id": 2,
-          "name": "Preordain",
+          "id": 39,
+          "name": "Island",
           "zone": "Hand",
           "controller": "AgentBot",
           "tapped": false,
@@ -130,12 +98,60 @@
           "damage": 0,
           "token": false,
           "faceDown": false,
-          "type": "Sorcery",
-          "manaCost": "{U}",
-          "text": "Scry 2, then draw a card. (To scry 2, look at the top two cards of your library, then put any number of them on the bottom and the rest on top in any order.) "
+          "type": "Basic Land - Island",
+          "manaCost": "no cost",
+          "text": ""
         },
         {
-          "id": 9,
+          "id": 36,
+          "name": "Island",
+          "zone": "Hand",
+          "controller": "AgentBot",
+          "tapped": false,
+          "sick": false,
+          "attacking": false,
+          "blocking": false,
+          "damage": 0,
+          "token": false,
+          "faceDown": false,
+          "type": "Basic Land - Island",
+          "manaCost": "no cost",
+          "text": ""
+        },
+        {
+          "id": 24,
+          "name": "Island",
+          "zone": "Hand",
+          "controller": "AgentBot",
+          "tapped": false,
+          "sick": false,
+          "attacking": false,
+          "blocking": false,
+          "damage": 0,
+          "token": false,
+          "faceDown": false,
+          "type": "Basic Land - Island",
+          "manaCost": "no cost",
+          "text": ""
+        },
+        {
+          "id": 27,
+          "name": "Island",
+          "zone": "Hand",
+          "controller": "AgentBot",
+          "tapped": false,
+          "sick": false,
+          "attacking": false,
+          "blocking": false,
+          "damage": 0,
+          "token": false,
+          "faceDown": false,
+          "type": "Basic Land - Island",
+          "manaCost": "no cost",
+          "text": ""
+        },
+        {
+          "id": 5,
           "name": "Preordain",
           "zone": "Hand",
           "controller": "AgentBot",
@@ -158,21 +174,38 @@
       "life": 20,
       "hasPriority": true,
       "isMe": false,
-      "handSize": 5,
+      "handSize": 4,
       "librarySize": 35,
       "graveyardSize": 0,
       "exileSize": 0,
       "mana": {},
-      "battlefield": [],
+      "battlefield": [
+        {
+          "id": 44,
+          "name": "Forest",
+          "zone": "Battlefield",
+          "controller": "HostAI",
+          "tapped": false,
+          "sick": false,
+          "attacking": false,
+          "blocking": false,
+          "damage": 0,
+          "token": false,
+          "faceDown": false,
+          "type": "Basic Land - Forest",
+          "manaCost": "no cost",
+          "text": ""
+        }
+      ],
       "graveyard": []
     }
   ],
   "stack": [
     {
-      "id": 447,
+      "id": 1139,
       "source": "Preordain",
       "by": "AgentBot",
-      "text": "Preordain (4) - AgentBot scries 2. AgentBot draws a card.",
+      "text": "Preordain (18) - AgentBot scries 2. AgentBot draws a card.",
       "targets": []
     }
   ]

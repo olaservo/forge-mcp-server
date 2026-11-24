@@ -1,5 +1,5 @@
 {
-  "revision": 1555,
+  "revision": 394,
   "connection": {
     "connected": false,
     "host": "127.0.0.1",
@@ -29,7 +29,7 @@
     "inGame": false,
     "finished": false,
     "prompt": "",
-    "promptCount": 166,
+    "promptCount": 34,
     "waiting": false,
     "priorityPrompt": false,
     "promptCard": null,

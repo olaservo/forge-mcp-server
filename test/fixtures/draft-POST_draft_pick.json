@@ -1,16 +1,16 @@
 {
   "picked": {
-    "name": "Merfolk Spy",
+    "name": "Knight Exemplar",
     "set": "M11",
-    "collectorNumber": "66",
-    "rarity": "Common",
-    "manaCost": "{U}",
-    "type": "Creature - Merfolk Rogue",
-    "colors": "U",
-    "power": "1",
-    "toughness": "1",
-    "oracle": "Islandwalk (This creature can't be blocked as long as defending player controls an Island.)\\nWhenever Merfolk Spy deals combat damage to a player, that player reveals a card at random from their hand."
+    "collectorNumber": "20",
+    "rarity": "Rare",
+    "manaCost": "{1}{W}{W}",
+    "type": "Creature - Human Knight",
+    "colors": "W",
+    "power": "2",
+    "toughness": "2",
+    "oracle": "First strike (This creature deals combat damage before creatures without first strike.)\\nOther Knight creatures you control get +1/+1 and have indestructible. (Damage and effects that say \"destroy\" don't destroy them.)"
   },
-  "packNumber": 3,
-  "pickNumber": 9
+  "packNumber": 1,
+  "pickNumber": 14
 }

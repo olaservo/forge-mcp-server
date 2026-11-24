@@ -40,7 +40,7 @@
       "mana": {},
       "battlefield": [
         {
-          "id": 28,
+          "id": 39,
           "name": "Forest",
           "zone": "Battlefield",
           "controller": "AgentBot",
@@ -56,7 +56,7 @@
           "text": ""
         },
         {
-          "id": 13,
+          "id": 20,
           "name": "Wild Growth",
           "zone": "Battlefield",
           "controller": "AgentBot",
@@ -69,7 +69,7 @@
           "faceDown": false,
           "attachedTo": {
             "type": "card",
-            "id": 28,
+            "id": 39,
             "name": "Forest"
           },
           "type": "Enchantment - Aura",
@@ -80,7 +80,7 @@
       "graveyard": [],
       "hand": [
         {
-          "id": 14,
+          "id": 12,
           "name": "Wild Growth",
           "zone": "Hand",
           "controller": "AgentBot",
@@ -94,6 +94,54 @@
           "type": "Enchantment - Aura",
           "manaCost": "{G}",
           "text": "Enchant land\r\n\r\n<span style=\"color:gray;\">Whenever enchanted land is tapped for mana, its controller adds an additional {G}.</span>"
+        },
+        {
+          "id": 40,
+          "name": "Forest",
+          "zone": "Hand",
+          "controller": "AgentBot",
+          "tapped": false,
+          "sick": false,
+          "attacking": false,
+          "blocking": false,
+          "damage": 0,
+          "token": false,
+          "faceDown": false,
+          "type": "Basic Land - Forest",
+          "manaCost": "no cost",
+          "text": ""
+        },
+        {
+          "id": 1,
+          "name": "Wild Growth",
+          "zone": "Hand",
+          "controller": "AgentBot",
+          "tapped": false,
+          "sick": false,
+          "attacking": false,
+          "blocking": false,
+          "damage": 0,
+          "token": false,
+          "faceDown": false,
+          "type": "Enchantment - Aura",
+          "manaCost": "{G}",
+          "text": "Enchant land\r\n\r\n<span style=\"color:gray;\">Whenever enchanted land is tapped for mana, its controller adds an additional {G}.</span>"
+        },
+        {
+          "id": 27,
+          "name": "Forest",
+          "zone": "Hand",
+          "controller": "AgentBot",
+          "tapped": false,
+          "sick": false,
+          "attacking": false,
+          "blocking": false,
+          "damage": 0,
+          "token": false,
+          "faceDown": false,
+          "type": "Basic Land - Forest",
+          "manaCost": "no cost",
+          "text": ""
         },
         {
           "id": 9,
@@ -110,54 +158,6 @@
           "type": "Enchantment - Aura",
           "manaCost": "{G}",
           "text": "Enchant land\r\n\r\n<span style=\"color:gray;\">Whenever enchanted land is tapped for mana, its controller adds an additional {G}.</span>"
-        },
-        {
-          "id": 15,
-          "name": "Wild Growth",
-          "zone": "Hand",
-          "controller": "AgentBot",
-          "tapped": false,
-          "sick": false,
-          "attacking": false,
-          "blocking": false,
-          "damage": 0,
-          "token": false,
-          "faceDown": false,
-          "type": "Enchantment - Aura",
-          "manaCost": "{G}",
-          "text": "Enchant land\r\n\r\n<span style=\"color:gray;\">Whenever enchanted land is tapped for mana, its controller adds an additional {G}.</span>"
-        },
-        {
-          "id": 30,
-          "name": "Forest",
-          "zone": "Hand",
-          "controller": "AgentBot",
-          "tapped": false,
-          "sick": false,
-          "attacking": false,
-          "blocking": false,
-          "damage": 0,
-          "token": false,
-          "faceDown": false,
-          "type": "Basic Land - Forest",
-          "manaCost": "no cost",
-          "text": ""
-        },
-        {
-          "id": 37,
-          "name": "Forest",
-          "zone": "Hand",
-          "controller": "AgentBot",
-          "tapped": false,
-          "sick": false,
-          "attacking": false,
-          "blocking": false,
-          "damage": 0,
-          "token": false,
-          "faceDown": false,
-          "type": "Basic Land - Forest",
-          "manaCost": "no cost",
-          "text": ""
         }
       ]
     },

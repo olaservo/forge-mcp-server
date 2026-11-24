@@ -345,15 +345,17 @@ export function registerTools(
         "One click in the match UI. `ok` and `cancel` press the two prompt buttons (OK passes priority or confirms; Cancel declines). " +
         "`selectCard` with a card `id` plays, activates, taps or targets that card, as the prompt allows. `pay: \"auto\"` lets Forge pay the cost, " +
         "and `pass: true` then passes priority so the spell resolves: `{action: \"selectCard\", id, pay: \"auto\", pass: true}` casts a spell that needs no target in one call. " +
-        "`ok` with your own spell or ability on top of the stack passes until the stack is empty; the host stops and asks you when an opponent adds to the stack or attacks. `once: true` passes one time, to keep priority after it. " +
-        "`endTurn` passes until the end of the turn, whatever the Cancel button reads. With `ok` on another prompt, `endTurn: true` answers it and then passes the rest of the turn: use it on the attack to skip your second main phase. " +
+        "`ok` with your own spell or ability on top of the stack passes until the stack is empty, so your own spells and triggers resolve without a prompt between them. `once: true` passes one time, and you are asked again before the next item resolves. " +
+        "`endTurn` passes until the end of the turn, whatever the Cancel button reads: no attack, nothing more in either main phase. With a cast, `endTurn: true` resolves the spell and ends the turn. " +
+        "With `ok` on the attack, `endTurn: true` attacks and skips your prompts after blockers are declared and in your second main phase, so leave it out when you hold a combat trick or a spell for after combat. " +
+        "None of these skips a response to an opponent: when an opponent adds to the stack or attacks you, the passing ends and you are asked before anything resolves. After `endTurn` that is when you have something you could play. " +
         "The Cancel button can read \"Undo\", which takes back your last spell or land, so do not press `cancel` to end a turn. " +
         "`selectPlayer` targets a player by `id`. `useMana` pays with a floating mana color (color: 1=W 2=U 4=B 8=R 16=G 32=C). " +
         "`alphaStrike` attacks with everything, `undo` takes back the last action, `concede` ends the game. " +
         "Once `gameOver` is true: `quit` leaves the match and returns everyone to the lobby, `continue` plays the next game of the match, `newMatch` restarts it. " +
         "`at` is the `promptCount` you are answering: if the prompt has changed, nothing is sent and the answer has `stale: true`. Pass it when you act on an event. " +
-        "Returns what you are asked next, after the host has reacted: `prompt`, the enabled `buttons`, `life`, your `hand` when you have priority, the `stack`, floating `mana`, `selection` and `actionable` when the prompt offers cards, " +
-        "`board` the first time it returns your main phase in a turn, `cardText` for card names not sent before, and `since` with what happened since your last result. `waiting: true` means nothing is asked of you. Send one action at a time.",
+        "Returns what you are asked next, after the host has reacted: `prompt`, the enabled `buttons`, `life`, your `hand` when you have priority, the `stack` from the top down, floating `mana`, `selection` and `actionable` when the prompt offers cards, " +
+        "`board` the first time it returns your main phase in a turn, `cardText` for card names not sent before, and `since` with what happened since your last result. `waiting: true` means nothing is asked of you: send no action until you are asked. Send one action at a time.",
       inputSchema: z.object({
         action: z.enum(["ok", "cancel", "selectCard", "selectPlayer", "useMana", "alphaStrike", "endTurn", "undo", "concede", "quit", "continue", "newMatch"]),
         id: z.number().int().optional().describe("Card or player id for selectCard / selectPlayer"),
@@ -361,7 +363,7 @@ export function registerTools(
         pay: z.enum(["auto"]).optional().describe("Press Auto if the action leads to the prompt that pays a cost"),
         pass: z.boolean().optional().describe("Afterwards, pass priority if your own spell or ability is on top of the stack"),
         once: z.boolean().optional().describe("With ok: pass priority one time only"),
-        endTurn: z.boolean().optional().describe("With ok: also pass until the end of the turn"),
+        endTurn: z.boolean().optional().describe("With ok or a cast: also pass until the end of the turn"),
         at: z.number().int().optional().describe("The promptCount this action answers"),
       }),
       outputSchema: out.View,

@@ -40,7 +40,7 @@
       "mana": {},
       "battlefield": [
         {
-          "id": 37,
+          "id": 28,
           "name": "Forest",
           "zone": "Battlefield",
           "controller": "AgentBot",
@@ -56,7 +56,7 @@
           "text": ""
         },
         {
-          "id": 34,
+          "id": 31,
           "name": "Forest",
           "zone": "Battlefield",
           "controller": "AgentBot",
@@ -75,7 +75,7 @@
       "graveyard": [],
       "hand": [
         {
-          "id": 11,
+          "id": 20,
           "name": "Elvish Visionary",
           "zone": "Hand",
           "controller": "AgentBot",
@@ -91,6 +91,58 @@
           "power": 1,
           "toughness": 1,
           "text": "<span style=\"color:gray;\">When Elvish Visionary enters, draw a card.</span>"
+        },
+        {
+          "id": 10,
+          "name": "Elvish Visionary",
+          "zone": "Hand",
+          "controller": "AgentBot",
+          "tapped": false,
+          "sick": false,
+          "attacking": false,
+          "blocking": false,
+          "damage": 0,
+          "token": false,
+          "faceDown": false,
+          "type": "Creature - Elf Shaman",
+          "manaCost": "{1}{G}",
+          "power": 1,
+          "toughness": 1,
+          "text": "<span style=\"color:gray;\">When Elvish Visionary enters, draw a card.</span>"
+        },
+        {
+          "id": 12,
+          "name": "Elvish Visionary",
+          "zone": "Hand",
+          "controller": "AgentBot",
+          "tapped": false,
+          "sick": false,
+          "attacking": false,
+          "blocking": false,
+          "damage": 0,
+          "token": false,
+          "faceDown": false,
+          "type": "Creature - Elf Shaman",
+          "manaCost": "{1}{G}",
+          "power": 1,
+          "toughness": 1,
+          "text": "<span style=\"color:gray;\">When Elvish Visionary enters, draw a card.</span>"
+        },
+        {
+          "id": 40,
+          "name": "Forest",
+          "zone": "Hand",
+          "controller": "AgentBot",
+          "tapped": false,
+          "sick": false,
+          "attacking": false,
+          "blocking": false,
+          "damage": 0,
+          "token": false,
+          "faceDown": false,
+          "type": "Basic Land - Forest",
+          "manaCost": "no cost",
+          "text": ""
         },
         {
           "id": 1,
@@ -108,44 +160,10 @@
           "manaCost": "{1}{G}",
           "power": 1,
           "toughness": 1,
-          "text": "<span style=\"color:gray;\">When Elvish Visionary enters, draw a card.</span>"
+          "text": "When Elvish Visionary enters, draw a card."
         },
         {
-          "id": 22,
-          "name": "Elvish Visionary",
-          "zone": "Hand",
-          "controller": "AgentBot",
-          "tapped": false,
-          "sick": false,
-          "attacking": false,
-          "blocking": false,
-          "damage": 0,
-          "token": false,
-          "faceDown": false,
-          "type": "Creature - Elf Shaman",
-          "manaCost": "{1}{G}",
-          "power": 1,
-          "toughness": 1,
-          "text": "<span style=\"color:gray;\">When Elvish Visionary enters, draw a card.</span>"
-        },
-        {
-          "id": 25,
-          "name": "Forest",
-          "zone": "Hand",
-          "controller": "AgentBot",
-          "tapped": false,
-          "sick": false,
-          "attacking": false,
-          "blocking": false,
-          "damage": 0,
-          "token": false,
-          "faceDown": false,
-          "type": "Basic Land - Forest",
-          "manaCost": "no cost",
-          "text": ""
-        },
-        {
-          "id": 5,
+          "id": 6,
           "name": "Elvish Visionary",
           "zone": "Hand",
           "controller": "AgentBot",
@@ -161,22 +179,6 @@
           "power": 1,
           "toughness": 1,
           "text": "When Elvish Visionary enters, draw a card."
-        },
-        {
-          "id": 26,
-          "name": "Forest",
-          "zone": "Hand",
-          "controller": "AgentBot",
-          "tapped": false,
-          "sick": false,
-          "attacking": false,
-          "blocking": false,
-          "damage": 0,
-          "token": false,
-          "faceDown": false,
-          "type": "Basic Land - Forest",
-          "manaCost": "no cost",
-          "text": ""
         }
       ]
     },
@@ -193,7 +195,7 @@
       "mana": {},
       "battlefield": [
         {
-          "id": 61,
+          "id": 74,
           "name": "Forest",
           "zone": "Battlefield",
           "controller": "HostAI",
@@ -209,7 +211,7 @@
           "text": ""
         },
         {
-          "id": 71,
+          "id": 69,
           "name": "Forest",
           "zone": "Battlefield",
           "controller": "HostAI",
@@ -230,7 +232,7 @@
   ],
   "stack": [
     {
-      "id": 601,
+      "id": 1175,
       "source": "Elvish Visionary",
       "by": "AgentBot",
       "text": "Elvish Visionary - Creature 1 / 1",

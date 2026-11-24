@@ -1,8 +1,8 @@
 {
   "inGame": true,
   "finished": false,
-  "prompt": "Shock (2) - Shock deals 2 damage to any target.\n\nSelect any target",
-  "promptCount": 5,
+  "prompt": "Shock (12) - Shock deals 2 damage to any target.\n\nSelect any target",
+  "promptCount": 4,
   "waiting": false,
   "priorityPrompt": false,
   "promptCard": "Shock",
@@ -40,7 +40,7 @@
       "mana": {},
       "battlefield": [
         {
-          "id": 24,
+          "id": 27,
           "name": "Mountain",
           "zone": "Battlefield",
           "controller": "AgentBot",
@@ -59,55 +59,7 @@
       "graveyard": [],
       "hand": [
         {
-          "id": 5,
-          "name": "Shock",
-          "zone": "Hand",
-          "controller": "AgentBot",
-          "tapped": false,
-          "sick": false,
-          "attacking": false,
-          "blocking": false,
-          "damage": 0,
-          "token": false,
-          "faceDown": false,
-          "type": "Instant",
-          "manaCost": "{R}",
-          "text": "Shock deals 2 damage to any target."
-        },
-        {
-          "id": 8,
-          "name": "Shock",
-          "zone": "Hand",
-          "controller": "AgentBot",
-          "tapped": false,
-          "sick": false,
-          "attacking": false,
-          "blocking": false,
-          "damage": 0,
-          "token": false,
-          "faceDown": false,
-          "type": "Instant",
-          "manaCost": "{R}",
-          "text": "Shock deals 2 damage to any target."
-        },
-        {
-          "id": 20,
-          "name": "Shock",
-          "zone": "Hand",
-          "controller": "AgentBot",
-          "tapped": false,
-          "sick": false,
-          "attacking": false,
-          "blocking": false,
-          "damage": 0,
-          "token": false,
-          "faceDown": false,
-          "type": "Instant",
-          "manaCost": "{R}",
-          "text": "Shock deals 2 damage to any target."
-        },
-        {
-          "id": 35,
+          "id": 38,
           "name": "Mountain",
           "zone": "Hand",
           "controller": "AgentBot",
@@ -123,8 +75,8 @@
           "text": ""
         },
         {
-          "id": 1,
-          "name": "Shock",
+          "id": 37,
+          "name": "Mountain",
           "zone": "Hand",
           "controller": "AgentBot",
           "tapped": false,
@@ -134,9 +86,25 @@
           "damage": 0,
           "token": false,
           "faceDown": false,
-          "type": "Instant",
-          "manaCost": "{R}",
-          "text": "Shock deals 2 damage to any target."
+          "type": "Basic Land - Mountain",
+          "manaCost": "no cost",
+          "text": ""
+        },
+        {
+          "id": 29,
+          "name": "Mountain",
+          "zone": "Hand",
+          "controller": "AgentBot",
+          "tapped": false,
+          "sick": false,
+          "attacking": false,
+          "blocking": false,
+          "damage": 0,
+          "token": false,
+          "faceDown": false,
+          "type": "Basic Land - Mountain",
+          "manaCost": "no cost",
+          "text": ""
         },
         {
           "id": 28,
@@ -153,6 +121,38 @@
           "type": "Basic Land - Mountain",
           "manaCost": "no cost",
           "text": ""
+        },
+        {
+          "id": 34,
+          "name": "Mountain",
+          "zone": "Hand",
+          "controller": "AgentBot",
+          "tapped": false,
+          "sick": false,
+          "attacking": false,
+          "blocking": false,
+          "damage": 0,
+          "token": false,
+          "faceDown": false,
+          "type": "Basic Land - Mountain",
+          "manaCost": "no cost",
+          "text": ""
+        },
+        {
+          "id": 2,
+          "name": "Shock",
+          "zone": "Hand",
+          "controller": "AgentBot",
+          "tapped": false,
+          "sick": false,
+          "attacking": false,
+          "blocking": false,
+          "damage": 0,
+          "token": false,
+          "faceDown": false,
+          "type": "Instant",
+          "manaCost": "{R}",
+          "text": "Shock deals 2 damage to any target."
         }
       ]
     },
@@ -169,7 +169,7 @@
       "mana": {},
       "battlefield": [
         {
-          "id": 70,
+          "id": 80,
           "name": "Forest",
           "zone": "Battlefield",
           "controller": "HostAI",
@@ -185,7 +185,7 @@
           "text": ""
         },
         {
-          "id": 62,
+          "id": 52,
           "name": "Llanowar Elves",
           "zone": "Battlefield",
           "controller": "HostAI",
@@ -212,7 +212,7 @@
     "max": 1,
     "cards": [
       {
-        "id": 62,
+        "id": 52,
         "name": "Llanowar Elves",
         "zone": "Battlefield",
         "controller": "HostAI",
