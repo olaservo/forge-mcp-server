@@ -72,6 +72,25 @@ describe("events", () => {
     expect(new MoveTracker(new EventLog()).observe(at(30, { ...waitingFor, waiting: false, buttons: okEndTurn }))?.data).toMatchObject({ prompt: "Waiting for Claude..." });
   });
 
+  it("wakes the seat for a prompt with no button enabled, such as a target it must choose", () => {
+    // Statuses from the fast-agent seat of the game on 2026-11-23, cut down to the fields the tracker reads
+    const moves = new MoveTracker(new EventLog());
+    const none = { ok: "OK", okEnabled: false, cancel: "Cancel", cancelEnabled: false };
+    const at = (promptCount: number, more: Record<string, unknown>) => ({ revision: promptCount, game: { ...game(promptCount), turn: 7, phase: "MAIN1", priorityPrompt: false, ...more } });
+    const target = "Skinrender (97) - When Skinrender enters, put three -1/-1 counters on target creature.\n\nSelect target creature";
+    expect(moves.observe(at(51, { prompt: "Waiting for Agent...", waiting: true, hasPriority: false, buttons: none }))).toBeUndefined();
+    expect(moves.observe(at(52, { prompt: target, waiting: false, hasPriority: true, promptCard: "Skinrender", buttons: none }))?.data).toMatchObject({ kind: "priority", prompt: target, turn: 7 });
+    // The prompt stays up until the host answers the selection, and is reported once
+    expect(moves.observe(at(52, { prompt: target, waiting: false, hasPriority: true, buttons: none }))).toBeUndefined();
+    // The seat's own priority prompt after the host passed for it is still no ask
+    expect(moves.observe(at(53, { prompt: "Priority: FastAgent", priorityPrompt: true, hasPriority: false, buttons: none }))).toBeUndefined();
+    // A bridge before 0.1.3 has no `waiting`, so its prompts with no button stay quiet
+    const old = new MoveTracker(new EventLog());
+    expect(old.observe(at(52, { prompt: "Waiting for Agent...", waiting: undefined, buttons: none }))).toBeUndefined();
+    // The gap between two inputs has no prompt
+    expect(new MoveTracker(new EventLog()).observe(at(52, { prompt: "", waiting: false, buttons: none }))).toBeUndefined();
+  });
+
   it("emits a lobby ask once while the seat sits unready", () => {
     const moves = new MoveTracker(new EventLog());
     const lobby = (ready: boolean, name = "Agent") => ({

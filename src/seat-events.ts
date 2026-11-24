@@ -37,8 +37,11 @@ export function pendingMove(status: SeatStatus, awaited?: number): Move | undefi
     // Forge sends the buttons of the next input before its prompt, and the buttons clear `waiting`. Until the
     // prompt arrives the count is the one the seat waited at, and the text is still "Waiting for ...".
     if (awaited !== undefined && game.promptCount === awaited) return undefined;
+    // A prompt with no button enabled is answered by selecting a card or a player, as a target that must be
+    // chosen is. Only the bridge's `waiting` flag tells it from the prompt shown while another player acts.
+    const answerable = game.buttons?.okEnabled || game.buttons?.cancelEnabled || game.waiting === false;
     // An empty prompt is the gap between two inputs, not an ask.
-    if ((game.buttons?.okEnabled || game.buttons?.cancelEnabled) && prompt.trim() !== "" && !game.waiting) {
+    if (answerable && prompt.trim() !== "" && !game.waiting) {
       // The bridge counts each prompt the host sends, so the same text twice in a turn is two asks.
       return { key: `priority:${game.promptCount}`, data: { kind: "priority", prompt, ...at } };
     }
