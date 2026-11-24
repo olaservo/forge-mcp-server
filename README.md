@@ -67,6 +67,7 @@ A seat with `FORGE_AUTO_JOIN` set to the hosted port sits down by itself, and so
 
 ## More
 
+- [Playing](docs/playing.md): what the game tools return, what is sent once, and the arguments that save calls. Needs bridge 0.1.10.
 - [Decks](docs/decks.md): the deck tools, the folders they read, and the deck sites `forge_deck_save` can fetch from and `forge_deck_search` can search.
 - [Events](docs/events.md): `forge.your_move` and `forge.chat` over MCP Events, by poll or webhook, and the settings for both.
 - [Claude Code](docs/claude-code.md): the `mcp-events` mod that starts a turn when an event fires.

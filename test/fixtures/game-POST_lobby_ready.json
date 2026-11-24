@@ -24,5 +24,10 @@
       "deckName": null,
       "hasDeck": false
     }
-  ]
+  ],
+  "myDeck": {
+    "name": "Agent Kicker Test",
+    "mainSize": 40,
+    "sideboardSize": 0
+  }
 }

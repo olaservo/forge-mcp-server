@@ -145,6 +145,8 @@ export const Player = z.looseObject({
   librarySize: num,
   graveyardSize: num,
   exileSize: num,
+  /** Mana floating in the pool, by colour letter. Bridge 0.1.10. */
+  mana: z.record(z.string(), z.number()).nullish(),
   battlefield: z.array(BoardCard).nullish(),
   graveyard: z.array(BoardCard).nullish(),
   hand: z.array(BoardCard).nullish(),
@@ -165,17 +167,24 @@ export const Game = z.looseObject({
   incorrectActions: num,
   pendingDecision: PendingDecision.nullish(),
   messages: strings,
+  /** Counts of the game's messages and game log lines. Bridge 0.1.10. */
+  messageCount: num,
+  logCount: num,
   turn: num,
   phase: str,
   activePlayer: str,
   hasPriority: bool,
   autoPass: str,
   autoPassNow: bool,
+  /** Where the host stops for the seat on an empty stack: `default` or `all`. Bridge 0.1.10. */
+  stops: str,
+  /** True when an action named a prompt count that was no longer current, and was not sent. Bridge 0.1.10. */
+  stale: bool,
   gameOver: bool,
   winner: str,
   me: str,
   players: z.array(Player).nullish(),
-  stack: z.array(z.looseObject({ id: num, source: str, by: str, text: str })).nullish(),
+  stack: z.array(z.looseObject({ id: num, source: str, by: str, text: str, targets: strings })).nullish(),
   combat: z
     .array(z.looseObject({ attacker: str, attackerId: num, defender: str, blockers: strings, blocked: bool }))
     .nullish(),
@@ -185,8 +194,55 @@ export const Game = z.looseObject({
   actionable: z.array(z.looseObject({ id: num, name: str })).nullish(),
 });
 
+/** What has happened since the seat's last game tool result. */
+export const Since = z.looseObject({
+  /** Game log lines, without phase changes and mana. The last 15, with the number of older ones in `earlier`. */
+  log: strings,
+  earlier: num,
+  newInHand: strings,
+  messages: strings,
+});
+
 /** What forge_game_state returns: the game with rules text by card name in `cardText`, unless asked for in full. */
-export const GameState = Game.extend({ cardText: z.record(z.string(), z.string()).nullish() });
+export const GameState = Game.extend({ cardText: z.record(z.string(), z.string()).nullish(), since: Since.nullish() });
+
+/**
+ * What forge_game_act and forge_game_decide return, and what `forge.your_move` carries: the ask, what is needed
+ * to answer it, and what is new. A field is left out when it has nothing to say.
+ */
+export const View = z.looseObject({
+  prompt: str,
+  promptCount: num,
+  turn: num,
+  phase: str,
+  activePlayer: str,
+  /** Nothing is asked of the seat. */
+  waiting: bool,
+  /** The labels of the enabled buttons. */
+  buttons: z.looseObject({ ok: str, cancel: str }).nullish(),
+  /** The host refused the action. */
+  refused: bool,
+  stale: bool,
+  inGame: bool,
+  gameOver: bool,
+  winner: str,
+  life: z.record(z.string(), z.number().nullable()).nullish(),
+  hand: z.array(BoardCard).nullish(),
+  stack: z.array(z.looseObject({ source: str, by: str, text: str, targets: strings })).nullish(),
+  mana: z.record(z.string(), z.number()).nullish(),
+  combat: Game.shape.combat,
+  selection: Game.shape.selection,
+  actionable: Game.shape.actionable,
+  pendingDecision: PendingDecision.nullish(),
+  board: z
+    .array(z.looseObject({ name: str, handSize: num, librarySize: num, graveyardSize: num, battlefield: z.array(BoardCard).nullish() }))
+    .nullish(),
+  cardText: z.record(z.string(), z.string()).nullish(),
+  since: Since.nullish(),
+  /** After `quit`: the seat is back in the lobby. */
+  left: bool,
+  lobby: Lobby.nullish(),
+});
 
 /** `from` is null for a line from the host itself. Before forge-agent-bridge 0.1.5 a line was the text `from: text`. */
 export const ChatLine = z.looseObject({ from: str, text: str });
@@ -207,7 +263,11 @@ export const StatusWithBridge = Status.extend({
 });
 
 export const PickResult = z.looseObject({ picked: PaperCard.nullish(), packNumber: num, pickNumber: num });
+/** A card of the deck the seat set: what Forge's card scripts say of it. */
+export const DeckCard = z.looseObject({ count: num, name: str, manaCost: str, type: str, pt: str, text: str });
 export const DeckResult = z.looseObject({ deck: str, size: num });
+/** What forge_lobby_deck returns: the bridge's answer and, from Forge's card scripts, the deck's description and main deck. */
+export const DeckSet = DeckResult.extend({ description: str, cards: z.array(DeckCard).nullish() });
 export const BuiltDeck = z.looseObject({ deck: str, size: num, lands: num, sideboardSize: num, path: str, problem: str });
 export const OkResult = z.looseObject({ ok: bool });
 export const LogResult = z.looseObject({ log: strings });

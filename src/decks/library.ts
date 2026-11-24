@@ -89,6 +89,16 @@ export interface DeckSummary {
   tags?: string;
 }
 
+/** A card of a deck as the seat is told of it when it sets the deck. */
+export interface DeckCard {
+  count: number;
+  name: string;
+  manaCost?: string;
+  type?: string;
+  pt?: string;
+  text?: string;
+}
+
 export interface DeckDetail extends DeckSummary {
   path: string;
   cards: Partial<Record<Section, { count: number; name: string }[]>>;
@@ -298,9 +308,39 @@ export class DeckLibrary {
     const deck = parseDck(dck);
     const cards: DeckDetail["cards"] = {};
     for (const [section, entries] of Object.entries(deck.sections) as [Section, Entry[]][]) {
-      cards[section] = entries.map((e) => ({ count: e.count, name: e.name }));
+      // One row per card: a deck file lists each printing of a basic land on a line of its own.
+      const rows = new Map<string, { count: number; name: string }>();
+      for (const e of entries) {
+        const row = rows.get(e.name);
+        if (row) row.count += e.count;
+        else rows.set(e.name, { count: e.count, name: e.name });
+      }
+      cards[section] = [...rows.values()];
     }
     return { ...this.summarize(id.slice(0, id.indexOf("/")), path, deck), path, cards, dck };
+  }
+
+  /** One row per card name, with what Forge's card scripts say of the card. Without `FORGE_HOME`, names and counts only. */
+  describe(entries: { count: number; name: string }[]): DeckCard[] {
+    const index = this.cards();
+    const rows = new Map<string, DeckCard>();
+    for (const e of entries) {
+      const info = index?.find(e.name);
+      const name = info?.name ?? e.name;
+      const row = rows.get(name);
+      if (row) row.count += e.count;
+      else {
+        rows.set(name, {
+          count: e.count,
+          name,
+          ...(info?.manaCost && { manaCost: info.manaCost }),
+          ...(info?.types && { type: info.types }),
+          ...(info?.pt && { pt: info.pt }),
+          ...(info?.oracle && { text: info.oracle }),
+        });
+      }
+    }
+    return [...rows.values()];
   }
 
   /** The deck with Forge's card names and set codes, and the names Forge does not implement. Unchanged without a card list. */

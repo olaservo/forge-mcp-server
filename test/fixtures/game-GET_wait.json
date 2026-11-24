@@ -1,5 +1,5 @@
 {
-  "revision": 575,
+  "revision": 38,
   "connection": {
     "connected": true,
     "host": "127.0.0.1",
@@ -34,7 +34,12 @@
         "deckName": null,
         "hasDeck": true
       }
-    ]
+    ],
+    "myDeck": {
+      "name": "Agent Kicker Test",
+      "mainSize": 40,
+      "sideboardSize": 0
+    }
   },
   "draft": {
     "seatIndex": -1,
@@ -53,10 +58,10 @@
   "game": {
     "inGame": true,
     "finished": false,
-    "prompt": "Priority: AgentBot\nTurn: 18 (AgentBot)\nPhase: Main phase, postcombat\nStack: Empty",
-    "promptCount": 103,
+    "prompt": "Choose optional costs",
+    "promptCount": 3,
     "waiting": false,
-    "priorityPrompt": true,
+    "priorityPrompt": false,
     "promptCard": null,
     "buttons": {
       "ok": "OK",
@@ -66,7 +71,7 @@
     },
     "incorrectActions": 0,
     "pendingDecision": {
-      "id": 6,
+      "id": 1,
       "kind": "choices",
       "prompt": "Choose optional costs",
       "options": [
@@ -77,15 +82,18 @@
       "default": null
     },
     "messages": [],
-    "turn": 18,
-    "phase": "MAIN2",
+    "messageCount": 0,
+    "logCount": 21,
+    "turn": 2,
+    "phase": "MAIN1",
     "activePlayer": "AgentBot",
     "gameOver": false,
     "winner": "",
     "me": "AgentBot",
     "hasPriority": true,
     "autoPass": "opponent-turns",
-    "autoPassNow": false
+    "autoPassNow": false,
+    "stops": "default"
   },
   "chat": [
     {

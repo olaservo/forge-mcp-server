@@ -9,6 +9,14 @@ export interface CardInfo {
   /** Colours in WUBRG order, empty for colourless. */
   colors: string;
   land: boolean;
+  /** As printed, such as `{1}{G}`. Absent for a card with no cost. */
+  manaCost?: string;
+  /** The type line without its dash, such as `Creature Elf Shaman`. */
+  types?: string;
+  /** Power and toughness, such as `1/1`. */
+  pt?: string;
+  /** Rules text. Another face follows on a line of its own, after its name. */
+  oracle?: string;
 }
 
 const WUBRG = "WUBRG";
@@ -47,6 +55,18 @@ interface Face {
   manaCost?: string;
   colors?: string;
   types?: string;
+  pt?: string;
+  oracle?: string;
+}
+
+/** A script's `1 G` as `{1}{G}`. Undefined for `no cost`. */
+function printedCost(manaCost: string | undefined): string | undefined {
+  if (!manaCost || manaCost === "no cost") return undefined;
+  return manaCost
+    .split(/\s+/)
+    .filter(Boolean)
+    .map((symbol) => `{${symbol}}`)
+    .join("");
 }
 
 /** The cards Forge implements, read from its card scripts. */
@@ -76,6 +96,8 @@ export class CardIndex {
       else if (key === "ManaCost" && face.manaCost === undefined) face.manaCost = value;
       else if (key === "Colors" && face.colors === undefined) face.colors = value;
       else if (key === "Types" && face.types === undefined) face.types = value;
+      else if (key === "PT" && face.pt === undefined) face.pt = value;
+      else if (key === "Oracle" && face.oracle === undefined) face.oracle = value.replaceAll("\\n", "\n");
       else if (key === "AlternateMode") mode = value;
     }
     const [front, back] = faces;
@@ -88,6 +110,16 @@ export class CardIndex {
         : faceColors(front.manaCost, front.colors),
       land: /\bLand\b/.test(front.types ?? ""),
     };
+    const cost = [printedCost(front.manaCost), split ? printedCost(back.manaCost) : undefined].filter(Boolean).join(" // ");
+    if (cost) info.manaCost = cost;
+    if (front.types) info.types = front.types;
+    if (front.pt) info.pt = front.pt;
+    const others = faces
+      .slice(1)
+      .filter((f) => f.name && f.oracle)
+      .map((f) => `${f.name}${printedCost(f.manaCost) ? ` ${printedCost(f.manaCost)}` : ""}: ${f.oracle}`);
+    const oracle = [front.oracle, ...others].filter(Boolean).join("\n");
+    if (oracle) info.oracle = oracle;
     this.cards.set(cardKey(info.name), info);
     for (const face of faces) {
       if (face.name && !this.faces.has(cardKey(face.name))) this.faces.set(cardKey(face.name), info);

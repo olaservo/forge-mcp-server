@@ -2,7 +2,7 @@
   "inGame": true,
   "finished": false,
   "prompt": "Goblin Bushwhacker - Creature 1 / 1\n\nPay Mana Cost: {R}{R}",
-  "promptCount": 104,
+  "promptCount": 4,
   "waiting": false,
   "priorityPrompt": false,
   "promptCard": "Goblin Bushwhacker",
@@ -14,13 +14,16 @@
   },
   "incorrectActions": 0,
   "messages": [],
-  "turn": 18,
-  "phase": "MAIN2",
+  "messageCount": 0,
+  "logCount": 21,
+  "turn": 2,
+  "phase": "MAIN1",
   "activePlayer": "AgentBot",
   "gameOver": false,
   "winner": "",
   "me": "AgentBot",
   "hasPriority": true,
   "autoPass": "opponent-turns",
-  "autoPassNow": false
+  "autoPassNow": false,
+  "stops": "default"
 }

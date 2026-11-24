@@ -153,7 +153,11 @@ describe("bridge fixtures", () => {
   it("sends a damage split as amounts", async () => {
     const assign = fixture(index["combat GET /game#assign"]) as { pendingDecision: { id: number; kind: string; amount: number } };
     expect(assign.pendingDecision).toMatchObject({ kind: "assign", amount: 3 });
-    const { bridge, calls } = fakeBridge({ "POST /game/decide": fixture(index["game POST /game/decide"]) });
+    const { bridge, calls } = fakeBridge({
+      "POST /game/decide": fixture(index["game POST /game/decide"]),
+      "GET /game": fixture(index["game GET /game"]),
+      "GET /game/log": { log: [] },
+    });
     const client = await connect(bridge);
     const res = await client.callTool({ name: "forge_game_decide", arguments: { id: assign.pendingDecision.id, amounts: [2, 1] } });
     expect(res.isError, JSON.stringify(res.content)).toBeFalsy();

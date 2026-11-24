@@ -443,4 +443,42 @@ describe("deck tools", () => {
     expect(missing.isError).toBe(true);
     await client.close();
   });
+
+  it("describes the deck once when it is set, and finds a deck by its bare name", async () => {
+    const { bridge, calls } = fakeBridge({ "POST /lobby/deck": { deck: "Bolt Precon", size: 24 } });
+    const client = await connect(bridge);
+    const set = await client.callTool({ name: "forge_lobby_deck", arguments: { name: "Bolt Precon" } });
+    expect(set.isError, JSON.stringify(set.content)).toBeFalsy();
+    // The bridge is sent the deck's text, since it knows a name only in two folders.
+    expect((calls.at(-1)?.body as { dck: string }).dck).toContain("4 Lightning Bolt|M10");
+    expect(set.structuredContent).toEqual({
+      deck: "Bolt Precon",
+      size: 24,
+      description: "Burn",
+      cards: [
+        { count: 20, name: "Mountain", type: "Basic Land Mountain" },
+        { count: 4, name: "Lightning Bolt", manaCost: "{R}", type: "Instant", text: "Lightning Bolt deals 3 damage to any target." },
+      ],
+    });
+
+    const pasted = await client.callTool({ name: "forge_lobby_deck", arguments: { dck: "[Main]\n2 Sol Ring\n2 Sol Ring|XYZ\n" } });
+    expect((pasted.structuredContent as { cards: unknown[] }).cards).toEqual([{ count: 4, name: "Sol Ring", manaCost: "{1}", type: "Artifact" }]);
+    await client.close();
+  });
+
+  it("lists without the folders table once narrowed, and reads a deck as one row per card with the file's text on request", async () => {
+    const client = await connect(fakeBridge({}).bridge);
+    const all = await client.callTool({ name: "forge_decks", arguments: {} });
+    expect(all.structuredContent).toHaveProperty("folders");
+    const narrowed = await client.callTool({ name: "forge_decks", arguments: { query: "bolt" } });
+    expect(narrowed.structuredContent).not.toHaveProperty("folders");
+    expect(narrowed.structuredContent).toMatchObject({ total: 1 });
+
+    const one = (await client.callTool({ name: "forge_decks", arguments: { id: "constructed/Izzet Tempo" } })).structuredContent as { deck: { dck?: string; cards: { Main: unknown[] } } };
+    expect(one.deck.dck).toBeUndefined();
+    expect(one.deck.cards.Main).toContainEqual({ count: 4, name: "Lightning Bolt" });
+    const withText = (await client.callTool({ name: "forge_decks", arguments: { id: "constructed/Izzet Tempo", dck: true } })).structuredContent as { deck: { dck?: string } };
+    expect(withText.deck.dck).toContain("[Main]");
+    await client.close();
+  });
 });

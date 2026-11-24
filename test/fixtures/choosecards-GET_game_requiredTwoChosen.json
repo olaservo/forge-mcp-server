@@ -2,7 +2,7 @@
   "inGame": true,
   "finished": false,
   "prompt": "Choose which card(s) to reveal",
-  "promptCount": 5,
+  "promptCount": 8,
   "waiting": false,
   "priorityPrompt": false,
   "promptCard": null,
@@ -14,7 +14,9 @@
   },
   "incorrectActions": 0,
   "messages": [],
-  "turn": 1,
+  "messageCount": 0,
+  "logCount": 32,
+  "turn": 2,
   "phase": "MAIN2",
   "activePlayer": "HostAI",
   "gameOver": false,
@@ -23,6 +25,7 @@
   "hasPriority": true,
   "autoPass": "opponent-turns",
   "autoPassNow": true,
+  "stops": "default",
   "players": [
     {
       "id": 0,
@@ -30,47 +33,33 @@
       "life": 20,
       "hasPriority": true,
       "isMe": true,
-      "handSize": 7,
+      "handSize": 6,
       "librarySize": 33,
       "graveyardSize": 0,
       "exileSize": 0,
-      "battlefield": [],
+      "mana": {},
+      "battlefield": [
+        {
+          "id": 9,
+          "name": "Island",
+          "zone": "Battlefield",
+          "controller": "AgentBot",
+          "tapped": false,
+          "sick": false,
+          "attacking": false,
+          "blocking": false,
+          "damage": 0,
+          "token": false,
+          "faceDown": false,
+          "type": "Basic Land - Island",
+          "manaCost": "no cost",
+          "text": ""
+        }
+      ],
       "graveyard": [],
       "hand": [
         {
-          "id": 25,
-          "name": "Island",
-          "zone": "Hand",
-          "controller": "AgentBot",
-          "tapped": false,
-          "sick": false,
-          "attacking": false,
-          "blocking": false,
-          "damage": 0,
-          "token": false,
-          "faceDown": false,
-          "type": "Basic Land - Island",
-          "manaCost": "no cost",
-          "text": ""
-        },
-        {
-          "id": 15,
-          "name": "Island",
-          "zone": "Hand",
-          "controller": "AgentBot",
-          "tapped": false,
-          "sick": false,
-          "attacking": false,
-          "blocking": false,
-          "damage": 0,
-          "token": false,
-          "faceDown": false,
-          "type": "Basic Land - Island",
-          "manaCost": "no cost",
-          "text": ""
-        },
-        {
-          "id": 33,
+          "id": 31,
           "name": "Island",
           "zone": "Hand",
           "controller": "AgentBot",
@@ -102,7 +91,7 @@
           "text": ""
         },
         {
-          "id": 16,
+          "id": 40,
           "name": "Island",
           "zone": "Hand",
           "controller": "AgentBot",
@@ -118,7 +107,7 @@
           "text": ""
         },
         {
-          "id": 11,
+          "id": 10,
           "name": "Island",
           "zone": "Hand",
           "controller": "AgentBot",
@@ -134,7 +123,23 @@
           "text": ""
         },
         {
-          "id": 22,
+          "id": 7,
+          "name": "Island",
+          "zone": "Hand",
+          "controller": "AgentBot",
+          "tapped": false,
+          "sick": false,
+          "attacking": false,
+          "blocking": false,
+          "damage": 0,
+          "token": false,
+          "faceDown": false,
+          "type": "Basic Land - Island",
+          "manaCost": "no cost",
+          "text": ""
+        },
+        {
+          "id": 12,
           "name": "Island",
           "zone": "Hand",
           "controller": "AgentBot",
@@ -157,13 +162,14 @@
       "life": 20,
       "hasPriority": false,
       "isMe": false,
-      "handSize": 5,
-      "librarySize": 33,
+      "handSize": 6,
+      "librarySize": 32,
       "graveyardSize": 0,
       "exileSize": 0,
+      "mana": {},
       "battlefield": [
         {
-          "id": 51,
+          "id": 48,
           "name": "Swamp",
           "zone": "Battlefield",
           "controller": "HostAI",
@@ -184,10 +190,13 @@
   ],
   "stack": [
     {
-      "id": 2,
+      "id": 4,
       "source": "Blackmail",
       "by": "HostAI",
-      "text": "Blackmail (61) - AgentBot reveals their hand. HostAI chooses a card from it. AgentBot discards that card."
+      "text": "Blackmail (76) - AgentBot reveals their hand. HostAI chooses a card from it. AgentBot discards that card.",
+      "targets": [
+        "AgentBot"
+      ]
     }
   ],
   "selection": {
@@ -195,39 +204,7 @@
     "max": 3,
     "cards": [
       {
-        "id": 25,
-        "name": "Island",
-        "zone": "Hand",
-        "controller": "AgentBot",
-        "tapped": false,
-        "sick": false,
-        "attacking": false,
-        "blocking": false,
-        "damage": 0,
-        "token": false,
-        "faceDown": false,
-        "type": "Basic Land - Island",
-        "manaCost": "no cost",
-        "text": ""
-      },
-      {
-        "id": 15,
-        "name": "Island",
-        "zone": "Hand",
-        "controller": "AgentBot",
-        "tapped": false,
-        "sick": false,
-        "attacking": false,
-        "blocking": false,
-        "damage": 0,
-        "token": false,
-        "faceDown": false,
-        "type": "Basic Land - Island",
-        "manaCost": "no cost",
-        "text": ""
-      },
-      {
-        "id": 33,
+        "id": 31,
         "name": "Island",
         "zone": "Hand",
         "controller": "AgentBot",
@@ -259,7 +236,7 @@
         "text": ""
       },
       {
-        "id": 16,
+        "id": 40,
         "name": "Island",
         "zone": "Hand",
         "controller": "AgentBot",
@@ -275,7 +252,7 @@
         "text": ""
       },
       {
-        "id": 11,
+        "id": 10,
         "name": "Island",
         "zone": "Hand",
         "controller": "AgentBot",
@@ -291,7 +268,23 @@
         "text": ""
       },
       {
-        "id": 22,
+        "id": 7,
+        "name": "Island",
+        "zone": "Hand",
+        "controller": "AgentBot",
+        "tapped": false,
+        "sick": false,
+        "attacking": false,
+        "blocking": false,
+        "damage": 0,
+        "token": false,
+        "faceDown": false,
+        "type": "Basic Land - Island",
+        "manaCost": "no cost",
+        "text": ""
+      },
+      {
+        "id": 12,
         "name": "Island",
         "zone": "Hand",
         "controller": "AgentBot",
@@ -311,12 +304,12 @@
     "chosen": [
       {
         "type": "card",
-        "id": 25,
+        "id": 31,
         "name": "Island"
       },
       {
         "type": "card",
-        "id": 15,
+        "id": 21,
         "name": "Island"
       }
     ]

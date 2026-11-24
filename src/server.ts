@@ -71,8 +71,8 @@ export function createServer(opts: CreateServerOptions = {}): McpServer {
     } as ServerCapabilities,
     instructions:
       "Forge (Card-Forge) seat for an agent. Tools drive one headless Forge client that joins a host's online lobby, " +
-      "drafts and plays. Start with forge_status, then forge_connect. With no host to join, forge_host starts one on this machine. Load the forge-player skill (skill://forge/forge-player/SKILL.md) " +
-      "before playing and forge-drafter before drafting. forge_decks lists the decks the seat can bring to a lobby; load forge-deck " +
+      "drafts and plays. Start with forge_status, then forge_connect. With no host to join, forge_host starts one on this machine. Before playing, read the forge-player skill, " +
+      "which is the MCP resource skill://forge/forge-player/SKILL.md on this server, and forge-drafter before drafting. forge_decks lists the decks the seat can bring to a lobby; load forge-deck " +
       "before choosing one or importing a new one. While the seat has nothing to do, wait in one of two ways. " +
       "If your client starts a turn for you when forge.your_move fires (an MCP Events client, or Claude Code with the " +
       "mcp-events mod, which tells you so), end your turn after acting and do not call forge_wait. " +

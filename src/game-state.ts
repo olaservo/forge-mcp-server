@@ -1,5 +1,5 @@
 /** Card fields left out of the compact game state when they hold this value. */
-const DEFAULTS: Record<string, unknown> = {
+export const DEFAULTS: Record<string, unknown> = {
   tapped: false,
   sick: false,
   attacking: false,

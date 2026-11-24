@@ -1,5 +1,5 @@
 {
-  "revision": 690,
+  "revision": 1555,
   "connection": {
     "connected": false,
     "host": "127.0.0.1",
@@ -27,10 +27,10 @@
   },
   "game": {
     "inGame": false,
-    "finished": true,
-    "prompt": "Waiting for HostAI...",
-    "promptCount": 122,
-    "waiting": true,
+    "finished": false,
+    "prompt": "",
+    "promptCount": 166,
+    "waiting": false,
     "priorityPrompt": false,
     "promptCard": null,
     "buttons": {
@@ -41,15 +41,8 @@
     },
     "incorrectActions": 0,
     "messages": [],
-    "turn": 21,
-    "phase": "COMBAT_DAMAGE",
-    "activePlayer": "HostAI",
-    "gameOver": true,
-    "winner": "HostAI",
-    "me": "AgentBot",
-    "hasPriority": false,
-    "autoPass": "opponent-turns",
-    "autoPassNow": true
+    "messageCount": 0,
+    "logCount": 0
   },
   "chat": [
     {

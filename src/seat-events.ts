@@ -98,7 +98,8 @@ export class MoveTracker {
     return pendingMove(status, this.awaited);
   }
 
-  observe(status: SeatStatus): EventOccurrence | undefined {
+  /** The ask to report for this status, or undefined when there is none or it is the one already reported. */
+  private take(status: SeatStatus): Move | undefined {
     // A game in progress means the reported result belongs to an earlier game. The next result is then
     // new, even when it ends on the same turn with the same winner.
     if (status.game?.inGame && !status.game.gameOver && !status.game.finished) this.reported = undefined;
@@ -111,7 +112,22 @@ export class MoveTracker {
       if (move === undefined) this.lastEvent = undefined;
       return undefined;
     }
-    return (this.lastEvent = this.log.emit(YOUR_MOVE, move.data));
+    return move;
+  }
+
+  observe(status: SeatStatus): EventOccurrence | undefined {
+    const move = this.take(status);
+    return move && (this.lastEvent = this.log.emit(YOUR_MOVE, move.data));
+  }
+
+  /** Like `observe`, and the event also carries what `more` returns for it. An ask is reported with or without it. */
+  async observeWith(status: SeatStatus, more: (data: Record<string, unknown>) => Promise<Record<string, unknown> | undefined>): Promise<EventOccurrence | undefined> {
+    const move = this.take(status);
+    if (!move) return undefined;
+    // Until the event exists, the earlier one no longer reports what is pending.
+    this.lastEvent = undefined;
+    const extra = await more(move.data).catch(() => undefined);
+    return (this.lastEvent = this.log.emit(YOUR_MOVE, { ...move.data, ...extra }));
   }
 
   /** The event that reported the ask pending at the last status, or undefined when there is none. A game result is not an ask here. */
@@ -170,7 +186,8 @@ export const EVENT_TYPES = [
     name: YOUR_MOVE,
     description:
       "Fires when the Forge seat is asked to act: a seat in the lobby that is not ready yet, a draft pick, a drafted or sealed pool to build a deck from, a priority prompt, a choice dialog, or the end of a game. " +
-      "The payload is a summary. Read the full state with forge_status before acting.",
+      "For a priority prompt or a choice in a game the payload is what forge_game_act returns for that prompt, with the board: act on it, and pass its `promptCount` as `at`. " +
+      "For the other kinds the payload is a summary. Read forge_status before acting.",
     inputSchema: NO_ARGUMENTS,
     payloadSchema: {
       type: "object",
@@ -182,6 +199,20 @@ export const EVENT_TYPES = [
         secondsLeft: { type: "integer", description: "Left on the pick clock when a draft pick was asked for, if the host set one" },
         turn: { type: "integer" },
         phase: { type: "string" },
+        promptCount: { type: "integer", description: "For kinds priority and decision: the prompt this event reports. Pass it as `at` to forge_game_act." },
+        activePlayer: { type: "string" },
+        buttons: { type: "object", description: "The labels of the enabled buttons" },
+        life: { type: "object" },
+        hand: { type: "array" },
+        stack: { type: "array" },
+        mana: { type: "object" },
+        combat: { type: "array" },
+        selection: { type: "object" },
+        actionable: { type: "array" },
+        pendingDecision: { type: "object" },
+        board: { type: "array", description: "Each player's battlefield and zone sizes" },
+        cardText: { type: "object", description: "Rules text for card names not sent before" },
+        since: { type: "object", description: "What has happened since the seat's last game tool result" },
       },
       required: ["kind"],
     },

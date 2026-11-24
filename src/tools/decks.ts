@@ -18,26 +18,31 @@ export function registerDeckTools(tool: RegisterTool, decks: DeckLibrary, search
       title: "List decks",
       description:
         "The decks this seat can use, read from Forge's deck folders on the server's machine: your own decks, net decks, draft pools, " +
-        "and the preconstructed and quest decks that ship with Forge. `folders` counts every folder. Narrow `decks` with `folder`, " +
+        "and the preconstructed and quest decks that ship with Forge. `folders` counts every folder, and is left out once you narrow the list. Narrow `decks` with `folder`, " +
         "`query` (words from the deck name, its path or its commander) and `colors` (the exact colours, such as `WU`; empty for colourless). " +
         "Net decks are listed only with `folder: \"net\"`, where `query` matches the category and file name. " +
-        "Give a deck's `id` to forge_lobby_deck to play it. Pass `id` here to read that one deck's card list.",
+        "Give a deck's `id` to forge_lobby_deck to play it. Pass `id` here to read that one deck's card list, one row per card name, and `dck: true` for the deck file's text as well.",
       inputSchema: z.object({
         folder: z.enum(folderKeys).optional(),
         query: z.string().optional(),
         colors: z.string().regex(/^[WUBRGwubrg]*$/).optional(),
         id: z.string().optional().describe("Read this one deck instead of listing"),
+        dck: z.boolean().default(false).describe("With id: include the deck file's text"),
         limit: z.number().int().min(1).max(200).default(40),
         offset: z.number().int().min(0).default(0),
       }),
       outputSchema: out.DeckList,
       annotations: readOnly,
     },
-    async ({ id, ...filters }) =>
+    async ({ id, dck, ...filters }) =>
       run(async () => {
-        if (!id) return await decks.list(filters);
-        const { path: _path, ...deck } = decks.read(id);
-        return { deck };
+        if (!id) {
+          const { folders, ...listed } = await decks.list(filters);
+          const narrowed = filters.folder !== undefined || filters.query !== undefined || filters.colors !== undefined;
+          return narrowed ? listed : { folders, ...listed };
+        }
+        const { path: _path, dck: text, ...deck } = decks.read(id);
+        return { deck: dck ? { ...deck, dck: text } : deck };
       }),
   );
 

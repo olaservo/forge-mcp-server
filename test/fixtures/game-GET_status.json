@@ -1,5 +1,5 @@
 {
-  "revision": 689,
+  "revision": 1553,
   "connection": {
     "connected": true,
     "host": "127.0.0.1",
@@ -34,7 +34,12 @@
         "deckName": null,
         "hasDeck": true
       }
-    ]
+    ],
+    "myDeck": {
+      "name": "Agent Kicker Test",
+      "mainSize": 40,
+      "sideboardSize": 0
+    }
   },
   "draft": {
     "seatIndex": -1,
@@ -53,9 +58,9 @@
   "game": {
     "inGame": false,
     "finished": true,
-    "prompt": "Waiting for HostAI...",
-    "promptCount": 122,
-    "waiting": true,
+    "prompt": "Game over. Winner: HostAI",
+    "promptCount": 166,
+    "waiting": false,
     "priorityPrompt": false,
     "promptCard": null,
     "buttons": {
@@ -66,15 +71,18 @@
     },
     "incorrectActions": 0,
     "messages": [],
-    "turn": 21,
-    "phase": "COMBAT_DAMAGE",
-    "activePlayer": "HostAI",
+    "messageCount": 0,
+    "logCount": 1017,
+    "turn": 68,
+    "phase": "DRAW",
+    "activePlayer": "AgentBot",
     "gameOver": true,
     "winner": "HostAI",
     "me": "AgentBot",
     "hasPriority": false,
     "autoPass": "opponent-turns",
-    "autoPassNow": true
+    "autoPassNow": false,
+    "stops": "default"
   },
   "chat": [
     {

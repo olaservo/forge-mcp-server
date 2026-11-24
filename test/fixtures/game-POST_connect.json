@@ -40,7 +40,9 @@
       "cancelEnabled": false
     },
     "incorrectActions": 0,
-    "messages": []
+    "messages": [],
+    "messageCount": 0,
+    "logCount": 0
   },
   "chat": [],
   "chatCount": 0

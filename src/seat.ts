@@ -3,6 +3,7 @@ import { EventLog } from "./event-log.js";
 import { sharedHost } from "./host.js";
 import { ChatTracker, MoveTracker, type SeatStatus, YOUR_MOVE } from "./seat-events.js";
 import { logEmitted, type ActivityLog } from "./log.js";
+import { memoryFor } from "./view.js";
 import { StatusWatcher } from "./watcher.js";
 
 /**
@@ -15,8 +16,17 @@ export function createSeat(log?: ActivityLog) {
   logEmitted(events, log);
   const moves = new MoveTracker(events);
   const chat = new ChatTracker(events);
-  const observe = (status: SeatStatus) => {
-    moves.observe(status);
+  const memory = memoryFor(bridge);
+  /** For an ask in a game, what forge_game_act would return for it, with the board once the game has begun. */
+  const view = async (status: SeatStatus, data: Record<string, unknown>) => {
+    if (data.kind !== "priority" && data.kind !== "decision") return undefined;
+    const game = await bridge.get<Record<string, unknown>>("/game");
+    // The prompt has changed since this status. The next status reports the new one.
+    if (game.promptCount !== status.game?.promptCount) return undefined;
+    return memory.view(bridge, game, { commit: false, board: Number(game.turn ?? 0) > 0 });
+  };
+  const observe = async (status: SeatStatus) => {
+    await moves.observeWith(status, (data) => view(status, data));
     chat.observe(status);
   };
   // A client that starts following mid-ask, by a poll or stream without a cursor or a new webhook
@@ -33,7 +43,7 @@ export function createSeat(log?: ActivityLog) {
         bridge,
         (_revision, status) => {
           onStatusChange();
-          observe(status);
+          return observe(status);
         },
         // The seat can already be seated and waiting when the bridge first answers
         { onSeed: observe },
