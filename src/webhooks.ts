@@ -32,6 +32,9 @@ export class DeliveryError extends Error {
 /** POSTs a signed body to a callback URL. Rejects with a `DeliveryError` when no HTTP response arrives. */
 export type WebhookPost = (url: string, headers: Record<string, string>, body: string) => Promise<{ status: number; body: string }>;
 
+/** GETs a document from a callback URL's origin. Rejects with a `DeliveryError` when no HTTP response arrives. */
+export type WebhookGet = (url: string) => Promise<{ status: number; body: string; cacheControl?: string }>;
+
 const MAX_BODY_BYTES = 256 * 1024;
 const MAX_RESPONSE_BYTES = 64 * 1024;
 const POST_TIMEOUT_MS = 10_000;
@@ -39,6 +42,11 @@ const DEFAULT_TTL_MS = 60 * 60 * 1000;
 const MIN_TTL_MS = 60 * 1000;
 const MAX_TTL_MS = 24 * 60 * 60 * 1000;
 const VERIFIED_FOR_MS = 24 * 60 * 60 * 1000;
+/** Where a receiver's origin lists the path prefixes that take MCP webhook deliveries (SEP-3415, "Endpoint verification"). */
+const RECEIVER_DOCUMENT = "/.well-known/mcp-webhook-receiver.json";
+/** How long an origin's receiver document, or its absence, is kept: this without `max-age`, and at most the second. */
+const RECEIVERS_FOR_MS = 5 * 60 * 1000;
+const MAX_RECEIVERS_FOR_MS = 60 * 60 * 1000;
 const ROTATION_GRACE_MS = 5 * 60 * 1000;
 const MAX_SUBSCRIPTIONS = 100;
 /** Subscription ids whose abandoned deliveries are remembered for a later subscribe. */
@@ -80,43 +88,77 @@ function reasonOf(err: unknown): DeliveryErrorReason {
   return "connection_refused";
 }
 
+type Response = { status: number; body: string; cacheControl?: string };
+
+/** One request to a callback's host: https only, no redirects, addresses checked when the socket connects. */
+function send(insecure: boolean, method: "GET" | "POST", url: string, headers: Record<string, string>, body?: string): Promise<Response> {
+  return new Promise((resolve, reject) => {
+    const target = new URL(url);
+    const host = target.hostname.replace(/^\[|\]$/g, "");
+    if (!insecure && (target.protocol !== "https:" || (isIP(host) !== 0 && !isPublicAddress(host)))) {
+      reject(new DeliveryError("connection_refused"));
+      return;
+    }
+    const request = target.protocol === "https:" ? httpsRequest : httpRequest;
+    const req = request(
+      target,
+      {
+        method,
+        headers: body === undefined ? headers : { ...headers, "content-length": String(Buffer.byteLength(body)) },
+        timeout: POST_TIMEOUT_MS,
+        ...(insecure ? {} : { lookup: publicLookup }),
+      },
+      (res) => {
+        const chunks: Buffer[] = [];
+        let size = 0;
+        res.on("data", (chunk: Buffer) => {
+          size += chunk.length;
+          if (size <= MAX_RESPONSE_BYTES) chunks.push(chunk);
+        });
+        res.on("end", () => {
+          const cacheControl = res.headers["cache-control"];
+          resolve({ status: res.statusCode ?? 0, body: size > MAX_RESPONSE_BYTES ? "" : Buffer.concat(chunks).toString("utf8"), cacheControl });
+        });
+        res.on("error", (err) => reject(new DeliveryError(reasonOf(err))));
+      },
+    );
+    req.on("timeout", () => req.destroy(new DeliveryError("timeout")));
+    req.on("error", (err) => reject(new DeliveryError(reasonOf(err))));
+    req.end(body);
+  });
+}
+
 /**
  * The default `WebhookPost`: https only, no redirects, addresses checked when the socket connects.
  * `insecure` also allows http and non-public addresses, for a receiver on the same machine.
  */
 export function webhookPost({ insecure = false } = {}): WebhookPost {
-  return (url, headers, body) =>
-    new Promise((resolve, reject) => {
-      const target = new URL(url);
-      const host = target.hostname.replace(/^\[|\]$/g, "");
-      if (!insecure && (target.protocol !== "https:" || (isIP(host) !== 0 && !isPublicAddress(host)))) {
-        reject(new DeliveryError("connection_refused"));
-        return;
-      }
-      const send = target.protocol === "https:" ? httpsRequest : httpRequest;
-      const req = send(
-        target,
-        {
-          method: "POST",
-          headers: { ...headers, "content-length": String(Buffer.byteLength(body)) },
-          timeout: POST_TIMEOUT_MS,
-          ...(insecure ? {} : { lookup: publicLookup }),
-        },
-        (res) => {
-          const chunks: Buffer[] = [];
-          let size = 0;
-          res.on("data", (chunk: Buffer) => {
-            size += chunk.length;
-            if (size <= MAX_RESPONSE_BYTES) chunks.push(chunk);
-          });
-          res.on("end", () => resolve({ status: res.statusCode ?? 0, body: Buffer.concat(chunks).toString("utf8") }));
-          res.on("error", (err) => reject(new DeliveryError(reasonOf(err))));
-        },
-      );
-      req.on("timeout", () => req.destroy(new DeliveryError("timeout")));
-      req.on("error", (err) => reject(new DeliveryError(reasonOf(err))));
-      req.end(body);
-    });
+  return (url, headers, body) => send(insecure, "POST", url, headers, body);
+}
+
+/** The default `WebhookGet`, over the same path as `webhookPost`. */
+export function webhookGet({ insecure = false } = {}): WebhookGet {
+  return (url) => send(insecure, "GET", url, { accept: "application/json" });
+}
+
+/** The path prefixes in a receiver document's body, or none when it is not one. */
+function receiversIn(body: string): string[] {
+  try {
+    const { receivers } = JSON.parse(body) as { receivers?: unknown };
+    return Array.isArray(receivers) ? receivers.filter((prefix): prefix is string => typeof prefix === "string" && prefix.startsWith("/")) : [];
+  } catch {
+    return [];
+  }
+}
+
+/** A prefix covers the paths under it, whole segments only. */
+const covers = (prefix: string, path: string) => path === prefix || path.startsWith(prefix.endsWith("/") ? prefix : `${prefix}/`);
+
+function maxAgeMs(cacheControl: string | undefined): number | undefined {
+  if (cacheControl === undefined) return undefined;
+  if (/(^|,)\s*no-(store|cache)\s*(,|$)/i.test(cacheControl)) return 0;
+  const seconds = /(^|,)\s*max-age=(\d+)/i.exec(cacheControl)?.[2];
+  return seconds === undefined ? undefined : Number(seconds) * 1000;
 }
 
 /** A Standard Webhooks symmetric secret: `whsec_` and the base64 of 24 to 64 bytes. */
@@ -201,6 +243,8 @@ export function retryDelays(value: string | undefined): number[] | undefined {
 
 export interface WebhookOptions {
   post?: WebhookPost;
+  /** Reads an origin's receiver document. With `post` given and this left out, no document is read. */
+  get?: WebhookGet;
   /** JSON file that keeps subscriptions across restarts. It holds the signing secrets. Without it, no-expiry requests get a finite grant. */
   file?: string;
   /** Allow http and non-public callback addresses. */
@@ -237,6 +281,9 @@ export class WebhookHub {
   private readonly unreported = new Map<string, number>();
   private readonly events: EventLog;
   private readonly post: WebhookPost;
+  private readonly get: WebhookGet | undefined;
+  /** Per origin, the prefixes its receiver document lists and when to read it again. */
+  private readonly receivers = new Map<string, { prefixes: string[]; until: number }>();
   private readonly insecure: boolean;
   private readonly file: string | undefined;
   private readonly retryDelaysMs: number[];
@@ -247,6 +294,7 @@ export class WebhookHub {
     this.events = source;
     this.insecure = opts.insecure ?? false;
     this.post = opts.post ?? webhookPost({ insecure: this.insecure });
+    this.get = opts.get ?? (opts.post ? undefined : webhookGet({ insecure: this.insecure }));
     this.file = opts.file;
     this.retryDelaysMs = opts.retryDelaysMs ?? [1000, 5000, 25_000];
     this.now = opts.now ?? Date.now;
@@ -288,7 +336,7 @@ export class WebhookHub {
     if ((this.verified.get(pair) ?? 0) <= now) {
       this.verifying.set(id, (this.verifying.get(id) ?? 0) + 1);
       try {
-        await this.verify(id, url, secret);
+        if (!(await this.published(url))) await this.verify(id, url, secret);
       } finally {
         const left = this.verifying.get(id)! - 1;
         if (left > 0) this.verifying.set(id, left);
@@ -354,6 +402,32 @@ export class WebhookHub {
   private lifetimeMs(ttlMs: number | null | undefined): number | null {
     if (ttlMs === null) return this.file === undefined ? MAX_TTL_MS : null;
     return Math.min(MAX_TTL_MS, Math.max(MIN_TTL_MS, ttlMs ?? DEFAULT_TTL_MS));
+  }
+
+  /** Whether the callback's origin lists its path in a receiver document, which verifies it with no challenge. */
+  private async published(url: string): Promise<boolean> {
+    if (!this.get) return false;
+    const { origin, pathname } = new URL(url);
+    const now = this.now();
+    let known = this.receivers.get(origin);
+    if (!known || known.until <= now) {
+      let prefixes: string[] = [];
+      let keptMs = RECEIVERS_FOR_MS;
+      try {
+        const response = await this.get(origin + RECEIVER_DOCUMENT);
+        if (response.status === 200) {
+          prefixes = receiversIn(response.body);
+          keptMs = Math.min(maxAgeMs(response.cacheControl) ?? RECEIVERS_FOR_MS, MAX_RECEIVERS_FOR_MS);
+        }
+      } catch {
+        // No document: the handshake decides.
+      }
+      known = { prefixes, until: now + keptMs };
+      this.receivers.set(origin, known);
+    }
+    const covered = known.prefixes.some((prefix) => covers(prefix, pathname));
+    if (covered) this.log(`webhook receiver document at ${origin} covers ${pathname}`);
+    return covered;
   }
 
   private async verify(id: string, url: string, secret: string): Promise<void> {

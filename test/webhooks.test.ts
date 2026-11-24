@@ -11,7 +11,7 @@ import { EventLog } from "../src/event-log.js";
 import { CHAT, MoveTracker, YOUR_MOVE } from "../src/seat-events.js";
 import { skillCatalog } from "../src/server.js";
 import { listenHttp } from "../src/transports/http.js";
-import { type SubscribeResult, WebhookHub, type WebhookPost, isPublicAddress, isSigningSecret, retryDelays, subscriptionId, webhookPost } from "../src/webhooks.js";
+import { DeliveryError, type SubscribeResult, type WebhookGet, WebhookHub, type WebhookPost, isPublicAddress, isSigningSecret, retryDelays, subscriptionId, webhookPost } from "../src/webhooks.js";
 import { connect, fakeBridge } from "./helpers.js";
 
 const newSecret = () => `whsec_${randomBytes(32).toString("base64")}`;
@@ -100,6 +100,51 @@ describe("webhook delivery", () => {
     await hub.idle();
     expect(events()).toHaveLength(1);
     await client.close();
+  });
+
+  it("sends no challenge to a callback its origin's receiver document covers", async () => {
+    const log = new EventLog();
+    const { posts, post, events } = receiver();
+    const gets: string[] = [];
+    let now = Date.parse("2026-11-23T00:00:00Z");
+    const get: WebhookGet = async (url) => {
+      gets.push(url);
+      return { status: 200, body: JSON.stringify({ receivers: ["/mcp-events", 7, "no-slash"] }), cacheControl: "public, max-age=600" };
+    };
+    const hub = new WebhookHub(log, { post, get, now: () => now });
+    const at = (url: string) => subscribeParams(newSecret(), { delivery: { mode: "webhook", url, secret: newSecret() } });
+
+    await hub.subscribe("ola", subscribeParams(newSecret()));
+    expect(gets).toEqual(["https://receiver.example.com/.well-known/mcp-webhook-receiver.json"]);
+    expect(posts).toHaveLength(0);
+    log.emit(YOUR_MOVE, { kind: "priority", prompt: "Priority: Agent" });
+    await hub.idle();
+    expect(events()).toHaveLength(1);
+
+    // a prefix covers whole segments, and a path outside it gets the handshake
+    await hub.subscribe("ola", at("https://receiver.example.com/mcp-events-other/1"));
+    expect(posts.filter((p) => isVerification(p.body))).toHaveLength(1);
+    // the document is read once per origin until its max-age has passed
+    await hub.subscribe("ben", subscribeParams(newSecret()));
+    expect(gets).toHaveLength(1);
+    now += 601_000;
+    await hub.subscribe("cat", subscribeParams(newSecret()));
+    expect(gets).toHaveLength(2);
+    expect(posts.filter((p) => isVerification(p.body))).toHaveLength(1);
+  });
+
+  it("falls back to the challenge when the origin has no receiver document", async () => {
+    for (const get of [
+      async () => ({ status: 404, body: "" }),
+      async () => ({ status: 200, body: "<html>" }),
+      async () => ({ status: 200, body: JSON.stringify({ receivers: ["/other/"] }) }),
+      async () => Promise.reject(new DeliveryError("timeout")),
+    ] satisfies WebhookGet[]) {
+      const { posts, post } = receiver();
+      const hub = new WebhookHub(new EventLog(), { post, get });
+      await hub.subscribe("ola", subscribeParams(newSecret()));
+      expect(posts.filter((p) => isVerification(p.body))).toHaveLength(1);
+    }
   });
 
   it("refuses subscriptions it must not accept", async () => {
@@ -440,6 +485,7 @@ describe("webhook delivery", () => {
   it("serves the whole exchange over sockets behind a bearer token", async () => {
     const received: { headers: Record<string, unknown>; body: string }[] = [];
     const callback = createHttpServer((req, res) => {
+      if (req.method !== "POST") return void res.writeHead(404).end();
       let body = "";
       req.on("data", (chunk) => (body += chunk));
       req.on("end", () => {
@@ -509,6 +555,7 @@ describe("webhook delivery", () => {
     const server = listenHttp({ bridge: fakeBridge({}).bridge, skills: await skillCatalog(), events: log, port: 0, proxyToken: "pr0xy", webhooks: hub });
     expect(await server.listening).toBe(true);
     const callback = createHttpServer((req, res) => {
+      if (req.method !== "POST") return void res.writeHead(404).end();
       let body = "";
       req.on("data", (chunk) => (body += chunk));
       req.on("end", () => {
