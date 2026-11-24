@@ -3,7 +3,7 @@ import { z } from "zod";
 import type { EventLog, EventOccurrence } from "./event-log.js";
 import type { ActivityLog } from "./log.js";
 import { EVENT_TYPES } from "./seat-events.js";
-import { FORBIDDEN, INVALID_PARAMS, NOT_FOUND, UNSUPPORTED, type WebhookHub } from "./webhooks.js";
+import { ENCRYPTION_SCHEME, FORBIDDEN, INVALID_PARAMS, NOT_FOUND, UNSUPPORTED, type WebhookHub } from "./webhooks.js";
 
 /**
  * MCP Events (SEP-3415, Final, https://modelcontextprotocol.io/seps/3415-events-extension), poll, push and webhook delivery.
@@ -27,7 +27,13 @@ const HEARTBEAT_MS = { default: 30_000, min: 1_000, max: 55_000 };
 const SubscribeParams = z.looseObject({
   name: z.string(),
   arguments: z.record(z.string(), z.unknown()).nullish(),
-  delivery: z.looseObject({ mode: z.string().optional(), url: z.string(), secret: z.string().optional() }),
+  delivery: z.looseObject({
+    mode: z.string().optional(),
+    url: z.string(),
+    secret: z.string().optional(),
+    // Not in the SEP. See `ENCRYPTION_SCHEME`.
+    encryption: z.looseObject({ scheme: z.string(), publicKey: z.string() }).optional(),
+  }),
   ttlMs: z.number().nullish(),
   cursor: z.string().nullish(),
   maxAgeMs: z.number().optional(),
@@ -54,7 +60,8 @@ function webhookCaller(webhooks: WebhookAccess | undefined): { hub: WebhookHub; 
 
 export function registerEvents(server: McpServer, log: EventLog, webhooks?: WebhookAccess, activity?: ActivityLog): void {
   const delivery = webhooks ? ["poll", "push", "webhook"] : ["poll", "push"];
-  const events = EVENT_TYPES.map((e) => ({ ...e, delivery }));
+  // A client that wants its webhook payloads encrypted checks `encryption` before it subscribes.
+  const events = EVENT_TYPES.map((e) => ({ ...e, delivery, ...(webhooks ? { encryption: [ENCRYPTION_SCHEME] } : {}) }));
   server.server.setRequestHandler("events/list", { params: z.looseObject({}).optional() }, async () => ({ resultType: "complete", events }));
   server.server.setRequestHandler("events/poll", { params: PollParams }, async (params) => {
     checkEvent(params.name);

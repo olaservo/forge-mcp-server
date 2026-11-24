@@ -6,6 +6,7 @@ import { request as httpsRequest } from "node:https";
 import { BlockList, isIP, type LookupFunction } from "node:net";
 import { ProtocolError } from "@modelcontextprotocol/server";
 import type { EventLog, EventOccurrence } from "./event-log.js";
+import { sealSeq, setupS } from "./hpke.js";
 import type { ActivityLog } from "./log.js";
 
 /**
@@ -20,6 +21,13 @@ export const FORBIDDEN = -32024;
 export const RESOURCE_EXHAUSTED = -32025;
 export const UNSUPPORTED = -32026;
 export const CALLBACK_ENDPOINT_ERROR = -32027;
+
+/**
+ * The one scheme `delivery.encryption` takes: RFC 9180 base mode with DHKEM(X25519, HKDF-SHA256), HKDF-SHA256 and
+ * AES-128-GCM. SEP-3415 does not define payload encryption. This is the experiment in issue 9.
+ */
+export const ENCRYPTION_SCHEME = "hpke-x25519-sha256-aes128gcm";
+const AES_128_GCM = 1;
 
 export type DeliveryErrorReason = "connection_refused" | "timeout" | "tls_error" | "http_4xx" | "http_5xx" | "challenge_failed";
 
@@ -170,6 +178,17 @@ export function isSigningSecret(secret: unknown): secret is string {
   return size >= 24 && size <= 64;
 }
 
+/** The base64url of a 32-byte X25519 public key that a payload can be sealed to. */
+function isPublicKey(key: string): boolean {
+  if (!/^[A-Za-z0-9_-]{43}$/.test(key)) return false;
+  try {
+    setupS(AES_128_GCM, Buffer.from(key, "base64url"), Buffer.alloc(0));
+    return true;
+  } catch {
+    return false;
+  }
+}
+
 /** Standard Webhooks `v1` signature over `<id>.<timestamp>.<body>`. */
 export function sign(secret: string, id: string, timestamp: number, body: string): string {
   const key = Buffer.from(secret.slice(6), "base64");
@@ -199,6 +218,8 @@ interface Subscription {
   secret: string;
   /** The secret replaced by a refresh, still signed with until `until`. */
   previous?: { secret: string; until: number };
+  /** The client's public key, in base64url. With it, `data` is sealed to the key in every delivery. */
+  encryption?: Encryption;
   /** Epoch ms, or null for no expiry. */
   expiresAt: number | null;
   lastDeliveryAt?: string;
@@ -210,10 +231,15 @@ interface Subscription {
   recovered?: boolean;
 }
 
+interface Encryption {
+  scheme: string;
+  publicKey: string;
+}
+
 export interface SubscribeParams {
   name: string;
   arguments?: Record<string, unknown> | null;
-  delivery: { mode?: string; url: string; secret?: string };
+  delivery: { mode?: string; url: string; secret?: string; encryption?: Encryption };
   /** Absent asks for the default lifetime, null for no expiry. */
   ttlMs?: number | null;
   /** The client's last persisted position. A new or lapsed subscription replays from it. */
@@ -226,6 +252,8 @@ export interface SubscribeResult {
   refreshBefore: string | null;
   cursor: string;
   truncated: boolean;
+  /** The encryption in effect after the call. Absent when deliveries are sent in the clear. */
+  delivery?: { encryption: { scheme: string } };
   deliveryStatus?: { active: true; lastDeliveryAt: string | null; lastError: DeliveryErrorReason | null; failedSince?: string; abandoned?: number };
 }
 
@@ -313,9 +341,15 @@ export class WebhookHub {
   }
 
   async subscribe(principal: string, params: SubscribeParams): Promise<SubscribeResult> {
-    const { url, secret, mode } = params.delivery;
+    const { url, secret, mode, encryption } = params.delivery;
     if (mode !== undefined && mode !== "webhook") {
       throw new ProtocolError(UNSUPPORTED, "Unsupported", { feature: "deliveryMode", value: mode });
+    }
+    if (encryption && encryption.scheme !== ENCRYPTION_SCHEME) {
+      throw new ProtocolError(UNSUPPORTED, "Unsupported", { feature: "encryption", value: encryption.scheme });
+    }
+    if (encryption && !isPublicKey(encryption.publicKey)) {
+      throw new ProtocolError(INVALID_PARAMS, "delivery.encryption.publicKey must be the base64url of a 32-byte X25519 public key");
     }
     if (!URL.canParse(url) || (new URL(url).protocol !== "https:" && !this.insecure)) {
       throw new ProtocolError(INVALID_PARAMS, "delivery.url must be an https URL");
@@ -346,11 +380,17 @@ export class WebhookHub {
     }
     // Read after the handshake, during which the subscription can be removed or deliveries can fail.
     const existing = this.subs.get(id);
+    // A refresh cannot turn encryption off. The client unsubscribes first.
+    if (existing?.encryption && !encryption) {
+      throw new ProtocolError(INVALID_PARAMS, "The subscription is encrypted, so a refresh must carry delivery.encryption");
+    }
 
     const lifetime = this.lifetimeMs(params.ttlMs);
     const expiresAt = lifetime === null ? null : now + lifetime;
     const rotated = existing && existing.secret !== secret ? { secret: existing.secret, until: now + ROTATION_GRACE_MS } : existing?.previous;
-    const sub: Subscription = { ...existing, id, principal, url, name: params.name, arguments: args, secret, previous: rotated, expiresAt };
+    // A refresh with another key replaces the key.
+    const key = encryption && { scheme: encryption.scheme, publicKey: encryption.publicKey };
+    const sub: Subscription = { ...existing, id, principal, url, name: params.name, arguments: args, secret, previous: rotated, encryption: key, expiresAt };
     const status = existing
       ? { active: true as const, lastDeliveryAt: sub.lastDeliveryAt ?? null, lastError: sub.lastError ?? null, ...(sub.failedSince ? { failedSince: sub.failedSince } : {}), ...(sub.abandoned ? { abandoned: sub.abandoned } : {}) }
       : undefined;
@@ -379,13 +419,14 @@ export class WebhookHub {
     // read from the file is not new. The event keeps its eventId, so a receiver that has it already can drop it.
     const ask = existing ? undefined : this.events.pending(params.name);
     if (ask && !(cursor !== null && this.events.issued(cursor) && Number(cursor.split(":")[1]) >= seqOf(ask))) this.start(sub, ask);
-    this.log(`webhook ${existing ? "refresh" : "subscribe"} ${id} ${params.name} principal=${principal} expires=${expiresAt === null ? "never" : new Date(expiresAt).toISOString()}`);
+    this.log(`webhook ${existing ? "refresh" : "subscribe"} ${id} ${params.name} principal=${principal} expires=${expiresAt === null ? "never" : new Date(expiresAt).toISOString()}${key ? ` encryption=${key.scheme}` : ""}`);
 
     return {
       id,
       refreshBefore: expiresAt === null ? null : new Date(expiresAt).toISOString(),
       cursor: this.watermark(id),
       truncated,
+      ...(key ? { delivery: { encryption: { scheme: key.scheme } } } : {}),
       ...(status ? { deliveryStatus: status } : {}),
     };
   }
@@ -466,16 +507,20 @@ export class WebhookHub {
 
   private dispatch(event: EventOccurrence): void {
     this.dropExpired(this.now());
-    const oversize = Buffer.byteLength(JSON.stringify({ ...event, cursor: this.events.head() })) > MAX_BODY_BYTES;
-    if (oversize) console.error(`[forge-mcp-server] ${event.name} ${event.eventId} is over 256 KiB and was not delivered by webhook`);
     for (const sub of this.subs.values()) {
-      if (sub.name !== event.name) continue;
-      if (oversize) {
-        this.abandon(sub, event);
-        continue;
-      }
-      this.start(sub, event);
+      if (sub.name === event.name) this.start(sub, event);
     }
+  }
+
+  /** The body of a delivery. With a key, `data` is sealed to it and the other fields stay in the clear. */
+  private body(sub: Subscription, event: EventOccurrence, cursor: string): string {
+    if (!sub.encryption) return JSON.stringify({ ...event, cursor });
+    const { data, ...clear } = event;
+    // The subscription id header is not signed. With the id in `info`, a delivery moved to another subscription does not open.
+    const context = setupS(AES_128_GCM, Buffer.from(sub.encryption.publicKey, "base64url"), Buffer.from(`mcp-events v1 ${sub.id}`));
+    const aad = Buffer.from(`${event.eventId}\n${event.name}\n${event.timestamp}`);
+    const ct = sealSeq(AES_128_GCM, context, 0, aad, Buffer.from(JSON.stringify(data)));
+    return JSON.stringify({ ...clear, cursor, encrypted: { enc: context.enc.toString("base64url"), ct: ct.toString("base64url") } });
   }
 
   /** Starts the delivery of `event` to `sub`, unless one is already under way. */
@@ -513,8 +558,8 @@ export class WebhookHub {
   }
 
   /**
-   * One event to one subscription. Each attempt is signed again. 410 and 413 are not retried.
-   * A delivery given up on is counted in `abandoned`.
+   * One event to one subscription. Each attempt is signed again, and sealed again when the subscription has a key.
+   * 410, 413 and a body over 256 KiB are not retried. A delivery given up on is counted in `abandoned`.
    */
   private async deliver(sub: Subscription, event: EventOccurrence): Promise<void> {
     const { name, eventId } = event;
@@ -529,7 +574,18 @@ export class WebhookHub {
         const secrets = [current.secret, ...(current.previous && current.previous.until > this.now() ? [current.previous.secret] : [])];
         let error: DeliveryErrorReason;
         let status: number | undefined;
-        const body = JSON.stringify({ ...event, cursor: this.watermark(id, event) });
+        let body: string | undefined;
+        try {
+          body = this.body(current, event, this.watermark(id, event));
+        } catch {
+          // A key read from the file that cannot be sealed to. The event is not sent in the clear.
+        }
+        // Measured on the body as sent. A sealed one is about a third larger than its `data`.
+        if (body === undefined || Buffer.byteLength(body) > MAX_BODY_BYTES) {
+          this.abandon(current, event);
+          console.error(`[forge-mcp-server] ${name} ${eventId} ${body === undefined ? "could not be sealed for" : "is over 256 KiB as sent to"} ${id} and was not delivered`);
+          return;
+        }
         const started = Date.now();
         const note = (result: string | number) => this.log(`webhook delivery ${name} ${eventId} to ${id} attempt ${attempt + 1}: ${result} in ${Date.now() - started} ms`);
         try {
