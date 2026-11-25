@@ -161,6 +161,10 @@ async function draft(s) {
       console.log(`${s.name} stale pick at ${view.at} naming 1:1 -> stale ${stale.stale}, picked ${JSON.stringify(stale.picked ?? null)}, at ${stale.at}, bridge picks ${status.draft?.picks?.length}, pack still ${status.draft?.at}`);
       check(stale.stale === true && stale.picked === undefined && stale.at === view.at && !sent, `${s.name}: the stale pick answers stale and sends nothing`);
       check(Array.isArray(stale.pack) && stale.pack.length === view.pack.length, `${s.name}: the stale answer has the waiting pack`);
+      const unnamed = await s.call("forge_draft_pick", { card: "0" });
+      const after = await s.call("forge_status");
+      console.log(`${s.name} pick at ${view.at} naming no pack -> stale ${unnamed.stale}, picked ${JSON.stringify(unnamed.picked ?? null)}, at ${unnamed.at}, bridge picks ${after.draft?.picks?.length}, "${unnamed.problem}"`);
+      check(unnamed.stale === true && unnamed.picked === undefined && unnamed.at === view.at && typeof unnamed.problem === "string" && after.draft?.picks?.length === s.picks.length && after.draft?.at === view.at, `${s.name}: a pick that names no pack sends nothing and answers with the waiting pack`);
     }
     if (sitsOut && s.picks.length === clockOutPick - 1 && typeof view.secondsLeft === "number") {
       console.log(`${s.name} sitting on ${view.at} for ${view.secondsLeft + 2} s, clock at ${view.secondsLeft} s, queued ${queued}`);
