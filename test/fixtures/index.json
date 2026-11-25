@@ -43,5 +43,6 @@
   "interrupt GET /game#response": "interrupt-GET_game_response.json",
   "stops GET /game/stops": "stops-GET_game_stops.json",
   "stops POST /game/stops": "stops-POST_game_stops.json",
-  "counter GET /game#stack-targets": "counter-GET_game_stack_targets.json"
+  "counter GET /game#stack-targets": "counter-GET_game_stack_targets.json",
+  "facedown GET /game#face-down": "facedown-GET_game_face_down.json"
 }

@@ -40,6 +40,8 @@ export const BoardCard = z.looseObject({
   damage: num,
   token: bool,
   faceDown: bool,
+  /** The other face of a face-down card the seat may look at, such as its own morph. Needs a bridge newer than 0.1.10. */
+  faceUpName: str,
   phasedOut: bool,
   attachedTo: EntityRef.nullish(),
   type: str,
