@@ -1,16 +1,16 @@
 {
   "picked": {
-    "name": "Knight Exemplar",
+    "name": "Cyclops Gladiator",
     "set": "M11",
-    "collectorNumber": "20",
+    "collectorNumber": "131",
     "rarity": "Rare",
-    "manaCost": "{1}{W}{W}",
-    "type": "Creature - Human Knight",
-    "colors": "W",
-    "power": "2",
-    "toughness": "2",
-    "oracle": "First strike (This creature deals combat damage before creatures without first strike.)\\nOther Knight creatures you control get +1/+1 and have indestructible. (Damage and effects that say \"destroy\" don't destroy them.)"
+    "manaCost": "{1}{R}{R}{R}",
+    "type": "Creature - Cyclops Warrior",
+    "colors": "R",
+    "power": "4",
+    "toughness": "4",
+    "oracle": "Whenever Cyclops Gladiator attacks, you may have it deal damage equal to its power to target creature defending player controls. If you do, that creature deals damage equal to its power to Cyclops Gladiator."
   },
-  "packNumber": 1,
-  "pickNumber": 14
+  "packNumber": 2,
+  "pickNumber": 13
 }

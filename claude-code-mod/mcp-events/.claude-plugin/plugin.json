@@ -38,7 +38,7 @@
       "type": "string",
       "title": "State tools",
       "description": "Comma-separated tool names (without the server prefix) whose results show the server's state; a call to one of them means the model has seen everything up to then. A name written tool:kind counts only for events whose data has that kind",
-      "default": "forge_status,forge_connect,forge_wait,forge_game_state,forge_game_act,forge_game_decide,forge_lobby_ready:lobby,forge_lobby_deck:lobby,forge_lobby_name:lobby,forge_lobby_avatar:lobby"
+      "default": "forge_status,forge_connect,forge_wait,forge_game_state,forge_game_act,forge_game_decide,forge_lobby_ready:lobby,forge_lobby_deck:lobby,forge_lobby_name:lobby,forge_lobby_avatar:lobby,forge_draft_pick,forge_draft_pack:draft_pick,forge_draft_pool:deck,forge_draft_deck:deck"
     },
     "ownOnly": {
       "type": "boolean",

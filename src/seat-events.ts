@@ -67,16 +67,20 @@ export function pendingMove(status: SeatStatus, awaited?: number): Move | undefi
   const poolEvent = draft?.poolReceived ? draft.poolEventId : undefined;
   const poolIsForThisLobby = poolEvent != null && lobby?.limitedMode === true && (lobby.activeEventId === poolEvent || lobby.event?.eventId === poolEvent);
   if (seat && poolIsForThisLobby && !((lobby?.myDeck?.mainSize ?? 0) > 0)) {
-    const prompt = "Your pool has arrived. Build a deck of at least 40 cards from it with forge_draft_deck, then check that you are ready.";
+    const prompt = "Your pool has arrived. Build a deck of at least 40 cards from it with forge_draft_deck. Its answer says whether you are ready.";
     return { key: `deck:${poolEvent}`, data: { kind: "deck", prompt, revision } };
   }
   const drafting = (draft?.packNumber ?? 0) > 0 && !draft?.poolReceived;
   if (seat && seat.ready === false && !drafting) {
     // Before a draft or sealed event starts there is no pool to build from, and the host cannot start until every seat is ready.
     const beforeEvent = lobby?.limitedMode === true && lobby.event?.phase === "LOBBY_GATHER" && lobby.event.eventId !== poolEvent;
+    // With the deck from the pool in the slot, the ready flag is all that is missing.
+    const built = poolIsForThisLobby;
     const prompt = beforeEvent
       ? "You are seated in a Limited lobby with an event set up and you are not ready. Ready up so the host can start it. No deck is needed yet."
-      : "You are seated in the lobby and not ready. Set your name, portrait and deck, then ready up.";
+      : built
+        ? "Your deck for the Limited match is set and you are not ready. Ready up with forge_lobby_ready."
+        : "You are seated in the lobby and not ready. Set your name, portrait and deck, then ready up.";
     return { key: beforeEvent ? `lobby:${lobby.event?.eventId}` : "lobby", data: { kind: "lobby", prompt, revision } };
   }
   return undefined;
@@ -190,6 +194,8 @@ export const EVENT_TYPES = [
     description:
       "Fires when the Forge seat is asked to act: a seat in the lobby that is not ready yet, a draft pick, a drafted or sealed pool to build a deck from, a priority prompt, a choice dialog, or the end of a game. " +
       "For a priority prompt or a choice in a game the payload is what forge_game_act returns for that prompt, with the board: act on it, and pass its `promptCount` as `at`. " +
+      "For a draft pick the payload is what forge_draft_pack returns: the pack, rules text for card names not sent before, the pick clock and counts of your picks. Pick from it with forge_draft_pick, and pass its `at`. " +
+      "For a pool the payload has `pool`, what forge_draft_pool returns: build the deck from it with forge_draft_deck. " +
       "For the other kinds the payload is a summary. Read forge_status before acting.",
     inputSchema: NO_ARGUMENTS,
     payloadSchema: {
@@ -200,6 +206,14 @@ export const EVENT_TYPES = [
         decisionKind: { type: "string" },
         revision: { type: "integer", description: "Bridge revision the ask was seen at" },
         secondsLeft: { type: "integer", description: "Left on the pick clock when a draft pick was asked for, if the host set one" },
+        at: { type: "string", description: "For kind draft_pick: names the pack. Pass it as `at` to forge_draft_pick." },
+        packNumber: { type: "integer" },
+        pickNumber: { type: "integer" },
+        pack: { type: "array", description: "For kind draft_pick: the cards to pick from" },
+        queued: { type: "integer", description: "Packs waiting for the seat behind this one" },
+        drafted: { type: "object", description: "Counts of the seat's picks so far" },
+        autoPicks: { type: "array", description: "Picks the host made for the seat when the clock ran out" },
+        pool: { type: "object", description: "For kind deck: the pool, one entry per card name, with counts" },
         turn: { type: "integer" },
         phase: { type: "string" },
         promptCount: { type: "integer", description: "For kinds priority and decision: the prompt this event reports. Pass it as `at` to forge_game_act." },
