@@ -119,6 +119,16 @@ describe("forge_game_act", () => {
     await client.close();
   });
 
+  it("passes on the bridge's refusal of an action sent while nothing is asked", async () => {
+    const refusal = "nothing is asked of the seat: ok was not sent. Wait for the next prompt.";
+    const refuses: typeof fetch = async () => new Response(JSON.stringify({ error: refusal }), { status: 400 });
+    const client = await connect(new Bridge({ baseUrl: "http://bridge.test", fetch: refuses }));
+    const res = await client.callTool({ name: "forge_game_act", arguments: { action: "ok" } });
+    expect(res.isError).toBe(true);
+    expect(JSON.stringify(res.content)).toContain(refusal);
+    await client.close();
+  });
+
   it("answers quit with the lobby the seat is back in", async () => {
     const lobby = { mySlot: 0, slots: [{ index: 0, name: "Me", ready: false }] };
     const over = { ...summary, inGame: false, finished: true, gameOver: true };

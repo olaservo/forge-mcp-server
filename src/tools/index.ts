@@ -351,10 +351,10 @@ export function registerTools(
         "One click in the match UI. `ok` and `cancel` press the two prompt buttons (OK passes priority or confirms; Cancel declines). " +
         "`selectCard` with a card `id` plays, activates, taps or targets that card, as the prompt allows. `pay: \"auto\"` lets Forge pay the cost, " +
         "and `pass: true` then passes priority so the spell resolves: `{action: \"selectCard\", id, pay: \"auto\", pass: true}` casts a spell that needs no target in one call. " +
-        "`ok` with your own spell or ability on top of the stack passes until the stack is empty, so your own spells and triggers resolve without a prompt between them. `once: true` passes one time, and you are asked again before the next item resolves. " +
+        "`ok` with your own spell or ability on top of the stack, and nothing of an opponent's under it, passes until the stack is empty, so your own spells and triggers resolve without a prompt between them. `once: true` passes one time, and you are asked again before the next item resolves. " +
         "`endTurn` passes until the end of the turn, whatever the Cancel button reads: no attack, nothing more in either main phase. With a cast, `endTurn: true` resolves the spell and ends the turn. " +
         "With `ok` on the attack, `endTurn: true` attacks and skips your prompts after blockers are declared and in your second main phase, so leave it out when you hold a combat trick or a spell for after combat. " +
-        "None of these skips a response to an opponent: when an opponent adds to the stack or attacks you, the passing ends and you are asked before anything resolves. After `endTurn` that is when you have something you could play. " +
+        "None of these skips a response to an opponent: when an opponent adds to the stack or attacks you, the passing ends and you are asked before anything resolves. After `endTurn` that is when you have something you could play. With an opponent's spell or ability under your own on the stack, `ok`, `pass` and `endTurn: true` on a cast pass one time: yours resolves, and theirs is then on top and asked like any other item of theirs. `pass` and `endTurn: true` on a click do nothing when the click put nothing of yours on the stack. " +
         "The Cancel button can read \"Undo\", which takes back your last spell or land, so do not press `cancel` to end a turn. " +
         "`selectPlayer` targets a player by `id`. `selectStack` targets a spell or ability on the stack, as a counterspell does, by the `id` that `selection.stack` gives it: a card id does not answer that prompt. `useMana` pays with a floating mana color (color: 1=W 2=U 4=B 8=R 16=G 32=C). " +
         "`alphaStrike` attacks with everything, `undo` takes back the last action, `concede` ends the game. " +
@@ -363,13 +363,13 @@ export function registerTools(
         "`at` is the `promptCount` you are answering: if the prompt has changed, nothing is sent and the answer has `stale: true`. Pass it when you act on an event. " +
         "`unchanged: true` after `selectCard`, `selectPlayer` or `selectStack` means the click changed nothing in the game: Forge ignores a click it cannot use and does not say so. Do not send the same click again. " +
         "Returns what you are asked next, after the host has reacted: `prompt`, the enabled `buttons`, `life`, your `hand` when you have priority, the `stack` from the top down, floating `mana`, `selection` and `actionable` when the prompt offers cards, players or stack entries, " +
-        "`board` the first time it returns your main phase in a turn, `cardText` for card names not sent before, and `since` with what happened since your last result. `waiting: true` means nothing is asked of you: send no action until you are asked. Send one action at a time.",
+        "`board` the first time it returns your main phase in a turn, `cardText` for card names not sent before, and `since` with what happened since your last result. `waiting: true` means nothing is asked of you: send no action until you are asked. An `ok`, `endTurn`, `alphaStrike`, `useMana` or select sent then is refused with an error and not sent. So is `cancel`, unless the prompt says you are yielding, where it ends the yield. Send one action at a time.",
       inputSchema: z.object({
         action: z.enum(["ok", "cancel", "selectCard", "selectPlayer", "selectStack", "useMana", "alphaStrike", "endTurn", "undo", "concede", "quit", "continue", "newMatch"]),
         id: z.number().int().optional().describe("Card, player or stack entry id for selectCard / selectPlayer / selectStack"),
         color: z.number().int().optional().describe("Mana color bits for useMana"),
         pay: z.enum(["auto"]).optional().describe("Press Auto if the action leads to the prompt that pays a cost"),
-        pass: z.boolean().optional().describe("Afterwards, pass priority if your own spell or ability is on top of the stack"),
+        pass: z.boolean().optional().describe("Afterwards, pass priority if the action put your own spell or ability on top of the stack"),
         once: z.boolean().optional().describe("With ok: pass priority one time only"),
         endTurn: z.boolean().optional().describe("With ok or a cast: also pass until the end of the turn"),
         at: z.number().int().optional().describe("The promptCount this action answers"),
