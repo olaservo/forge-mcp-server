@@ -38,7 +38,7 @@ interface Told {
   text: Map<string, string>;
   /** The seat's turn on which a view last carried the board. */
   boardTurn: number;
-  /** The game's number in its match, when the bridge gives it. */
+  /** Which game this is, when the bridge says: its count of games opened, or the game's number in its match. */
   game?: number;
 }
 
@@ -81,13 +81,15 @@ export class SeatMemory {
   }
 
   /**
-   * A new game counts its log and messages from nothing. The next game of a match starts fresh too, but for
-   * its place in the log, which Forge's client keeps through the match. Bridge 0.1.11 numbers the games.
+   * A new game counts its log and messages from nothing. Forge's client keeps one log through the games of a
+   * match and through the matches of a lobby, so those counts do not drop there. Bridge 0.1.11 counts the
+   * games it opens: another game starts fresh too, but for its place in the log.
    */
   private start(game: Json): Told {
     const restarted = Number(game.logCount ?? 0) < this.told.log || Number(game.messageCount ?? 0) < this.told.messages;
     const left = game.inGame === false && game.gameOver !== true && game.finished !== true;
-    const number = (game.match as Json | null | undefined)?.game;
+    // Without the count, the game's number in its match tells the games of one match apart.
+    const number = game.gamesOpened ?? (game.match as Json | null | undefined)?.game;
     if (restarted || left) {
       this.told = fresh();
       this.peeks.clear();
