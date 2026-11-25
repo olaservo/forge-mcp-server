@@ -40,5 +40,7 @@
   "choosecards GET /game#requiredTwoChosen": "choosecards-GET_game_requiredTwoChosen.json",
   "yield GET /game#stack": "yield-GET_game_stack.json",
   "yield POST /game/act#stale": "yield-POST_game_act_stale.json",
-  "interrupt GET /game#response": "interrupt-GET_game_response.json"
+  "interrupt GET /game#response": "interrupt-GET_game_response.json",
+  "stops GET /game/stops": "stops-GET_game_stops.json",
+  "stops POST /game/stops": "stops-POST_game_stops.json"
 }

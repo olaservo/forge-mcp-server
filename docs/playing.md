@@ -35,8 +35,18 @@ Magic gives a player priority in every step. A seat that is asked at every one o
 - A response to an opponent is never skipped. A yield from `ok`, `pass` or `endTurn` ends when an opponent casts a spell, activates an ability, has a trigger go on the stack, or attacks the seat, and the seat is asked with their item on top of the stack before anything resolves. The bridge's `AgentInterruptTest` plays this against a host that counters the seat's spell, for the stack yield and for the end of turn yield. An activated ability and a trigger have not been played: Forge fires the same event for them as for a spell (`MagicStack.add`), which is what ends the yield.
 - After `endTurn` on its own turn, and on an opponent's turn, the host asks only a seat that could play or activate something, by Forge's own check of its hand and battlefield against its mana. That check can miss an ability used from the graveyard. A seat with nothing it could play is not asked, and reads what happened in `since.log`.
 - Between its own items the seat is not asked after a plain `ok`. `once` asks again before the next one resolves.
-- With an empty stack the seat is not asked in its own upkeep, draw step, beginning of combat, after it declares attackers, or in its end step, nor in an opponent's upkeep, draw step or main phases. These are Forge's desktop defaults. A deck that needs one of those windows needs the bridge started with `--stops all`. A tool for the seat to set its own stops is not built.
+- With an empty stack the seat is not asked in its own upkeep, draw step, beginning of combat, after it declares attackers, or in its end step, nor in an opponent's upkeep, draw step or main phases. These are Forge's desktop defaults. A deck that needs one of those windows adds it with `forge_game_stops`, below.
 - `endTurn` with the attack skips the prompt after blockers are declared, where a combat trick is played. The guide says to leave it out when holding one.
+
+## The seat's own stops
+
+`forge_game_stops` returns and sets the steps where the host asks the seat on an empty stack, for its own turn and for an opponent's. It is what a player does on Forge's desktop by clicking a phase label, and the bridge sends each change to the host the same way. The defaults are not changed by anything else.
+
+- It is there first for a deck that needs a window the defaults leave out, such as its own upkeep or end step.
+- A seat may also remove a stop. On 2026-11-24 a seat with a burn deck was asked at all four default stops of each opponent turn, 14 of its 60 actions, because it always held an instant it could pay for. That is the game working as it should, and whether to give up one of those windows is the player's choice. The guide tells a seat to leave the defaults unless its deck gives it a reason.
+- `own` must include `MAIN1`, since a seat that is not asked there cannot play a land.
+- Removing the stop the seat is being asked at, with an empty stack, passes that prompt. The answer's `game` has what the seat is asked next.
+- An opponent's spell or ability, blocks and choices are asked whatever the stops.
 
 ## Knowing the deck
 

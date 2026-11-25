@@ -1,0 +1,12 @@
+{
+  "stops": "custom",
+  "own": [
+    "UPKEEP",
+    "MAIN1",
+    "COMBAT_DECLARE_BLOCKERS",
+    "MAIN2"
+  ],
+  "opponent": [
+    "COMBAT_DECLARE_ATTACKERS"
+  ]
+}

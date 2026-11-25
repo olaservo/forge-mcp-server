@@ -203,6 +203,30 @@ export const Since = z.looseObject({
   messages: strings,
 });
 
+/** The steps where a player gets priority and a stop can be set, by Forge's names. The untap step has none. */
+export const PHASES = [
+  "UPKEEP",
+  "DRAW",
+  "MAIN1",
+  "COMBAT_BEGIN",
+  "COMBAT_DECLARE_ATTACKERS",
+  "COMBAT_DECLARE_BLOCKERS",
+  "COMBAT_FIRST_STRIKE_DAMAGE",
+  "COMBAT_DAMAGE",
+  "COMBAT_END",
+  "MAIN2",
+  "END_OF_TURN",
+  "CLEANUP",
+] as const;
+
+/** `GET /game/stops` and `POST /game/stops`: where the host asks the seat on an empty stack. Bridge 0.1.10. */
+export const Stops = z.looseObject({
+  /** `default`, `all` or `custom`. */
+  stops: z.string(),
+  own: z.array(z.string()),
+  opponent: z.array(z.string()),
+});
+
 /** What forge_game_state returns: the game with rules text by card name in `cardText`, unless asked for in full. */
 export const GameState = Game.extend({ cardText: z.record(z.string(), z.string()).nullish(), since: Since.nullish() });
 

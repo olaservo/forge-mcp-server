@@ -108,3 +108,46 @@ describe("forge.your_move with the view", () => {
     expect(event?.data).toEqual({ kind: "priority", prompt: summary.prompt, revision: 40, turn: 3, phase: "MAIN1" });
   });
 });
+
+describe("forge_game_stops", () => {
+  const stops = { stops: "default", own: ["MAIN1", "COMBAT_DECLARE_BLOCKERS", "MAIN2"], opponent: ["COMBAT_BEGIN", "COMBAT_DECLARE_ATTACKERS", "COMBAT_DECLARE_BLOCKERS", "END_OF_TURN"] };
+  const custom = { stops: "custom", own: stops.own, opponent: ["END_OF_TURN"] };
+
+  it("returns the stops and changes nothing without arguments", async () => {
+    const { bridge, calls } = fakeBridge({ "GET /game/stops": stops, "POST /game/stops": custom, "GET /game": game });
+    const client = await connect(bridge);
+    const res = await client.callTool({ name: "forge_game_stops", arguments: {} });
+    expect(res.isError, JSON.stringify(res.content)).toBeFalsy();
+    expect(res.structuredContent).toEqual(stops);
+    expect(calls.map((c) => `${c.method} ${c.path}`)).toEqual(["GET /game/stops"]);
+    await client.close();
+  });
+
+  it("sends the lists it was given and returns what the seat is asked afterwards", async () => {
+    const { bridge, calls } = fakeBridge({ "GET /game/stops": stops, "POST /game/stops": custom, "GET /game": game, "GET /game/log": { log: [] } });
+    const client = await connect(bridge);
+    const res = await client.callTool({ name: "forge_game_stops", arguments: { opponent: ["END_OF_TURN"] } });
+    expect(res.isError, JSON.stringify(res.content)).toBeFalsy();
+    expect(calls.find((c) => c.path === "/game/stops")?.body).toEqual({ opponent: ["END_OF_TURN"] });
+    expect(res.structuredContent).toMatchObject({ stops: "custom", opponent: ["END_OF_TURN"], game: { promptCount: 12, phase: "MAIN1" } });
+    await client.close();
+  });
+
+  it("returns the stops alone outside a game, and refuses a name that is no step", async () => {
+    const { bridge } = fakeBridge({ "POST /game/stops": custom, "GET /game": { inGame: false, prompt: "" } });
+    const client = await connect(bridge);
+    const res = await client.callTool({ name: "forge_game_stops", arguments: { opponent: ["END_OF_TURN"] } });
+    expect(res.structuredContent).toEqual(custom);
+    const bad = await client.callTool({ name: "forge_game_stops", arguments: { own: ["UNTAP"] } });
+    expect(bad.isError).toBe(true);
+    await client.close();
+  });
+
+  it("says so when the bridge is too old", async () => {
+    const client = await connect(fakeBridge({}).bridge);
+    const res = await client.callTool({ name: "forge_game_stops", arguments: {} });
+    expect(res.isError).toBe(true);
+    expect(JSON.stringify(res.content)).toContain("forge-agent-bridge 0.1.10");
+    await client.close();
+  });
+});

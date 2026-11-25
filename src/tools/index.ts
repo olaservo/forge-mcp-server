@@ -420,6 +420,46 @@ export function registerTools(
   );
 
   tool(
+    "forge_game_stops",
+    {
+      title: "Where the seat is asked",
+      description:
+        "The steps where the host asks this seat while the stack is empty: `own` on its own turn, `opponent` on an opponent's. A player sets these on Forge's desktop by clicking a phase. " +
+        "Without arguments it returns them and changes nothing. A list replaces the whole set for that turn, so start from the lists it returns. " +
+        "The defaults are Forge's: own MAIN1, COMBAT_DECLARE_BLOCKERS, MAIN2, and opponent COMBAT_BEGIN, COMBAT_DECLARE_ATTACKERS, COMBAT_DECLARE_BLOCKERS, END_OF_TURN. Leave them unless your deck gives you a reason. " +
+        "Add a step when a card of yours has to be used there, such as your own UPKEEP or END_OF_TURN. " +
+        "Remove a step only when you will never act there: it gives up your chance to act in that step on an empty stack. " +
+        "Whatever the stops, you are asked when an opponent puts something on the stack, when you can block, and for every choice. " +
+        "On an opponent's turn a stop asks you only while you have something you could play. " +
+        "`own` must include MAIN1. If you are being asked right now, with an empty stack, in a step you remove, that prompt is passed, and `game` in the answer has what you are asked next. " +
+        "The stops stay for later games until you set them again.",
+      inputSchema: z.object({
+        own: z.array(z.enum(out.PHASES)).optional().describe("Every step of your own turn where you are asked on an empty stack"),
+        opponent: z.array(z.enum(out.PHASES)).optional().describe("Every step of an opponent's turn where you are asked on an empty stack"),
+      }),
+      outputSchema: out.Stops.extend({ game: out.View.nullish() }),
+      annotations: acting,
+    },
+    async ({ own, opponent }) =>
+      run(async () => {
+        const isChange = own !== undefined || opponent !== undefined;
+        let stops: z.infer<typeof out.Stops>;
+        try {
+          stops = isChange
+            ? await bridge.post<z.infer<typeof out.Stops>>("/game/stops", { ...(own && { own }), ...(opponent && { opponent }) })
+            : await bridge.get<z.infer<typeof out.Stops>>("/game/stops");
+        } catch (e) {
+          if (e instanceof Error && e.message.startsWith("unknown route")) throw new Error("forge_game_stops needs forge-agent-bridge 0.1.10 or later.", { cause: e });
+          throw e;
+        }
+        if (!isChange) return stops;
+        // The host may have passed a prompt in a step that is no longer a stop.
+        const game = await bridge.get<Record<string, unknown>>("/game");
+        return game.inGame === true ? { ...stops, game: await memoryFor(bridge).view(bridge, game, { commit: true }) } : stops;
+      }),
+  );
+
+  tool(
     "forge_wait",
     {
       title: "Wait for a change",

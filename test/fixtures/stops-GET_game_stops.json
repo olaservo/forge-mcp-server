@@ -1,0 +1,14 @@
+{
+  "stops": "default",
+  "own": [
+    "MAIN1",
+    "COMBAT_DECLARE_BLOCKERS",
+    "MAIN2"
+  ],
+  "opponent": [
+    "COMBAT_BEGIN",
+    "COMBAT_DECLARE_ATTACKERS",
+    "COMBAT_DECLARE_BLOCKERS",
+    "END_OF_TURN"
+  ]
+}
