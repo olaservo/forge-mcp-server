@@ -156,6 +156,7 @@ export class DraftMemory {
       view.pickNumber = draft.pickNumber;
       if (typeof draft.secondsLeft === "number") view.secondsLeft = draft.secondsLeft;
       // The host counts the packs at each seat when any seat picks. The seat's own count includes the pack shown.
+      // Two picks close together can deliver their counts out of order, so this can be a pack off either way.
       const depths = Array.isArray(draft.seatQueueDepths) ? (draft.seatQueueDepths as number[]) : [];
       const behind = (depths[Number(draft.seatIndex)] ?? 0) - 1;
       if (behind > 0) view.queued = behind;

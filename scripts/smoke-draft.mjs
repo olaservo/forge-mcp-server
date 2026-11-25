@@ -65,6 +65,7 @@ async function seat(index, url) {
     chars: 0,
     waits: 0,
     queuedSeen: 0,
+    queuedWrong: 0,
     autoPicked: [],
     landTurn: -1,
     tried: new Set(),
@@ -190,8 +191,12 @@ async function draft(s) {
     s.picked.add(view.at);
     const next = answer.pack ? "next pack" : answer.poolReceived ? (answer.pool ? "pool" : "pool to come") : "waiting";
     if (s.picks.length <= 2 || s.picks.length % 15 === 0 || (next === "waiting" && s.waits < 3)) console.log(`${s.name} pick ${s.picks.length} at ${view.at}: ${card} -> ${next}${answer.pack ? ` ${answer.at}` : ""} in ${took} ms`);
-    // A pack that was queued behind this one is there at once.
-    if (queued > 0) check(Array.isArray(answer.pack) && took < HOLD_MS, `${s.name}: with ${queued} queued behind ${view.at} the answer has the next pack`);
+    // A pack that was queued behind this one is there at once. The host sends its counts from the thread of each
+    // pick, so two picks close together can deliver them out of order and leave the count a pack high.
+    if (queued > 0 && !(Array.isArray(answer.pack) && took < HOLD_MS)) {
+      s.queuedWrong++;
+      console.log(`${s.name} at ${view.at}: queued ${queued}, and the answer had no next pack`);
+    }
     if (answer.pack) {
       check(took < HOLD_MS + 1500, `${s.name}: the answer with the next pack came in ${took} ms`);
       view = answer;
@@ -214,7 +219,7 @@ async function build(s, pool) {
   const n = s.picks.length;
   if (!options.sealed) {
     const order = [1, 2, 3].flatMap((p) => Array.from({ length: 15 }, (_, k) => `${p}:${k + 1}`));
-    console.log(`${s.name} packs: ${s.from.event} from events, ${s.from.answer} from pick answers, ${s.waits} waiting answers, ${s.queuedSeen} views with packs queued, ${s.chars} characters. cardText: ${s.textNames} names sent, ${s.textRepeats} repeated`);
+    console.log(`${s.name} packs: ${s.from.event} from events, ${s.from.answer} from pick answers, ${s.waits} waiting answers, ${s.queuedSeen} views with packs queued (${s.queuedWrong} not followed by a pack), ${s.chars} characters. cardText: ${s.textNames} names sent, ${s.textRepeats} repeated`);
     check(s.from.event + s.from.answer === 45 && n === 45, `${s.name}: 45 packs arrived in an event or a pick answer (${s.from.event} + ${s.from.answer})`);
     check(s.seen.join(" ") === order.join(" "), `${s.name}: the packs came in order, each once: ${s.seen.join(" ")}`);
     check([...s.eventAts.values()].every((count) => count === 1), `${s.name}: no pack was reported by two events: ${JSON.stringify([...s.eventAts].filter(([, c]) => c > 1))}`);
@@ -232,6 +237,13 @@ async function build(s, pool) {
   }
   check(s.counts.forge_draft_pool === undefined, `${s.name}: forge_draft_pool was never called`);
 
+  if (!options.sealed) {
+    // The script's own read: every card of the pool that has rules text was sent it during the draft.
+    const all = await s.call("forge_draft_pool", { allText: true });
+    const withheld = Object.keys(all.cardText ?? {}).filter((name) => !s.textSeen.has(name));
+    console.log(`${s.name} text: ${Object.keys(all.cardText ?? {}).length} pool names have rules text, ${withheld.length} of them never sent ${JSON.stringify(withheld)}`);
+    check(withheld.length === 0, `${s.name}: no pool card's text was withheld during the draft`);
+  }
   const spells = (pool?.cards ?? []).filter((c) => !isLand(c.type)).flatMap((c) => Array.from({ length: c.count }, () => c.name));
   const main = spells.slice(0, 23);
   const deck = await s.call("forge_draft_deck", { main, lands: { Plains: 17 } });

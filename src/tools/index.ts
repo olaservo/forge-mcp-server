@@ -255,7 +255,7 @@ export function registerTools(
       title: "Current draft pack",
       description:
         "The pack in front of us. A forge.your_move event of kind draft_pick and a forge_draft_pick answer carry the same, so call this only when you have neither. " +
-        "`packNumber` and `pickNumber` count from 1, and `at` names the pack: pass it to forge_draft_pick. `secondsLeft` is the pick clock when the host set one. `queued` is the number of packs waiting for you behind this one, when there are any: other seats are waiting on your picks. `pack` has each card's name, mana cost, type, `pt` and its `rarity` unless Common. " +
+        "`packNumber` and `pickNumber` count from 1, and `at` names the pack: pass it to forge_draft_pick. `secondsLeft` is the pick clock when the host set one. `queued` is the host's last count of packs waiting for you behind this one, when there are any: other seats are waiting on your picks. It can be a pack off. `pack` has each card's name, mana cost, type, `pt` and its `rarity` unless Common. " +
         "Rules text is in `cardText` under the card's name, and only for names this draft has not sent you yet: a pack that comes round again does not repeat it. `allText: true` sends every name's text again. " +
         "`drafted` counts your picks so far: by colour, creatures and other spells, lands, and the mana values of the spells in `curve`. `autoPicks` lists picks the host made for you when the clock ran out. " +
         "`waiting: true` means you have picked and the next pack has not arrived. `poolReceived: true` means the draft is over. `full: true` returns the bridge's own answer, with every card's printing and your pick list by name.",
@@ -283,7 +283,7 @@ export function registerTools(
         "If the pack you name is no longer the one waiting, because the clock ran out and the host picked for you, nothing is sent either. " +
         "Both answer `stale: true` with no `picked` and what is waiting now: the pack with its `at`, or `waiting: true` when the next pack has not come, in which case you are told when it arrives. " +
         "`weakCheck: true` means the bridge is older than 0.1.11 and does not check `at` with the pick: the server compared it just before sending. " +
-        "The answer then has what you are asked next, as forge_draft_pack returns it: the next pack when it arrives within 2 seconds, so pick again from it in the same turn. " +
+        "The answer then has what you are asked next, as forge_draft_pack returns it: the next pack when it arrives within about 2 seconds, so pick again from it in the same turn. " +
         "`waiting: true` means the next pack has not come yet: another seat is still picking, and you are told when it arrives. It comes with `revision`, which a client with no events passes to forge_wait as `since`. " +
         "After the last pick, `poolReceived: true` comes with `pool`, what forge_draft_pool returns, when the pool has arrived.",
       inputSchema: z.object({
