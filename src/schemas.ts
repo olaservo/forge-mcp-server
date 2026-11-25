@@ -180,13 +180,16 @@ export const Game = z.looseObject({
   stops: str,
   /** True when an action named a prompt count that was no longer current, and was not sent. Bridge 0.1.10. */
   stale: bool,
+  /** True when a `selectCard`, `selectPlayer` or `selectStack` was sent and nothing in the game but the prompt count differs. Bridge after 0.1.10. */
+  unchanged: bool,
   gameOver: bool,
   winner: str,
   me: str,
   players: z.array(Player).nullish(),
   stack: z.array(z.looseObject({ id: num, source: str, by: str, text: str, targets: strings })).nullish(),
+  /** `blocked` is true once the block is final. While it is false, `blocksFinal` is true for an unblocked attacker and false while blockers are still being declared. `blocksFinal`: bridge after 0.1.10. */
   combat: z
-    .array(z.looseObject({ attacker: str, attackerId: num, defender: str, blockers: strings, blocked: bool }))
+    .array(z.looseObject({ attacker: str, attackerId: num, defender: str, blockers: strings, blocked: bool, blocksFinal: bool }))
     .nullish(),
   selection: z
     .looseObject({
@@ -252,9 +255,11 @@ export const View = z.looseObject({
   waiting: bool,
   /** The labels of the enabled buttons. */
   buttons: z.looseObject({ ok: str, cancel: str }).nullish(),
-  /** The host refused the action. */
+  /** The host flagged the action as incorrect. Forge 2.0.16 does not do this for a card click it ignores. */
   refused: bool,
   stale: bool,
+  /** The click was sent and changed nothing in the game. */
+  unchanged: bool,
   inGame: bool,
   gameOver: bool,
   winner: str,

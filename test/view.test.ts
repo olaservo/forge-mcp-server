@@ -181,6 +181,27 @@ describe("the view an action returns", () => {
     expect(View.safeParse(view).success).toBe(true);
     expect(JSON.stringify(view).length).toBeLessThan(JSON.stringify(fixture("game-GET_game.json")).length);
   });
+
+  it("says whether the blocks are final, from recorded combats", async () => {
+    type Attack = { blockers: string[]; blocked: boolean; blocksFinal: boolean };
+    const combat = async (name: string) => {
+      const view = await new SeatMemory().view(bridgeWith([]), fixture(name), { commit: true });
+      expect(View.safeParse(view).success).toBe(true);
+      return view.combat as Attack[];
+    };
+    // A blocker is chosen and OK is not pressed: nothing is settled, for the other attacker either.
+    const planned = await combat("combatSignals-GET_game_plannedBlock.json");
+    expect(planned.map((a) => [a.blockers.length, a.blocked, a.blocksFinal])).toEqual([[1, false, false], [0, false, false]]);
+    // After OK one attacker is blocked and the other is unblocked.
+    const declared = await combat("combatSignals-GET_game_blocked.json");
+    expect(declared.map((a) => [a.blockers.length, a.blocked, a.blocksFinal])).toEqual([[1, true, true], [0, false, true]]);
+  });
+
+  it("marks a click that changed nothing only when told so", async () => {
+    const memory = new SeatMemory();
+    expect(await memory.view(bridgeWith(), game(), { commit: true, unchanged: true })).toMatchObject({ unchanged: true });
+    expect(await memory.view(bridgeWith([]), game(), { commit: true })).not.toHaveProperty("unchanged");
+  });
 });
 
 describe("forge_game_state through the memory", () => {

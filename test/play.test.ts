@@ -1,9 +1,12 @@
+import { readFileSync } from "node:fs";
 import { describe, expect, it } from "vitest";
 import { Bridge } from "../src/bridge.js";
 import { EventLog } from "../src/event-log.js";
 import { MoveTracker, type SeatStatus } from "../src/seat-events.js";
 import { withoutIdleDraft } from "../src/tools/index.js";
 import { connect, fakeBridge } from "./helpers.js";
+
+const fixture = (name: string) => JSON.parse(readFileSync(new URL(`./fixtures/${name}`, import.meta.url), "utf8")) as Record<string, unknown>;
 
 const summary = {
   inGame: true,
@@ -67,6 +70,23 @@ describe("forge_game_act", () => {
     const res = await client.callTool({ name: "forge_game_act", arguments: { action: "ok", at: 3 } });
     expect(res.structuredContent).toMatchObject({ stale: true, promptCount: 12 });
     await client.close();
+  });
+
+  it("marks a click that changed nothing, from a recorded answer", async () => {
+    const answer = fixture("combatSignals-POST_game_act_unchanged.json");
+    expect(answer.unchanged).toBe(true);
+    const client = await connect(fakeBridge({ "POST /game/act": answer, "GET /game": game }).bridge);
+    const res = await client.callTool({ name: "forge_game_act", arguments: { action: "selectCard", id: 4, at: 12 } });
+    expect(res.isError, JSON.stringify(res.content)).toBeFalsy();
+    expect(res.structuredContent).toMatchObject({ unchanged: true, promptCount: 12 });
+    expect(res.structuredContent).not.toHaveProperty("refused");
+
+    const { unchanged: _none, ...changed } = answer;
+    const other = await connect(fakeBridge({ "POST /game/act": changed, "GET /game": game }).bridge);
+    const next = await other.callTool({ name: "forge_game_act", arguments: { action: "selectCard", id: 4 } });
+    expect(next.structuredContent).not.toHaveProperty("unchanged");
+    await client.close();
+    await other.close();
   });
 
   it("offers a spell on the stack as a target and sends selectStack for it", async () => {

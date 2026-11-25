@@ -1,0 +1,30 @@
+{
+  "inGame": true,
+  "finished": false,
+  "prompt": "Select creatures to attack HostAI or select player/card you wish to attack.",
+  "promptCount": 30,
+  "waiting": false,
+  "priorityPrompt": false,
+  "promptCard": null,
+  "buttons": {
+    "ok": "OK",
+    "okEnabled": true,
+    "cancel": "Alpha Strike",
+    "cancelEnabled": true
+  },
+  "incorrectActions": 0,
+  "messages": [],
+  "messageCount": 0,
+  "logCount": 105,
+  "turn": 6,
+  "phase": "COMBAT_DECLARE_ATTACKERS",
+  "activePlayer": "AgentBot",
+  "gameOver": false,
+  "winner": "",
+  "me": "AgentBot",
+  "hasPriority": false,
+  "autoPass": "off",
+  "autoPassNow": false,
+  "stops": "default",
+  "unchanged": true
+}

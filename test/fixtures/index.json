@@ -43,5 +43,8 @@
   "interrupt GET /game#response": "interrupt-GET_game_response.json",
   "stops GET /game/stops": "stops-GET_game_stops.json",
   "stops POST /game/stops": "stops-POST_game_stops.json",
-  "counter GET /game#stack-targets": "counter-GET_game_stack_targets.json"
+  "counter GET /game#stack-targets": "counter-GET_game_stack_targets.json",
+  "combatSignals POST /game/act#unchanged": "combatSignals-POST_game_act_unchanged.json",
+  "combatSignals GET /game#plannedBlock": "combatSignals-GET_game_plannedBlock.json",
+  "combatSignals GET /game#blocked": "combatSignals-GET_game_blocked.json"
 }
