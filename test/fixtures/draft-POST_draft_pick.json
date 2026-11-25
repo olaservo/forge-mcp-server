@@ -1,16 +1,16 @@
 {
   "picked": {
-    "name": "White Knight",
+    "name": "Cyclops Gladiator",
     "set": "M11",
-    "collectorNumber": "39",
-    "rarity": "Uncommon",
-    "manaCost": "{W}{W}",
-    "type": "Creature - Human Knight",
-    "colors": "W",
-    "power": "2",
-    "toughness": "2",
-    "oracle": "First strike (This creature deals combat damage before creatures without first strike.)\\nProtection from black (This creature can't be blocked, targeted, dealt damage, or enchanted by anything black.)"
+    "collectorNumber": "131",
+    "rarity": "Rare",
+    "manaCost": "{1}{R}{R}{R}",
+    "type": "Creature - Cyclops Warrior",
+    "colors": "R",
+    "power": "4",
+    "toughness": "4",
+    "oracle": "Whenever Cyclops Gladiator attacks, you may have it deal damage equal to its power to target creature defending player controls. If you do, that creature deals damage equal to its power to Cyclops Gladiator."
   },
   "packNumber": 2,
-  "pickNumber": 15
+  "pickNumber": 13
 }

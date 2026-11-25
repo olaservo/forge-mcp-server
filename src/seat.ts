@@ -11,8 +11,7 @@ import { StatusWatcher } from "./watcher.js";
  * What a server process holds once, whatever its transport: the bridge, the event log, and the watcher
  * that turns bridge revisions into `forge.your_move` and `forge.chat`.
  */
-export function createSeat(log?: ActivityLog) {
-  const bridge = new Bridge();
+export function createSeat(log?: ActivityLog, bridge = new Bridge()) {
   const events = new EventLog();
   logEmitted(events, log);
   const moves = new MoveTracker(events);

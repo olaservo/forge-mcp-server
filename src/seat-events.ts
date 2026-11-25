@@ -191,7 +191,7 @@ export const EVENT_TYPES = [
     description:
       "Fires when the Forge seat is asked to act: a seat in the lobby that is not ready yet, a draft pick, a drafted or sealed pool to build a deck from, a priority prompt, a choice dialog, or the end of a game. " +
       "For a priority prompt or a choice in a game the payload is what forge_game_act returns for that prompt, with the board: act on it, and pass its `promptCount` as `at`. " +
-      "For a draft pick the payload is what forge_draft_pack returns: the pack, rules text for card names not sent before, the pick clock and counts of your picks. Pick from it with forge_draft_pick. " +
+      "For a draft pick the payload is what forge_draft_pack returns: the pack, rules text for card names not sent before, the pick clock and counts of your picks. Pick from it with forge_draft_pick, and pass its `at`. " +
       "For a pool the payload has `pool`, what forge_draft_pool returns: build the deck from it with forge_draft_deck. " +
       "For the other kinds the payload is a summary. Read forge_status before acting.",
     inputSchema: NO_ARGUMENTS,
@@ -203,6 +203,7 @@ export const EVENT_TYPES = [
         decisionKind: { type: "string" },
         revision: { type: "integer", description: "Bridge revision the ask was seen at" },
         secondsLeft: { type: "integer", description: "Left on the pick clock when a draft pick was asked for, if the host set one" },
+        at: { type: "string", description: "For kind draft_pick: names the pack. Pass it as `at` to forge_draft_pick." },
         packNumber: { type: "integer" },
         pickNumber: { type: "integer" },
         pack: { type: "array", description: "For kind draft_pick: the cards to pick from" },

@@ -9,7 +9,7 @@ import type { ActivityLog } from "../log.js";
 import { sharedHost, type LobbyHost } from "../host.js";
 import type { GetText } from "../names.js";
 import * as out from "../schemas.js";
-import { afterPick, draftFor } from "../draft.js";
+import { afterPick, draftFor, packAt } from "../draft.js";
 import { waitForAsk, type SeatStatus } from "../seat-events.js";
 import { memoryFor } from "../view.js";
 import { acting, failure, readOnly, run, type RegisterTool, type ToolConfig } from "./common.js";
@@ -252,7 +252,7 @@ export function registerTools(
       title: "Current draft pack",
       description:
         "The pack in front of us. A forge.your_move event of kind draft_pick and a forge_draft_pick answer carry the same, so call this only when you have neither. " +
-        "`packNumber` and `pickNumber` count from 1. `secondsLeft` is the pick clock when the host set one. `pack` has each card's name, mana cost, type, `pt` and its `rarity` unless Common. " +
+        "`packNumber` and `pickNumber` count from 1, and `at` names the pack: pass it to forge_draft_pick. `secondsLeft` is the pick clock when the host set one. `pack` has each card's name, mana cost, type, `pt` and its `rarity` unless Common. " +
         "Rules text is in `cardText` under the card's name, and only for names this draft has not sent you yet: a pack that comes round again does not repeat it. `allText: true` sends every name's text again. " +
         "`drafted` counts your picks so far: by colour, creatures and other spells, lands, and the mana values of the spells in `curve`. `autoPicks` lists picks the host made for you when the clock ran out. " +
         "`waiting: true` means you have picked and the next pack has not arrived. `poolReceived: true` means the draft is over. `full: true` returns the bridge's own answer, with every card's printing and your pick list by name.",
@@ -276,17 +276,38 @@ export function registerTools(
       title: "Draft pick",
       description:
         "Pick a card from the current pack by exact name (or its 0-based index in the pack). `picked` confirms the card. " +
+        "`at` is the `at` of the pack you chose from. If that pack is no longer the one waiting, because the clock ran out and the host picked for you, nothing is sent and the answer has `stale: true` with the pack waiting now. " +
+        "Without `at` the server names the pack it last showed you, when it can tell which that was, and otherwise the pick is made from whatever pack is waiting. " +
+        "`weakCheck: true` means the bridge is older than 0.1.11 and does not check `at` with the pick: the server compared it just before sending. " +
         "The answer then has what you are asked next, as forge_draft_pack returns it: the next pack when it arrives within 2 seconds, so pick again from it in the same turn. " +
         "`waiting: true` means the next pack has not come yet: another seat is still picking, and you are told when it arrives. " +
         "After the last pick, `poolReceived: true` comes with `pool`, what forge_draft_pool returns, when the pool has arrived.",
-      inputSchema: z.object({ card: z.string().min(1) }),
+      inputSchema: z.object({
+        card: z.string().min(1),
+        at: z.string().regex(/^\d+:\d+$/).optional().describe("The `at` of the pack this pick is from, such as \"2:7\""),
+      }),
       outputSchema: out.PickAnswer,
       annotations: acting,
     },
-    async ({ card }) =>
+    async ({ card, at }) =>
       run(async () => {
         const drafts = draftFor(bridge);
-        const answer = await bridge.post<{ picked?: { name?: string }; packNumber?: number; pickNumber?: number }>("/draft/pick", { card });
+        const wanted = at ?? drafts.lastTold();
+        const stale = (now: Record<string, unknown>) => ({ stale: true, ...drafts.pack(now, { commit: true }) });
+        let weak = false;
+        if (wanted !== undefined && drafts.bridgeChecks !== true) {
+          const now = await bridge.get<Record<string, unknown>>("/draft/pack");
+          if ("at" in now) {
+            drafts.bridgeChecks = true;
+          } else {
+            // A bridge that does not take `at`: the pack can still change between this read and the pick.
+            if (packAt(now) !== wanted) return stale(now);
+            weak = true;
+          }
+        }
+        const body = wanted !== undefined && !weak ? { card, at: wanted } : { card };
+        const answer = await bridge.post<{ picked?: { name?: string }; packNumber?: number; pickNumber?: number; stale?: boolean }>("/draft/pick", body);
+        if (answer.stale === true) return stale(await bridge.get<Record<string, unknown>>("/draft/pack"));
         const picked = { name: answer.picked?.name, packNumber: answer.packNumber, pickNumber: answer.pickNumber };
         // The seat picked from this pack, so it has read the event or the answer that showed it.
         drafts.saw(`pack:${answer.packNumber}:${answer.pickNumber}`);
@@ -294,12 +315,13 @@ export function registerTools(
         try {
           const next = await afterPick(bridge);
           if (next.poolReceived === true) {
-            return { picked, ...drafts.pack(next, { commit: true }), pool: drafts.pool(await bridge.get<Record<string, unknown>>("/draft/pool"), { commit: true }) };
+            return { picked, ...(weak && { weakCheck: true }), ...drafts.pack(next, { commit: true }), pool: drafts.pool(await bridge.get<Record<string, unknown>>("/draft/pool"), { commit: true }) };
           }
           const pack = next.pickPending === true ? await bridge.get<Record<string, unknown>>("/draft/pack") : next;
-          return { picked, ...drafts.pack(pack, { commit: true }) };
+          return { picked, ...(weak && { weakCheck: true }), ...drafts.pack(pack, { commit: true }) };
         } catch {
-          return { picked };
+          drafts.picked();
+          return { picked, ...(weak && { weakCheck: true }) };
         }
       }),
   );

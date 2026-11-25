@@ -19,7 +19,7 @@ A client with no events calls `forge_wait` where this guide says to end the turn
 2. A `draft_pick` event carries the pack. `packNumber` and `pickNumber` count from 1. `secondsLeft` is the pick clock, when the host set one. `pack` has each card's `name`, `manaCost`, `type`, `pt`, and its `rarity` unless it is Common.
 3. Rules text is in `cardText` under the card's name. It is sent once per card name in a draft. A pack that comes round the table again has no text for cards you were already sent, and a creature with no abilities has none. `forge_draft_pack {allText: true}` sends the text of the current pack again.
 4. `drafted` counts your picks so far: `colors`, `creatures`, `other` spells, `lands`, and `curve`, the number of spells at each mana value. `unknown` counts picks the server never saw in a pack.
-5. Pick with `forge_draft_pick {card: "<exact name>"}`. `picked` confirms the card.
+5. Pick with `forge_draft_pick {card: "<exact name>", at: "<the pack's at>"}`. `picked` confirms the card. If the clock ran out and another pack is waiting, nothing is picked and the answer has `stale: true` with that pack: pick from it.
 6. The answer has what you are asked next. If it has a `pack`, the next pack was already waiting: pick from it in the same turn. If it has `waiting: true`, another seat is still picking: end your turn, and the next event brings the pack. After the last pick it has `poolReceived: true`, with `pool` when the pool has arrived.
 
 A pick made from the event's pack needs no other call. Do not call `forge_draft_pack` or `forge_status` before a pick.

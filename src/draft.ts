@@ -49,6 +49,12 @@ export function tally(cards: Json[], unknown = 0): Json {
   return { count: cards.length + unknown, colors, creatures, other, ...(lands > 0 ? { lands } : {}), ...(unknown > 0 ? { unknown } : {}), curve: sorted };
 }
 
+/** What names the pack waiting for a pick, as `pack:pick`, or undefined when none is. A bridge before 0.1.11 does not send it. */
+export function packAt(draft: Json): string | undefined {
+  if (draft.pickPending !== true) return undefined;
+  return typeof draft.at === "string" ? draft.at : `${String(draft.packNumber)}:${String(draft.pickNumber)}`;
+}
+
 /** A pack or pool card without its text, its printing, and the fields that say nothing. */
 function shown(card: Json): Json {
   const out: Json = { name: card.name };
@@ -85,8 +91,23 @@ export class DraftMemory {
   private deckTold = new Set<string>();
   private pickCount = 0;
   private poolEvent: string | undefined;
+  /** The packs the seat may have been shown last: one after a tool result, more once an event has reported a later pack. */
+  private shown: string[] = [];
+  /** Whether the bridge checks a pick's `at` with the pick, known once a draft answer of its has been read. Bridge 0.1.11. */
+  bridgeChecks: boolean | undefined;
+
+  /** The `at` of the pack the seat was last told of, when there is no doubt which pack that was. */
+  lastTold(): string | undefined {
+    return this.shown.length === 1 ? this.shown[0] : undefined;
+  }
+
+  /** A pick was sent, and what the seat is shown next could not be read. */
+  picked(): void {
+    this.shown = [];
+  }
 
   private reset(): void {
+    this.shown = [];
     this.told.clear();
     this.peeks.clear();
     this.known.clear();
@@ -133,7 +154,13 @@ export class DraftMemory {
     const cards = list(draft.pack);
     for (const card of cards) this.known.set(key(card.name), card);
     const view: Json = {};
+    this.bridgeChecks = "at" in draft;
+    if (draft.pickPending !== true && opts.commit) this.shown = [];
     if (draft.pickPending === true) {
+      const at = packAt(draft)!;
+      if (opts.commit) this.shown = [at];
+      else if (!this.shown.includes(at)) this.shown.push(at);
+      view.at = at;
       view.packNumber = draft.packNumber;
       view.pickNumber = draft.pickNumber;
       if (typeof draft.secondsLeft === "number") view.secondsLeft = draft.secondsLeft;

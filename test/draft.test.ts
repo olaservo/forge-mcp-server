@@ -1,7 +1,9 @@
 import { readFileSync } from "node:fs";
 import { describe, expect, it } from "vitest";
-import { afterPick, DraftMemory, manaValue, tally } from "../src/draft.js";
-import { EventLog } from "../src/event-log.js";
+import { Bridge } from "../src/bridge.js";
+import { afterPick, draftFor, DraftMemory, manaValue, tally } from "../src/draft.js";
+import { EventLog, type EventOccurrence } from "../src/event-log.js";
+import { createSeat } from "../src/seat.js";
 import { MoveTracker } from "../src/seat-events.js";
 import { memoryFor } from "../src/view.js";
 import { connect, fakeBridge } from "./helpers.js";
@@ -13,6 +15,8 @@ type Card = { name: string; type?: string; text?: string; count?: number; rarity
 const fixture = (file: string) => JSON.parse(readFileSync(new URL(`./fixtures/${file}`, import.meta.url), "utf8")) as Json;
 const pack = fixture("draft-GET_draft_pack.json");
 const pool = fixture("draft-GET_draft_pool.json");
+/** The same ask from the bridge that names its packs: `at` is "3:1". */
+const named = fixture("draft-GET_draft_pack_at.json");
 const packCards = pack.pack as Json[];
 const names = (cards: unknown) => (cards as Card[]).map((c) => c.name);
 /** A creature with no abilities has no rules text to send. */
@@ -23,7 +27,10 @@ describe("the pack view", () => {
   it("shows each card without its printing and sends rules text once per card name", () => {
     const drafts = new DraftMemory();
     const view = drafts.pack(pack, { commit: true });
-    expect(view).toMatchObject({ packNumber: 3, pickNumber: 1, secondsLeft: 120 });
+    // An older bridge does not name the pack, so the view does.
+    expect(pack).not.toHaveProperty("at");
+    expect(view).toMatchObject({ at: "3:1", packNumber: 3, pickNumber: 1, secondsLeft: 120 });
+    expect(new DraftMemory().pack({ ...named, at: "3:1b" }, { commit: true }).at).toBe("3:1b");
     expect(names(view.pack)).toEqual(packCards.map((c) => c.name));
     const angel = (view.pack as Json[]).find((c) => c.name === "Serra Angel");
     expect(angel).toEqual({ name: "Serra Angel", manaCost: "{3}{W}{W}", type: "Creature - Angel", pt: "4/4", rarity: "Uncommon" });
@@ -193,6 +200,60 @@ describe("forge_draft_pick", () => {
   });
 });
 
+describe("forge_draft_pick with at", () => {
+  const idle = { revision: 5, draft: { pickPending: false, poolReceived: false, at: null, picks: ["Shock"] } };
+  const made = { picked: { name: "Shock" }, packNumber: 3, pickNumber: 1 };
+  const posted = (calls: { path: string; body?: unknown }[]) => calls.filter((c) => c.path === "/draft/pick").map((c) => c.body);
+
+  it("names the pack to the bridge, and a stale pick answers with the pack waiting now", async () => {
+    expect(named.at).toBe("3:1");
+    const later = { ...named, at: "3:2", pickNumber: 2 };
+    const { bridge, calls } = fakeBridge({ "GET /draft/pack": later, "POST /draft/pick": fixture("draft-POST_draft_pick_stale.json"), "GET /wait": idle });
+    const client = await connect(bridge);
+    const answer = (await client.callTool({ name: "forge_draft_pick", arguments: { card: "0", at: "3:1" } })).structuredContent as Json;
+    expect(posted(calls)).toEqual([{ card: "0", at: "3:1" }]);
+    expect(answer).toMatchObject({ stale: true, at: "3:2", pickNumber: 2 });
+    expect(answer.pack).toHaveLength(15);
+    expect(answer.picked).toBeUndefined();
+    // Nothing was picked, so there is no next pack to hold for.
+    expect(calls.some((c) => c.path === "/wait")).toBe(false);
+    const bad = await client.callTool({ name: "forge_draft_pick", arguments: { card: "0", at: "2.7" } });
+    expect(bad.isError).toBe(true);
+    await client.close();
+  });
+
+  it("names the pack it last showed when at is left out, and none once an event has reported a later pack", async () => {
+    const { bridge, calls } = fakeBridge({ "GET /draft/pack": named, "POST /draft/pick": made, "GET /wait": idle });
+    const client = await connect(bridge);
+    // Nothing shown yet: the pick is made from whatever pack is waiting.
+    await client.callTool({ name: "forge_draft_pick", arguments: { card: "0" } });
+    await client.callTool({ name: "forge_draft_pack", arguments: {} });
+    await client.callTool({ name: "forge_draft_pick", arguments: { card: "0" } });
+    expect(posted(calls)).toEqual([{ card: "0" }, { card: "0", at: "3:1" }]);
+    // The answer showed no pack, and the event for the next one may or may not have been read.
+    const drafts = draftFor(bridge);
+    drafts.pack({ ...named, at: "3:2", pickNumber: 2 }, { commit: false });
+    expect(drafts.lastTold()).toBe("3:2");
+    drafts.pack({ ...named, at: "3:3", pickNumber: 3 }, { commit: false });
+    expect(drafts.lastTold()).toBeUndefined();
+    await client.callTool({ name: "forge_draft_pick", arguments: { card: "0" } });
+    expect(posted(calls).at(-1)).toEqual({ card: "0" });
+    await client.close();
+  });
+
+  it("compares before the pick with a bridge that does not check, and says so", async () => {
+    const { bridge, calls } = fakeBridge({ "GET /draft/pack": pack, "POST /draft/pick": made, "GET /wait": { ...idle, draft: { pickPending: false, picks: [] } } });
+    const client = await connect(bridge);
+    const stale = (await client.callTool({ name: "forge_draft_pick", arguments: { card: "0", at: "2:15" } })).structuredContent as Json;
+    expect(stale).toMatchObject({ stale: true, at: "3:1" });
+    expect(posted(calls)).toEqual([]);
+    const answer = (await client.callTool({ name: "forge_draft_pick", arguments: { card: "0", at: "3:1" } })).structuredContent as Json;
+    expect(answer).toMatchObject({ picked: { name: "Shock" }, weakCheck: true, waiting: true });
+    expect(posted(calls)).toEqual([{ card: "0" }]);
+    await client.close();
+  });
+});
+
 describe("forge_draft_pack and forge_draft_pool", () => {
   it("return the bridge's own answer with full", async () => {
     const client = await connect(fakeBridge({ "GET /draft/pack": pack, "GET /draft/pool": pool }).bridge);
@@ -242,6 +303,26 @@ describe("forge_draft_deck", () => {
 });
 
 describe("forge.your_move for a draft", () => {
+  it("is emitted by the seat's watcher with the pack", async () => {
+    const json = (body: unknown, status = 200) => new Response(JSON.stringify(body), { status, headers: { "content-type": "application/json" } });
+    const fetchImpl: typeof fetch = async (input) => {
+      const path = new URL(String(input)).pathname;
+      if (path === "/wait") {
+        await new Promise((r) => setTimeout(r, 20));
+        return json({ revision: 4, game: { inGame: false }, draft: { ...named, pack: undefined } });
+      }
+      return path === "/draft/pack" ? json(named) : json({ error: `unknown route ${path}` }, 400);
+    };
+    const seat = createSeat(undefined, new Bridge({ baseUrl: "http://bridge.test", fetch: fetchImpl }));
+    const emitted = new Promise<EventOccurrence>((resolve) => seat.events.onEmit(resolve));
+    seat.start(() => {});
+    const { data } = await emitted;
+    seat.stop();
+    expect(data).toMatchObject({ kind: "draft_pick", at: "3:1", packNumber: 3, pickNumber: 1, drafted: { count: 30 } });
+    expect(data.pack).toHaveLength(15);
+    expect(Object.keys(data.cardText as Json).length).toBeGreaterThan(0);
+  });
+
   it("carries the pack for a pick and the pool for a deck", async () => {
     const drafts = new DraftMemory();
     const moves = new MoveTracker(new EventLog());
