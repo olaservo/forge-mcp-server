@@ -43,5 +43,10 @@
   "interrupt GET /game#response": "interrupt-GET_game_response.json",
   "stops GET /game/stops": "stops-GET_game_stops.json",
   "stops POST /game/stops": "stops-POST_game_stops.json",
-  "counter GET /game#stack-targets": "counter-GET_game_stack_targets.json"
+  "counter GET /game#stack-targets": "counter-GET_game_stack_targets.json",
+  "bo3 GET /status#gameOver": "bo3-GET_status_gameOver.json",
+  "bo3 GET /status#matchOver": "bo3-GET_status_matchOver.json",
+  "bo3 GET /game#secondGame": "bo3-GET_game_secondGame.json",
+  "bo3 GET /game#matchOver": "bo3-GET_game_matchOver.json",
+  "bo3 POST /game/act#continue": "bo3-POST_game_act_continue.json"
 }

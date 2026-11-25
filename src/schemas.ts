@@ -155,6 +155,12 @@ export const Player = z.looseObject({
 /** A card, player or stack entry in a selection: `type` is `card`, `player` or `stack`. */
 const Chosen = z.looseObject({ type: str, id: num, name: str });
 
+/**
+ * Where the match stands. `game` counts from 1, `wins` is games won by player name, and `over` says whether the
+ * game that just ended decided the match. Bridge 0.1.11.
+ */
+const Match = z.looseObject({ gamesPerMatch: num, game: num, wins: z.record(z.string(), z.number()).nullish(), over: bool });
+
 export const Game = z.looseObject({
   inGame: bool,
   finished: bool,
@@ -182,6 +188,7 @@ export const Game = z.looseObject({
   stale: bool,
   gameOver: bool,
   winner: str,
+  match: Match.nullish(),
   me: str,
   players: z.array(Player).nullish(),
   stack: z.array(z.looseObject({ id: num, source: str, by: str, text: str, targets: strings })).nullish(),
@@ -258,6 +265,8 @@ export const View = z.looseObject({
   inGame: bool,
   gameOver: bool,
   winner: str,
+  /** With `gameOver`: where the match stands. */
+  match: Game.shape.match,
   life: z.record(z.string(), z.number().nullable()).nullish(),
   hand: z.array(BoardCard).nullish(),
   stack: z.array(z.looseObject({ source: str, by: str, text: str, targets: strings })).nullish(),
@@ -315,7 +324,14 @@ export const DeckSummary = z.looseObject({
   description: str,
   tags: str,
 });
-export const Host = z.looseObject({ running: z.boolean(), port: z.number().optional(), seats: z.number().optional(), limited: z.boolean().optional(), addresses: z.array(z.string()) });
+export const Host = z.looseObject({
+  running: z.boolean(),
+  port: z.number().optional(),
+  seats: z.number().optional(),
+  limited: z.boolean().optional(),
+  games: z.number().optional(),
+  addresses: z.array(z.string()),
+});
 
 export const Names = z.looseObject({ type: z.string(), names: z.array(z.string()), source: z.string() });
 

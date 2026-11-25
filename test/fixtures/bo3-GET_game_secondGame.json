@@ -1,0 +1,70 @@
+{
+  "inGame": true,
+  "finished": false,
+  "prompt": "FirstBot, you lost the last game.\n\nWould you like to play or draw?",
+  "promptCount": 1,
+  "waiting": false,
+  "priorityPrompt": false,
+  "promptCard": null,
+  "buttons": {
+    "ok": "Play",
+    "okEnabled": true,
+    "cancel": "Draw",
+    "cancelEnabled": true
+  },
+  "incorrectActions": 0,
+  "messages": [],
+  "messageCount": 0,
+  "logCount": 6,
+  "turn": 0,
+  "phase": null,
+  "activePlayer": null,
+  "gameOver": false,
+  "winner": "",
+  "match": {
+    "gamesPerMatch": 3,
+    "game": 2,
+    "wins": {
+      "FirstBot": 0,
+      "SecondBot": 1
+    },
+    "over": false
+  },
+  "me": "FirstBot",
+  "hasPriority": false,
+  "autoPass": "opponent-turns",
+  "autoPassNow": false,
+  "stops": "default",
+  "players": [
+    {
+      "id": 0,
+      "name": "FirstBot",
+      "life": 20,
+      "hasPriority": false,
+      "isMe": true,
+      "handSize": 0,
+      "librarySize": 40,
+      "graveyardSize": 0,
+      "exileSize": 0,
+      "mana": {},
+      "battlefield": [],
+      "graveyard": [],
+      "hand": []
+    },
+    {
+      "id": 1,
+      "name": "SecondBot",
+      "life": 20,
+      "hasPriority": false,
+      "isMe": false,
+      "handSize": 0,
+      "librarySize": 40,
+      "graveyardSize": 0,
+      "exileSize": 0,
+      "mana": {},
+      "battlefield": [],
+      "graveyard": []
+    }
+  ],
+  "stack": []
+}

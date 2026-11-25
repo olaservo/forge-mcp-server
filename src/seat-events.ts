@@ -11,8 +11,11 @@ export type SeatStatus = z.infer<typeof Status>;
 type Move = { key: string; data: Record<string, unknown> };
 
 function gameOver(game: NonNullable<SeatStatus["game"]>, revision: SeatStatus["revision"]): Move {
-  const data = { kind: "game_over", prompt: `Game over. Winner: ${game.winner ?? ""}`, revision, turn: game.turn, phase: game.phase };
-  return { key: `game_over:${game.turn}:${game.winner}`, data };
+  // Bridge 0.1.11 says where the match stands. Without it the seat cannot tell whether another game follows.
+  const match = game.match;
+  const standing = match ? { matchOver: match.over, score: match.wins } : {};
+  const data = { kind: "game_over", prompt: `Game over. Winner: ${game.winner ?? ""}`, revision, turn: game.turn, phase: game.phase, ...standing };
+  return { key: `game_over:${match?.game ?? ""}:${game.turn}:${game.winner}`, data };
 }
 
 /**
@@ -200,6 +203,8 @@ export const EVENT_TYPES = [
         turn: { type: "integer" },
         phase: { type: "string" },
         promptCount: { type: "integer", description: "For kinds priority and decision: the prompt this event reports. Pass it as `at` to forge_game_act." },
+        matchOver: { type: "boolean", description: "For kind game_over: whether that game decided the match. False means another game follows." },
+        score: { type: "object", description: "For kind game_over: games won in the match, by player name" },
         activePlayer: { type: "string" },
         buttons: { type: "object", description: "The labels of the enabled buttons" },
         life: { type: "object" },

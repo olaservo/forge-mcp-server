@@ -6,6 +6,8 @@ export interface HostSettings {
   port: number;
   seats: number;
   limited: boolean;
+  /** Games per match: 1, 3 or 5. More than 1 needs forge-agent-bridge 0.1.11. */
+  games: number;
 }
 
 export interface HostState extends Partial<HostSettings> {
@@ -53,7 +55,11 @@ export class LobbyHost {
   /** Starts the host and resolves once it listens. With a host already running, answers its state when the settings match. */
   start(settings: HostSettings, timeoutMs = 180_000): Promise<HostState> {
     if (this.settings) {
-      const same = this.settings.port === settings.port && this.settings.seats === settings.seats && this.settings.limited === settings.limited;
+      const same =
+        this.settings.port === settings.port &&
+        this.settings.seats === settings.seats &&
+        this.settings.limited === settings.limited &&
+        this.settings.games === settings.games;
       if (!same) {
         return Promise.reject(new Error(`Already hosting on port ${this.settings.port} with other settings. Stop it with forge_host_stop first.`));
       }
@@ -83,6 +89,7 @@ export class LobbyHost {
       String(settings.port),
       "--seats",
       String(settings.seats),
+      ...(settings.games !== 1 ? ["--games", String(settings.games)] : []),
       ...(settings.limited ? ["--limited"] : []),
       "--exit-with-parent",
     ];
@@ -91,6 +98,8 @@ export class LobbyHost {
     this.child = child;
     return new Promise<HostState>((resolve, reject) => {
       let errors = "";
+      let output = "";
+      let ready = false;
       const fail = (message: string) => {
         clearTimeout(timer);
         if (this.child === child) this.stop();
@@ -99,10 +108,17 @@ export class LobbyHost {
       const timer = setTimeout(() => fail("The Forge host did not come up in time."), timeoutMs);
       child.stdout?.on("data", (d: Buffer) => {
         process.stderr.write(`[forge-host] ${d}`);
-        if (String(d).includes(READY)) {
-          clearTimeout(timer);
-          resolve(this.state());
+        if (ready) return;
+        output = (output + String(d)).slice(-2000);
+        const line = new RegExp(`${READY}.*\\n`).exec(output)?.[0];
+        if (line === undefined) return;
+        ready = true;
+        // A MatchHost before 0.1.11 ignores --games and does not name the games in this line.
+        if (settings.games !== 1 && !line.includes(` games=${settings.games}`)) {
+          return fail(`forge_host with games ${settings.games} needs forge-agent-bridge 0.1.11 or later. The host was stopped.`);
         }
+        clearTimeout(timer);
+        resolve(this.state());
       });
       child.stderr?.on("data", (d: Buffer) => {
         process.stderr.write(`[forge-host] ${d}`);

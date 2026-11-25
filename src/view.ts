@@ -149,7 +149,7 @@ export class SeatMemory {
     const view: Json = { prompt: game.prompt, promptCount: game.promptCount };
     if (opts.stale) view.stale = true;
     if (game.inGame === false && !over) view.inGame = false;
-    if (over) Object.assign(view, { gameOver: true, winner: game.winner });
+    if (over) Object.assign(view, { gameOver: true, winner: game.winner }, game.match != null && { match: game.match });
     for (const key of ["turn", "phase", "activePlayer"]) if (game[key] !== null && game[key] !== undefined) view[key] = game[key];
     if (game.waiting === true) view.waiting = true;
     const b = (game.buttons ?? {}) as Json;
