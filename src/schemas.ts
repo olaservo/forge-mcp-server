@@ -301,6 +301,32 @@ export const DeckResult = z.looseObject({ deck: str, size: num });
 /** What forge_lobby_deck returns: the bridge's answer and, from Forge's card scripts, the deck's description and main deck. */
 export const DeckSet = DeckResult.extend({ description: str, cards: z.array(DeckCard).nullish() });
 export const BuiltDeck = z.looseObject({ deck: str, size: num, lands: num, sideboardSize: num, path: str, problem: str });
+
+/** Counts of the cards drafted, in a pool or in a deck: `colors` and `curve` count the spells, not the lands. */
+export const DraftTally = z.looseObject({
+  count: num,
+  colors: z.record(z.string(), z.number()).nullish(),
+  creatures: num,
+  other: num,
+  lands: num,
+  /** Picks whose card the server never saw in a pack. */
+  unknown: num,
+  curve: z.record(z.string(), z.number()).nullish(),
+});
+/** A pack or pool card as the draft tools show it: copies of the card, and power and toughness as one field. */
+const DraftCard = PaperCard.extend({ count: num, pt: str });
+const CardText = z.record(z.string(), z.string()).nullish();
+/**
+ * What forge_draft_pack returns and `forge.your_move` carries for a pick: the pack, rules text for card names not
+ * sent before in this draft, and counts of the picks. `waiting` when no pack is waiting and no pool has arrived.
+ */
+export const PackView = Draft.extend({ pack: z.array(DraftCard).nullish(), waiting: bool, cardText: CardText, drafted: DraftTally.nullish() });
+/** What forge_draft_pool returns and `forge.your_move` carries for a pool: one entry per card name, with counts. */
+export const PoolView = Pool.extend({ cards: z.array(DraftCard).nullish(), cardText: CardText, counts: DraftTally.nullish() });
+/** What forge_draft_pick returns: the pick, then the pack view of what the seat is asked next, with the pool once it has arrived. */
+export const PickAnswer = PackView.extend({ picked: z.looseObject({ name: str, packNumber: num, pickNumber: num }).nullish(), pool: PoolView.nullish() });
+/** What forge_draft_deck returns: the bridge's answer, the seat's ready flag, and the main deck's pool cards with counts. */
+export const DraftDeck = BuiltDeck.extend({ ready: bool, cards: z.array(DeckCard).nullish(), counts: DraftTally.nullish() });
 export const OkResult = z.looseObject({ ok: bool });
 export const LogResult = z.looseObject({ log: strings });
 

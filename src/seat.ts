@@ -1,4 +1,5 @@
 import { Bridge } from "./bridge.js";
+import { draftFor } from "./draft.js";
 import { EventLog } from "./event-log.js";
 import { sharedHost } from "./host.js";
 import { ChatTracker, MoveTracker, type SeatStatus, YOUR_MOVE } from "./seat-events.js";
@@ -17,8 +18,19 @@ export function createSeat(log?: ActivityLog) {
   const moves = new MoveTracker(events);
   const chat = new ChatTracker(events);
   const memory = memoryFor(bridge);
-  /** For an ask in a game, what forge_game_act would return for it, with the board once the game has begun. */
+  const drafts = draftFor(bridge);
+  /**
+   * What the event carries beside the ask. For a pick, the pack as forge_draft_pack returns it. For a pool, what
+   * forge_draft_pool returns. For an ask in a game, what forge_game_act would return for it, with the board once the game has begun.
+   */
   const view = async (status: SeatStatus, data: Record<string, unknown>) => {
+    if (data.kind === "draft_pick") {
+      const draft = await bridge.get<Record<string, unknown>>("/draft/pack");
+      // The seat has picked since this status, or the next pack has come. The next status reports it.
+      if (draft.pickPending !== true || draft.packNumber !== status.draft?.packNumber || draft.pickNumber !== status.draft?.pickNumber) return undefined;
+      return drafts.pack(draft, { commit: false });
+    }
+    if (data.kind === "deck") return { pool: drafts.pool(await bridge.get<Record<string, unknown>>("/draft/pool"), { commit: false }) };
     if (data.kind !== "priority" && data.kind !== "decision") return undefined;
     const game = await bridge.get<Record<string, unknown>>("/game");
     // The prompt has changed since this status. The next status reports the new one.

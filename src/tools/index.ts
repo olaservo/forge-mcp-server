@@ -9,6 +9,7 @@ import type { ActivityLog } from "../log.js";
 import { sharedHost, type LobbyHost } from "../host.js";
 import type { GetText } from "../names.js";
 import * as out from "../schemas.js";
+import { afterPick, draftFor } from "../draft.js";
 import { waitForAsk, type SeatStatus } from "../seat-events.js";
 import { memoryFor } from "../view.js";
 import { acting, failure, readOnly, run, type RegisterTool, type ToolConfig } from "./common.js";
@@ -126,7 +127,7 @@ export function registerTools(
     {
       title: "Set lobby ready",
       description:
-        "Toggle the Ready flag on our lobby slot. Before a draft or sealed event starts, ready up with no deck. For the match after it, build the deck with forge_draft_deck first.",
+        "Toggle the Ready flag on our lobby slot. Before a draft or sealed event starts, ready up with no deck. For the match after it, build the deck with forge_draft_deck first: its answer says whether you are ready.",
       inputSchema: z.object({ ready: z.boolean().default(true) }),
       outputSchema: out.Lobby,
       annotations: acting,
@@ -250,37 +251,81 @@ export function registerTools(
     {
       title: "Current draft pack",
       description:
-        "The pack in front of us: pack and pick numbers (both from 1), the pick timer with `secondsLeft` when the host set one, and every card with mana cost, type, colors, P/T and oracle text. " +
-        "`pickPending` false means we have already picked and the next pack has not arrived; use forge_wait.",
-      inputSchema: z.object({}),
-      outputSchema: out.Draft,
+        "The pack in front of us. A forge.your_move event of kind draft_pick and a forge_draft_pick answer carry the same, so call this only when you have neither. " +
+        "`packNumber` and `pickNumber` count from 1. `secondsLeft` is the pick clock when the host set one. `pack` has each card's name, mana cost, type, `pt` and its `rarity` unless Common. " +
+        "Rules text is in `cardText` under the card's name, and only for names this draft has not sent you yet: a pack that comes round again does not repeat it. `allText: true` sends every name's text again. " +
+        "`drafted` counts your picks so far: by colour, creatures and other spells, lands, and the mana values of the spells in `curve`. `autoPicks` lists picks the host made for you when the clock ran out. " +
+        "`waiting: true` means you have picked and the next pack has not arrived. `poolReceived: true` means the draft is over. `full: true` returns the bridge's own answer, with every card's printing and your pick list by name.",
+      inputSchema: z.object({
+        full: z.boolean().default(false).describe("The bridge's own answer, every field with the text on each card"),
+        allText: z.boolean().default(false).describe("Rules text for every card in the pack, also the ones sent before"),
+      }),
+      outputSchema: out.PackView,
       annotations: readOnly,
     },
-    async () => run(() => bridge.get("/draft/pack")),
+    async ({ full, allText }) =>
+      run(async () => {
+        const draft = await bridge.get<Record<string, unknown>>("/draft/pack");
+        return full ? draft : draftFor(bridge).pack(draft, { commit: true, allText });
+      }),
   );
 
   tool(
     "forge_draft_pick",
     {
       title: "Draft pick",
-      description: "Pick a card from the current pack by exact name (or its 0-based index in the pack).",
+      description:
+        "Pick a card from the current pack by exact name (or its 0-based index in the pack). `picked` confirms the card. " +
+        "The answer then has what you are asked next, as forge_draft_pack returns it: the next pack when it arrives within 2 seconds, so pick again from it in the same turn. " +
+        "`waiting: true` means the next pack has not come yet: another seat is still picking, and you are told when it arrives. " +
+        "After the last pick, `poolReceived: true` comes with `pool`, what forge_draft_pool returns, when the pool has arrived.",
       inputSchema: z.object({ card: z.string().min(1) }),
-      outputSchema: out.PickResult,
+      outputSchema: out.PickAnswer,
       annotations: acting,
     },
-    async ({ card }) => run(() => bridge.post("/draft/pick", { card })),
+    async ({ card }) =>
+      run(async () => {
+        const drafts = draftFor(bridge);
+        const answer = await bridge.post<{ picked?: { name?: string }; packNumber?: number; pickNumber?: number }>("/draft/pick", { card });
+        const picked = { name: answer.picked?.name, packNumber: answer.packNumber, pickNumber: answer.pickNumber };
+        // The seat picked from this pack, so it has read the event or the answer that showed it.
+        drafts.saw(`pack:${answer.packNumber}:${answer.pickNumber}`);
+        // The pick is made. What comes next is read on top of it, and a failed read does not fail the pick.
+        try {
+          const next = await afterPick(bridge);
+          if (next.poolReceived === true) {
+            return { picked, ...drafts.pack(next, { commit: true }), pool: drafts.pool(await bridge.get<Record<string, unknown>>("/draft/pool"), { commit: true }) };
+          }
+          const pack = next.pickPending === true ? await bridge.get<Record<string, unknown>>("/draft/pack") : next;
+          return { picked, ...drafts.pack(pack, { commit: true }) };
+        } catch {
+          return { picked };
+        }
+      }),
   );
 
   tool(
     "forge_draft_pool",
     {
       title: "Drafted pool",
-      description: "The card pool delivered when the draft ended or the sealed event started, its event tags, and the .dck path it was saved to.",
-      inputSchema: z.object({}),
-      outputSchema: out.Pool,
+      description:
+        "The card pool delivered when the draft ended or the sealed event started. A forge.your_move event of kind deck carries the same, so call this only when you do not have it. " +
+        "`cards` has one entry per card name with its `count`, mana cost, type, `pt` and its `rarity` unless Common, sorted by colour and then cost. " +
+        "`counts` counts the pool by colour, creatures and other spells, lands, and the mana values of the spells in `curve`. " +
+        "Rules text is in `cardText`, and only for names not sent you during the draft. `allText: true` sends every name's text. " +
+        "`full: true` returns the bridge's own answer: one entry per copy with its printing and text, the event tags, and the .dck path the pool was saved to.",
+      inputSchema: z.object({
+        full: z.boolean().default(false).describe("The bridge's own answer, one entry per copy with its text"),
+        allText: z.boolean().default(false).describe("Rules text for every card name, also the ones sent before"),
+      }),
+      outputSchema: out.PoolView,
       annotations: readOnly,
     },
-    async () => run(() => bridge.get("/draft/pool")),
+    async ({ full, allText }) =>
+      run(async () => {
+        const pool = await bridge.get<Record<string, unknown>>("/draft/pool");
+        return full ? pool : draftFor(bridge).pool(pool, { commit: true, allText });
+      }),
   );
 
   tool(
@@ -290,16 +335,34 @@ export function registerTools(
       description:
         "Build the deck for the Limited match from the delivered pool and set it on our lobby slot. `main` names the pool cards to play, one entry per copy. " +
         "`lands` adds basic lands, which are free in Limited. The rest of the pool becomes the sideboard, and the deck keeps the pool's name and event tags. " +
-        "`problem` is null when the deck is legal, which needs at least 40 cards in `size`. Call it again to change the deck.",
+        "A card that is not in the pool is an error, and no deck is set. `problem` is null when the deck is legal, which needs at least 40 cards in `size`. " +
+        "With a `problem` the deck is still set on the slot: call this again with a legal deck before the match. Call it again also to change the deck. " +
+        "`ready` is your seat's ready flag: when it is false, call forge_lobby_ready. When it is true, nothing more is needed from you before the match. " +
+        "The answer describes the deck once: `cards` has each pool card of the main deck with its count, cost, type, `pt` and rules text, and `counts` its colours, creatures and curve. " +
+        "Read it before the match, since the game does not send these cards' text again. A later answer has text only for cards new to the deck.",
       inputSchema: z.object({
         main: z.array(z.string().min(1)).describe("Pool card names, repeated for each copy played"),
         lands: z.record(z.string(), z.number().int().min(0)).default({}).describe('Basic lands to add, for example {"Swamp": 9, "Mountain": 8}'),
         landSet: z.string().optional().describe("Set code for the basic lands. Default: the set most of the pool comes from"),
       }),
-      outputSchema: out.BuiltDeck,
+      outputSchema: out.DraftDeck,
       annotations: acting,
     },
-    async ({ main, lands, landSet }) => run(() => bridge.post("/draft/deck", { main, lands, landSet })),
+    async ({ main, lands, landSet }) =>
+      run(async () => {
+        const answer = await bridge.post<Record<string, unknown>>("/draft/deck", { main, lands, landSet });
+        // The deck is set. The rest is read on top of it, and a failed read does not fail the build.
+        try {
+          const status = await bridge.get<SeatStatus>("/status");
+          const mySlot = status.lobby?.mySlot ?? -1;
+          const seat = status.lobby?.slots?.find((s, i) => (s.index ?? i) === mySlot);
+          const { cards, counts, briefed } = draftFor(bridge).deck(await bridge.get<Record<string, unknown>>("/draft/pool"), main);
+          memoryFor(bridge).brief(briefed);
+          return { ...answer, ...(typeof seat?.ready === "boolean" && { ready: seat.ready }), counts, cards };
+        } catch {
+          return answer;
+        }
+      }),
   );
 
   tool(
