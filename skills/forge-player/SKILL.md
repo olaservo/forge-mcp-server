@@ -5,7 +5,7 @@ description: Play a Magic match in Forge through the forge_* tools as one seat i
 
 # Playing a Forge match
 
-You are one seat in a Forge online lobby. A headless Forge client (the bridge) holds the seat; the tools read what Forge would show on screen and press what a human would click. Forge enforces the rules, so you never need to compute legality: try the action, and if Forge rejects it the answer has `refused: true` and the prompt is unchanged.
+You are one seat in a Forge online lobby. A headless Forge client (the bridge) holds the seat; the tools read what Forge would show on screen and press what a human would click. Forge enforces the rules, so you never need to compute legality: try the action and read the answer. Forge ignores a click it cannot use and does not say so. The answer then has `unchanged: true` and the same prompt.
 
 ## Session loop
 
@@ -32,12 +32,13 @@ A field is left out when it has nothing to say.
 - `prompt` is the text Forge shows above the buttons, for example "Declare attackers" or a `Priority:` prompt with the turn, the phase and the stack size. It tells you what the current input wants. `promptCount` goes up with each prompt.
 - `buttons` has the labels of the enabled buttons: `ok` (OK, Done, Yes, Auto) and `cancel` (Cancel, No, End Turn, Undo). A button that is not there is disabled.
 - `waiting: true`: nothing is asked of you, whatever the buttons read. Do not send an action: it would be refused, or land on a prompt you have not seen. End your turn, and the next event brings what you are asked.
-- `refused: true`: Forge rejected the action. `stale: true`: the action named an old prompt with `at` and was not sent.
+- `unchanged: true`: your `selectCard`, `selectPlayer` or `selectStack` was sent and nothing in the game changed. Forge ignored the click, or accepted it with no visible effect, as when you pick the attacker that is already picked. Do not send the same click again: read `prompt`, `selection` and `actionable` for what the prompt takes.
+- `refused: true`: Forge flagged the action as incorrect. Forge sends this for a player you cannot attack. It does not send it for a card click it ignores. `stale: true`: the action named an old prompt with `at` and was not sent.
 - `life` has each player's life total.
 - `hand`, when you have priority: your cards with `id`, `name`, cost and type. Actions use the `id`.
 - `stack`, when it is not empty, from the top down, so the first item resolves first: who put each item there (`by`), its `source`, its `text` and its `targets`. If the stack is not empty and you have priority, Forge is asking whether you respond.
 - `mana`: mana floating in your pool, by colour letter.
-- `combat` lists attackers, defenders and blockers while combat is being declared or resolved. `blocked` says whether the attacker is blocked, and a blocker you have chosen shows here before you press OK.
+- `combat` lists attackers, defenders and blockers while combat is being declared or resolved. `blocked` says whether the attacker is blocked, and a blocker you have chosen shows here before you press OK. `blocked: false` is settled only once `blocksFinal` is true: until then blockers are still being declared.
 - `selection`, when the prompt lets you pick: the cards (with `min` and `max`) and `players` it offers, including cards in zones you do not otherwise see, such as your library during a search. Pick with `selectCard` and the card's `id`, or `selectPlayer` and the player's `id`. When the target is a spell or ability on the stack, as for a counterspell, the prompt lists it under `selection.stack`: pick it with `selectStack` and that `id`, which is not a card id. `selection.chosen` lists what you have picked so far. When a prompt requires a fixed number of cards (`min` equals `max`), the pick that reaches `max` answers the prompt by itself: do not press `ok` after it, since that press would land on the next prompt.
 - `actionable` lists the cards (`id`, `name`) the host marks as able to act right now: cards you can play while you have priority, creatures that can attack or block while declaring, mana sources while paying a cost. It is a hint, so a card missing from it may still be usable.
 - `pendingDecision`, when present, must be answered with `forge_game_decide` before anything else happens. It carries `kind`, `prompt`, `options`, `min`, `max` and sometimes a `default`.

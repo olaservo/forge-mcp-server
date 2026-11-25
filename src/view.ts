@@ -139,15 +139,17 @@ export class SeatMemory {
    * The view of a full `GET /game` answer. With `commit` the seat is taken to have read it, as it has a tool
    * result. Without, as for an event that may never reach the model, it is kept until an action names its
    * prompt count. `board` adds both battlefields: asked for where a seat plans, when an event starts a turn.
-   * A tool result adds it by itself the first time it returns the seat's main phase in a turn.
+   * A tool result adds it by itself the first time it returns the seat's main phase in a turn. `stale` and
+   * `unchanged` are what the bridge said of the action, which the game read after it does not hold.
    */
-  async view(bridge: Bridge, game: Json, opts: { commit: boolean; board?: boolean; stale?: boolean }): Promise<Json> {
+  async view(bridge: Bridge, game: Json, opts: { commit: boolean; board?: boolean; stale?: boolean; unchanged?: boolean }): Promise<Json> {
     const told = this.start(game);
     const players = list(game.players);
     const me = players.find((p) => p.isMe === true);
     const over = game.gameOver === true || game.finished === true;
     const view: Json = { prompt: game.prompt, promptCount: game.promptCount };
     if (opts.stale) view.stale = true;
+    if (opts.unchanged) view.unchanged = true;
     if (game.inGame === false && !over) view.inGame = false;
     if (over) Object.assign(view, { gameOver: true, winner: game.winner });
     for (const key of ["turn", "phase", "activePlayer"]) if (game[key] !== null && game[key] !== undefined) view[key] = game[key];
