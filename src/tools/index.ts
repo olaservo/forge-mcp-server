@@ -292,6 +292,8 @@ export function registerTools(
     async ({ card, at }) =>
       run(async () => {
         const drafts = draftFor(bridge);
+        // A seat that names a pack has read the event or the answer that showed it, whatever becomes of the pick.
+        if (at !== undefined) drafts.saw(`pack:${at}`);
         const wanted = at ?? drafts.lastTold();
         const stale = (now: Record<string, unknown>) => ({ stale: true, ...drafts.pack(now, { commit: true }) });
         let weak = false;

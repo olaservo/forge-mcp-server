@@ -222,6 +222,17 @@ describe("forge_draft_pick with at", () => {
     await client.close();
   });
 
+  it("takes a pick that names a pack as proof the seat read that pack's event", async () => {
+    // The pick is refused, and the pack it named is still the one waiting: its text is not sent again.
+    const { bridge } = fakeBridge({ "GET /draft/pack": named, "POST /draft/pick": { stale: true, at: "3:1" } });
+    const client = await connect(bridge);
+    expect(draftFor(bridge).pack(named, { commit: false }).cardText).toBeDefined();
+    const answer = (await client.callTool({ name: "forge_draft_pick", arguments: { card: "0", at: "3:1" } })).structuredContent as Json;
+    expect(answer).toMatchObject({ stale: true, at: "3:1" });
+    expect(answer.cardText).toBeUndefined();
+    await client.close();
+  });
+
   it("names the pack it last showed when at is left out, and none once an event has reported a later pack", async () => {
     const { bridge, calls } = fakeBridge({ "GET /draft/pack": named, "POST /draft/pick": made, "GET /wait": idle });
     const client = await connect(bridge);
