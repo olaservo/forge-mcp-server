@@ -23,8 +23,8 @@ Card text is made plain on the way: Forge's blank Windows lines become one line 
 The bridge sends the host the seat's stops, as Forge's desktop client does, and the host passes priority elsewhere while the stack is empty. The bridge README lists them. On top of that, `forge_game_act` takes:
 
 - `pay: "auto"`: press Auto when the action leads to the prompt that pays a cost.
-- `pass: true`: afterwards, pass priority if the seat's own spell or ability is on top of the stack.
-- `ok` with the seat's own spell or ability on top of the stack yields until the stack is empty. `once: true` passes one time.
+- `pass: true`: afterwards, pass priority if the action put the seat's own spell or ability on top of the stack.
+- `ok` with the seat's own spell or ability on top of the stack, and nothing of an opponent's under it, yields until the stack is empty. `once: true` passes one time.
 - `endTurn`, as an action, with `ok`, or with a cast: yield until the end of the turn.
 - `at`: the `promptCount` the action answers. If it is no longer the current one the action is not sent and the answer has `stale: true`.
 
@@ -35,6 +35,8 @@ Measured before these existed, on 2026-11-23 and 2026-11-24: about half of a sea
 Magic gives a player priority in every step. A seat that is asked at every one of them spends half its calls passing, and a seat that is asked nowhere cannot play the game. These are the lines drawn here.
 
 - A response to an opponent is never skipped. A yield from `ok`, `pass` or `endTurn` ends when an opponent casts a spell, activates an ability, has a trigger go on the stack, or attacks the seat, and the seat is asked with their item on top of the stack before anything resolves. The bridge's `AgentInterruptTest` plays this against a host that counters the seat's spell, for the stack yield and for the end of turn yield. An activated ability and a trigger have not been played: Forge fires the same event for them as for a spell (`MagicStack.add`), which is what ends the yield.
+- A yield starts only when every item on the stack is the seat's. With an opponent's item under the seat's own, `ok`, `pass` and `endTurn` on a cast pass one time, and the seat is asked again when its item has resolved and theirs is on top. The bridge's `AgentSecondResponseTest` plays it with `pass`.
+- `pass` and `endTurn` on a click act only when the click put the seat's own item on top of the stack. A card the host refuses passes nothing, also with an earlier item of the seat's on the stack. The bridge's `AgentRefusedClickTest` plays it.
 - After `endTurn` on its own turn, and on an opponent's turn, the host asks only a seat that could play or activate something, by Forge's own check of its hand and battlefield against its mana. That check can miss an ability used from the graveyard. A seat with nothing it could play is not asked, and reads what happened in `since.log`.
 - Between its own items the seat is not asked after a plain `ok`. `once` asks again before the next one resolves.
 - With an empty stack the seat is not asked in its own upkeep, draw step, beginning of combat, after it declares attackers, or in its end step, nor in an opponent's upkeep, draw step or main phases. These are Forge's desktop defaults. A deck that needs one of those windows adds it with `forge_game_stops`, below.

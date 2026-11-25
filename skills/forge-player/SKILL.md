@@ -5,7 +5,7 @@ description: Play a Magic match in Forge through the forge_* tools as one seat i
 
 # Playing a Forge match
 
-You are one seat in a Forge online lobby. A headless Forge client (the bridge) holds the seat; the tools read what Forge would show on screen and press what a human would click. Forge enforces the rules, so you never need to compute legality: try the action, and if Forge rejects it the answer has `refused: true` and the prompt is unchanged.
+You are one seat in a Forge online lobby. A headless Forge client (the bridge) holds the seat; the tools read what Forge would show on screen and press what a human would click. Forge enforces the rules, so you never need to compute legality: try the action, and if Forge rejects it the prompt is unchanged. Forge sends no other sign for a card it rejects.
 
 ## Session loop
 
@@ -31,8 +31,8 @@ A field is left out when it has nothing to say.
 
 - `prompt` is the text Forge shows above the buttons, for example "Declare attackers" or a `Priority:` prompt with the turn, the phase and the stack size. It tells you what the current input wants. `promptCount` goes up with each prompt.
 - `buttons` has the labels of the enabled buttons: `ok` (OK, Done, Yes, Auto) and `cancel` (Cancel, No, End Turn, Undo). A button that is not there is disabled.
-- `waiting: true`: nothing is asked of you, whatever the buttons read. Do not send an action: it would be refused, or land on a prompt you have not seen. End your turn, and the next event brings what you are asked.
-- `refused: true`: Forge rejected the action. `stale: true`: the action named an old prompt with `at` and was not sent.
+- `waiting: true`: nothing is asked of you, whatever the buttons read. Do not send an action: it would land on a prompt you have not seen. End your turn, and the next event brings what you are asked.
+- `refused: true`: Forge rejected a player you chose to attack. A card Forge rejects leaves the prompt unchanged and adds no field. `stale: true`: the action named an old prompt with `at` and was not sent.
 - `life` has each player's life total.
 - `hand`, when you have priority: your cards with `id`, `name`, cost and type. Actions use the `id`.
 - `stack`, when it is not empty, from the top down, so the first item resolves first: who put each item there (`by`), its `source`, its `text` and its `targets`. If the stack is not empty and you have priority, Forge is asking whether you respond.
@@ -54,9 +54,9 @@ A field is left out when it has nothing to say.
 - Play a land: `forge_game_act {action: "selectCard", id}` on a land in your hand while the prompt says you may play spells.
 - Cast a spell: `{action: "selectCard", id, pay: "auto", pass: true}`. `pay: "auto"` lets Forge tap lands for the cost, and `pass: true` then passes priority so the spell resolves. If the spell needs a target, the answer is the target prompt: pick with `selectCard`, `selectPlayer` or `selectStack` and give `pay` and `pass` on that call. Leave `pay` out to choose which lands to tap, when the colours you keep open matter: the pay prompt then lists them in `actionable`, and `ok` reads "Auto". Leave `pass` out to keep priority with your spell on the stack, to cast or activate something else before it resolves.
 - A Phyrexian mana symbol is paid with 2 life by `selectPlayer` with your own player id, and the prompt then shows the rest of the cost.
-- Pass priority or confirm: `{action: "ok"}`. With your own spell or ability on top of the stack, `ok` passes until the stack is empty: your own spells and triggers resolve one after another without a prompt between them. `once: true` passes one time only, so you are asked again before the next item resolves.
+- Pass priority or confirm: `{action: "ok"}`. With your own spell or ability on top of the stack and nothing of an opponent's under it, `ok` passes until the stack is empty: your own spells and triggers resolve one after another without a prompt between them. `once: true` passes one time only, so you are asked again before the next item resolves.
 - End your turn: `{action: "endTurn"}`. It passes until the end of the turn: no attack, nothing more in either main phase. Do not press `cancel` for this: the Cancel button reads "End Turn" at some prompts and "Undo" at others, also with an empty stack, and Undo takes back your last spell or land.
-- Cast a spell as the last thing in your turn: add `endTurn: true` to the cast, `{action: "selectCard", id, pay: "auto", endTurn: true}`. The spell resolves and the turn ends, with no attack. A card Forge refuses ends nothing.
+- Cast a spell as the last thing in your turn: add `endTurn: true` to the cast, `{action: "selectCard", id, pay: "auto", endTurn: true}`. The spell resolves and the turn ends, with no attack. A card Forge refuses ends nothing, also with an earlier spell of yours on the stack.
 - Activate an ability: `selectCard` on the permanent. If it has several abilities, or one ability with a choice of costs, a `pendingDecision` of kind `ability` lists them.
 - Attack: you are asked to declare attackers after you pass priority in your main phase with creatures that can attack. `selectCard` each attacker, or `alphaStrike` for every creature that can attack, then `ok`. You are asked again after blockers are declared, which is when a combat trick is played, and in your second main phase. `{action: "ok", endTurn: true}` on the attack skips both: use it when you hold nothing to play after blocks and nothing to cast after combat. `ok` with no attacker chosen attacks with nothing.
 - Block: the prompt names the attacker being blocked, for example "Select creatures to block Archangel (11) or select another attacker to declare blockers for." `selectCard` a blocker to block that attacker. To block another attacker, `selectCard` that attacker first, then its blocker. `ok` when done. `ok` with no blocker chosen declares no blocks. If the host refuses a declaration of no blockers, choose a blocker from `actionable`.
@@ -66,7 +66,7 @@ A field is left out when it has nothing to say.
 - Decline or back out of a prompt: `{action: "cancel"}`, when `buttons.cancel` reads Cancel or No.
 - Concede: `{action: "concede"}`.
 - Without events, `forge_wait` with the last `revision` after an action returns at your next prompt. Act once per change: resending `ok` or `selectCard` while nothing is asked of you does nothing useful and floods the host.
-- Responding to the opponent is never skipped by a shortcut. When an opponent casts a spell, activates an ability or has a trigger go on the stack, a pass with `ok` or `pass` ends there and you are asked, with their item on top of the `stack`, before anything resolves. After `endTurn` you are asked in the same way when you have something you could play, and likewise when they attack you. To respond, cast or activate as usual. To let it resolve, `ok`.
+- Responding to the opponent is never skipped by a shortcut. When an opponent casts a spell, activates an ability or has a trigger go on the stack, a pass with `ok` or `pass` ends there and you are asked, with their item on top of the `stack`, before anything resolves. After `endTurn` you are asked in the same way when you have something you could play, and likewise when they attack you. To respond, cast or activate as usual. To let it resolve, `ok`. When you respond with a spell or ability of your own, `ok`, `pass` and `endTurn: true` on it pass one time: yours resolves and theirs is on top again. You are asked about it before it resolves, on an opponent's turn when you still have something you could play.
 
 ## Where you are asked
 
@@ -77,7 +77,7 @@ The host passes priority for you where a player seldom acts, as Forge does for a
 - `forge_game_stops` returns the steps where you are asked and sets them, as a player does at the desktop by clicking a phase. The defaults suit most decks, so leave them unless your deck gives you a reason. Add a step your deck needs when you read the deck, before you ready. Removing a step gives up your chance to act there on an empty stack, so remove one only when you will never act there. You are asked about an opponent's spell, about blocks and about every choice whatever the stops.
 - On an opponent's turn you are asked only when you have something you could play or activate (`autoPass` is `opponent-turns`): at beginning of combat, after attackers and after blockers are declared, in the end step, and whenever the opponent puts something on the stack. With nothing to play, their turn passes without a prompt for you, and `since.log` tells you what happened. You are not asked in their upkeep, draw step or main phases while the stack is empty.
 - "Something you could play" is Forge's own check of your hand and battlefield against your untapped mana. It can miss an ability used from your graveyard.
-- Something on the stack is always asked, unless it is your own and you passed with `ok`, or you have nothing you could play on an opponent's turn. Declaring attackers and blockers and answering choices are always asked.
+- Something on the stack is always asked, unless it is your own and you passed with `ok` or `pass`, you passed the turn with `endTurn`, or you have nothing you could play on an opponent's turn. Declaring attackers and blockers and answering choices are always asked.
 - Holding an instant on an opponent's turn: pass with `ok` at each prompt until the moment you want. `endTurn` there passes the rest of their turn, and the host asks you again when they cast a spell or attack you.
 - A card revealed from an opponent's hand can arrive as a prompt such as "Looking at cards in Claude's hand", with OK, which holds the game until you press `ok`.
 - Combat damage for a blocked trampler or a creature with several blockers is an `assign` decision. A split that breaks a rule is replaced by the decision's `default`, and a line in `since.messages` says so.
