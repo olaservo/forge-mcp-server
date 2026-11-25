@@ -5,34 +5,44 @@ description: Draft a seat in a Forge network booster draft or sealed event throu
 
 # Drafting in Forge
 
-The host configures the event in their lobby (product, pod size, pick timer) and starts it. Each human seat gets packs one at a time; AI seats pick instantly. Your job is the pick loop, then the deck.
+The host sets up the event in their lobby (product, pod size, pick timer) and starts it. Each human seat gets one pack at a time, and AI seats pick at once. You make the picks, then build the deck.
+
+## How you are told
+
+A `forge.your_move` event starts a turn each time the seat is asked something: `lobby` when you are not ready, `draft_pick` for a pack, `deck` when the pool arrives. If events wake your seat, act on the event and end your turn. `forge_wait` is refused for such a seat, and the refusal says to end the turn.
+
+A client with no events calls `forge_wait` where this guide says to end the turn. It returns the status when the seat is asked something. Then read the pack with `forge_draft_pack`, or the pool with `forge_draft_pool`. If you do not know whether events wake you, call `forge_wait` once after you ready: it either waits or is refused.
 
 ## Pick loop
 
-1. `forge_connect`, then `forge_lobby_ready` straight away: the host cannot start the event while any seat is unready, and in a Limited lobby no deck is needed to be ready before the draft. Then `forge_wait` until `draft.pickPending` is true.
-2. `forge_draft_pack`: `packNumber` and `pickNumber` (both count from 1), `timerSeconds` (0 means no clock), `secondsLeft` when there is a clock, and `pack[]` with each card's `index`, `name`, `manaCost`, `type`, `colors`, `power`, `toughness`, `rarity` and `oracle`.
-3. Decide, then `forge_draft_pick {card: "<exact name>"}` (or the index). The result confirms the card.
-4. `forge_wait` with the returned `revision` until the next pack arrives or `draft.poolReceived` becomes true. If your client delivers `forge.your_move` events, end your turn here instead; the next pack starts a new one.
+1. `forge_connect`, then `forge_lobby_ready` straight away. The host cannot start the event while a seat is unready, and no deck is needed to ready before a draft. End your turn.
+2. A `draft_pick` event carries the pack. `packNumber` and `pickNumber` count from 1. `secondsLeft` is the pick clock, when the host set one. `pack` has each card's `name`, `manaCost`, `type`, `pt`, and its `rarity` unless it is Common.
+3. Rules text is in `cardText` under the card's name. It is sent once per card name in a draft. A pack that comes round the table again has no text for cards you were already sent, and a creature with no abilities has none. `forge_draft_pack {allText: true}` sends the text of the current pack again.
+4. `drafted` counts your picks so far: `colors`, `creatures`, `other` spells, `lands`, and `curve`, the number of spells at each mana value. `unknown` counts picks the server never saw in a pack.
+5. Pick with `forge_draft_pick {card: "<exact name>"}`. `picked` confirms the card.
+6. The answer has what you are asked next. If it has a `pack`, the next pack was already waiting: pick from it in the same turn. If it has `waiting: true`, another seat is still picking: end your turn, and the next event brings the pack. After the last pick it has `poolReceived: true`, with `pool` when the pool has arrived.
 
-If the pick timer runs out the host takes the first card of the pack for you; those cards show up in `draft.autoPicks`. Keep picks under the timer: decide from the pack text you have, do not fetch extra data on the clock unless `secondsLeft` is generous. The clock runs from when the pack arrived, so a pack that was waiting while you thought has less left than `timerSeconds`.
+A pick made from the event's pack needs no other call. Do not call `forge_draft_pack` or `forge_status` before a pick.
 
-`draft.picks` is your running pick list. `draft.seatQueueDepths` shows how many packs are queued at each seat, which hints at who is slow.
+If the clock runs out the host takes the first card of the pack for you. Those picks are listed in `autoPicks`. The clock runs from when the pack arrived. Decide from the pack you have, and do not look cards up on the clock unless `secondsLeft` is generous.
 
 ## Pick heuristics
 
 Unless a persona skill says otherwise:
 
-- First picks: removal and bombs over everything; evasive or efficient creatures next; situational cards last.
-- By pick 4 or 5 settle into at most two colors, and read what is flowing: a strong card in a color late in pack 1 means the seats passing to you are not in it.
-- Count creatures. A 40-card deck wants roughly 15 to 17 creatures, 6 to 8 spells, 17 lands (16 with a low curve). Draft to that shape in packs 2 and 3.
-- Curve: prefer two- and three-drops when you have none; do not take a fifth five-drop.
-- Late picks: playables in your colors over off-color power. Sideboard-grade answers (artifact and enchantment removal) are fine last picks.
+- First picks: removal and bombs first, then evasive or efficient creatures, then situational cards.
+- By pick 4 or 5 settle into at most two colors. A strong card in a color late in pack 1 means the seats passing to you are not in it.
+- Count creatures in `drafted`. A 40-card deck wants 15 to 17 creatures, 6 to 8 other spells and 17 lands (16 with a low curve). Draft to that shape in packs 2 and 3.
+- Curve: take two- and three-drops when `curve` has few. Do not take a fifth five-drop.
+- Late picks: playables in your colors over off-color power. Artifact and enchantment removal for the sideboard is a fine last pick.
 
 ## After the draft
 
-The pool arrives when the last pick is made (`draft.poolReceived`, or a `forge.your_move` event of kind `deck`). `forge_draft_pool` returns it with its `eventId` tags and the `.dck` path Forge saved it to. Forge delivers every pick in the `Sideboard` section with an empty `Main`, so the pool is not yet a deck.
+The pool arrives when every seat has made its last pick. A `deck` event carries it in `pool`, and so does the answer to your last pick when the pool came in time. `forge_draft_pool` returns the same.
 
-Build one with `forge_draft_deck`: name the 22 or 23 pool cards you play in `main`, one entry per copy, and the basic lands in `lands`. Basic lands are free and need not be in the pool.
+`pool.cards` has one entry per card name with its `count`, sorted by colour and then cost. `pool.counts` counts the pool the way `drafted` counts picks. `cardText` has text only for names the draft did not send you.
+
+Build the deck with `forge_draft_deck`. Name the 22 or 23 pool cards you play in `main`, one entry per copy, and the basic lands in `lands`. Basic lands are free and need not be in the pool.
 
 ```
 forge_draft_deck {
@@ -41,10 +51,12 @@ forge_draft_deck {
 }
 ```
 
-The tool keeps the pool's name and event tags, puts the cards you left out in the sideboard, sets the deck on your lobby slot and saves it over the pool file. It refuses a card that is not in the pool. `problem` in the result is null when the deck is legal; a deck under 40 cards is not. Call it again to change the deck.
+The cards you leave out become the sideboard. A name that is not in the pool, or more copies than the pool has, is an error and no deck is set. `problem` is null when the deck is legal. A deck under 40 cards has a `problem` and is still set, so call the tool again with a legal one. Call it again also to change the deck.
 
-Your ready flag from before the draft stays set; check `lobby.slots` in `forge_status` and `forge_lobby_ready` again only if it shows you unready. `lobby.myDeck` shows the deck you set. Then switch to the `forge-player` skill for the match.
+The answer has `cards`: each pool card of the main deck with its count, cost, type and rules text, and `counts` for the deck. Read it once and note how the deck wins, which hands to keep and which cards to hold. The game does not send these cards' text again.
+
+`ready` in the answer is your ready flag. It normally stays set from before the draft. If it is false, call `forge_lobby_ready`. Then load the `forge-player` skill and end your turn. The host starts the match, and the first game event brings your opening hand.
 
 ## Sealed
 
-A sealed event has no picks. Ready up, and when the host starts it the pool arrives at once (six boosters, about 84 cards). Build the deck from it the same way.
+A sealed event has no picks. Ready up, and when the host starts it the pool arrives at once (six boosters, about 84 cards) with the text of every card. Build the deck from it the same way.
