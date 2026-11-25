@@ -358,7 +358,8 @@ export function registerTools(
         "The Cancel button can read \"Undo\", which takes back your last spell or land, so do not press `cancel` to end a turn. " +
         "`selectPlayer` targets a player by `id`. `selectStack` targets a spell or ability on the stack, as a counterspell does, by the `id` that `selection.stack` gives it: a card id does not answer that prompt. `useMana` pays with a floating mana color (color: 1=W 2=U 4=B 8=R 16=G 32=C). " +
         "`alphaStrike` attacks with everything, `undo` takes back the last action, `concede` ends the game. " +
-        "Once `gameOver` is true: `quit` leaves the match and returns everyone to the lobby, `continue` plays the next game of the match, `newMatch` restarts it. " +
+        "Once `gameOver` is true, `match.over` says whether the match is decided. While it is not, `continue` plays the next game, which starts when every player has continued. " +
+        "When it is, send `quit` once: it leaves the match and returns everyone to the lobby. `newMatch` restarts the match. " +
         "`at` is the `promptCount` you are answering: if the prompt has changed, nothing is sent and the answer has `stale: true`. Pass it when you act on an event. " +
         "`unchanged: true` after `selectCard`, `selectPlayer` or `selectStack` means the click changed nothing in the game: Forge ignores a click it cannot use and does not say so. Do not send the same click again. " +
         "Returns what you are asked next, after the host has reacted: `prompt`, the enabled `buttons`, `life`, your `hand` when you have priority, the `stack` from the top down, floating `mana`, `selection` and `actionable` when the prompt offers cards, players or stack entries, " +

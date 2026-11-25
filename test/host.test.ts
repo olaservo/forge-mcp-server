@@ -2,7 +2,7 @@ import { delimiter } from "node:path";
 import { describe, expect, it } from "vitest";
 import { fakeHost } from "./helpers.js";
 
-const settings = { port: 36750, seats: 2, limited: true };
+const settings = { port: 36750, seats: 2, limited: true, games: 1 };
 
 describe("LobbyHost", () => {
   it("starts the bridge jar's MatchHost and answers once it listens", async () => {
@@ -29,6 +29,22 @@ describe("LobbyHost", () => {
     expect(killed).toEqual([1]);
     await host.start({ ...settings, limited: false });
     expect(spawned[1]).not.toContain("--limited");
+  });
+
+  it("passes the games per match and takes the host's word for them", async () => {
+    const { host, spawned } = fakeHost("MATCH_HOST_READY port=36750 games=3\n");
+    const state = await host.start({ ...settings, games: 3 });
+    expect(state).toMatchObject({ running: true, games: 3 });
+    const args = spawned[0];
+    expect(args.slice(args.indexOf("--seats"))).toEqual(["--seats", "2", "--games", "3", "--limited", "--exit-with-parent"]);
+    await expect(host.start(settings)).rejects.toThrow("Already hosting on port 36750");
+  });
+
+  it("refuses a longer match on a bridge jar that ignores the games", async () => {
+    const { host, killed } = fakeHost("MATCH_HOST_READY port=36750\n");
+    await expect(host.start({ ...settings, games: 3 })).rejects.toThrow("forge_host with games 3 needs forge-agent-bridge 0.1.11 or later");
+    expect(killed).toEqual([1]);
+    expect(host.state().running).toBe(false);
   });
 
   it("says when the bridge jar is too old to host", async () => {

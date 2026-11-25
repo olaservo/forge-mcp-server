@@ -1,0 +1,116 @@
+{
+  "revision": 19,
+  "connection": {
+    "connected": true,
+    "host": "127.0.0.1",
+    "port": 58604,
+    "name": "FirstBot",
+    "reconnectState": "CONNECTED",
+    "closeReason": null
+  },
+  "lobby": {
+    "mySlot": 0,
+    "limitedMode": true,
+    "activeEventId": null,
+    "formatName": null,
+    "slots": [
+      {
+        "index": 0,
+        "type": "REMOTE",
+        "name": "FirstBot",
+        "ready": true,
+        "avatar": 12,
+        "team": 0,
+        "deckName": null,
+        "hasDeck": true
+      },
+      {
+        "index": 1,
+        "type": "REMOTE",
+        "name": "SecondBot",
+        "ready": true,
+        "avatar": 12,
+        "team": 1,
+        "deckName": null,
+        "hasDeck": true
+      }
+    ],
+    "myDeck": {
+      "name": "Agent Best Of Three Test",
+      "mainSize": 40,
+      "sideboardSize": 0
+    }
+  },
+  "draft": {
+    "seatIndex": -1,
+    "packNumber": 0,
+    "pickNumber": 0,
+    "timerSeconds": 0,
+    "pickPending": false,
+    "packSize": 0,
+    "seatQueueDepths": [],
+    "picks": [],
+    "autoPicks": [],
+    "poolReceived": false,
+    "poolEventId": null,
+    "poolPath": null
+  },
+  "game": {
+    "inGame": false,
+    "finished": true,
+    "prompt": "Game over. Winner: SecondBot",
+    "promptCount": 2,
+    "waiting": false,
+    "priorityPrompt": false,
+    "promptCard": null,
+    "buttons": {
+      "ok": "Keep",
+      "okEnabled": true,
+      "cancel": "Mulligan",
+      "cancelEnabled": true
+    },
+    "incorrectActions": 0,
+    "messages": [],
+    "messageCount": 0,
+    "logCount": 8,
+    "logStart": 0,
+    "turn": 0,
+    "phase": null,
+    "activePlayer": null,
+    "gameOver": true,
+    "winner": "SecondBot",
+    "match": {
+      "gamesPerMatch": 3,
+      "game": 1,
+      "wins": {
+        "FirstBot": 0,
+        "SecondBot": 1
+      },
+      "over": false
+    },
+    "me": "FirstBot",
+    "hasPriority": false,
+    "autoPass": "opponent-turns",
+    "autoPassNow": false,
+    "stops": "default"
+  },
+  "chat": [
+    {
+      "from": null,
+      "text": "FirstBot is ready (1/1 players ready)"
+    },
+    {
+      "from": null,
+      "text": "SecondBot joined the lobby."
+    },
+    {
+      "from": null,
+      "text": "SecondBot is ready (2/2 players ready)"
+    },
+    {
+      "from": null,
+      "text": "Every seat is ready. The match starts in 3 seconds."
+    }
+  ],
+  "chatCount": 4
+}

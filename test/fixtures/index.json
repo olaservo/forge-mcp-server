@@ -48,5 +48,15 @@
   "combatSignals GET /game#plannedBlock": "combatSignals-GET_game_plannedBlock.json",
   "combatSignals GET /game#blocked": "combatSignals-GET_game_blocked.json",
   "facedown GET /game#face-down": "facedown-GET_game_face_down.json",
-  "librarytop GET /game#library-top": "librarytop-GET_game_library_top.json"
+  "librarytop GET /game#library-top": "librarytop-GET_game_library_top.json",
+  "bo3 GET /game#firstGame": "bo3-GET_game_firstGame.json",
+  "bo3 GET /status#firstGame": "bo3-GET_status_firstGame.json",
+  "bo3 GET /status#gameOver": "bo3-GET_status_gameOver.json",
+  "bo3 GET /game#gameOver": "bo3-GET_game_gameOver.json",
+  "bo3 POST /game/act#continue": "bo3-POST_game_act_continue.json",
+  "bo3 GET /game#secondGame": "bo3-GET_game_secondGame.json",
+  "bo3 GET /status#secondGame": "bo3-GET_status_secondGame.json",
+  "bo3 GET /game/log#secondGame": "bo3-GET_game_log_secondGame.json",
+  "bo3 GET /status#matchOver": "bo3-GET_status_matchOver.json",
+  "bo3 GET /game#matchOver": "bo3-GET_game_matchOver.json"
 }

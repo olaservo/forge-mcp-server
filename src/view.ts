@@ -6,6 +6,8 @@ type Card = Record<string, unknown>;
 
 /** Game log lines that say nothing a seat acts on. */
 const LOG_NOISE = /^(Phase|Mana|Player Control):/;
+/** The lines that give a game's result and the match score. */
+const EARLIER_RESULT = /^(Game Outcome|Match Result):/;
 /** The most log lines one view carries. Older ones are counted in `earlier`. */
 const LOG_LINES = 15;
 /** How many event views are kept for an action to name with `at`. */
@@ -36,6 +38,8 @@ interface Told {
   text: Map<string, string>;
   /** The seat's turn on which a view last carried the board. */
   boardTurn: number;
+  /** The game's number in its match, when the bridge gives it. */
+  game?: number;
 }
 
 const fresh = (): Told => ({ log: 0, messages: 0, incorrect: 0, text: new Map(), boardTurn: -1 });
@@ -76,14 +80,23 @@ export class SeatMemory {
     if (next) this.told = next;
   }
 
-  /** A new game counts its log and messages from nothing. */
+  /**
+   * A new game counts its log and messages from nothing. The next game of a match starts fresh too, but for
+   * its place in the log, which Forge's client keeps through the match. Bridge 0.1.11 numbers the games.
+   */
   private start(game: Json): Told {
     const restarted = Number(game.logCount ?? 0) < this.told.log || Number(game.messageCount ?? 0) < this.told.messages;
     const left = game.inGame === false && game.gameOver !== true && game.finished !== true;
+    const number = (game.match as Json | null | undefined)?.game;
     if (restarted || left) {
       this.told = fresh();
       this.peeks.clear();
+    } else if (typeof number === "number" && this.told.game !== undefined && number !== this.told.game) {
+      // The bridge counts refused actions through the games too.
+      this.told = { ...fresh(), log: this.told.log, incorrect: this.told.incorrect };
+      this.peeks.clear();
     }
+    if (typeof number === "number") this.told.game = number;
     return { ...this.told, hand: this.told.hand && new Set(this.told.hand), text: new Map(this.told.text) };
   }
 
@@ -112,7 +125,13 @@ export class SeatMemory {
     const logCount = Number(game.logCount ?? 0);
     if (logCount > told.log) {
       const { log } = await bridge.get<{ log?: string[] }>("/game/log", { since: told.log });
-      const lines = (log ?? []).map((l) => plainText(l)).filter((l) => l && !LOG_NOISE.test(l));
+      // Lines before `logStart` are from an earlier game of the match (bridge 0.1.11). Of those the seat has not been told, only the result is.
+      const logStart = Number(game.logStart ?? 0);
+      const from = told.log;
+      const lines = (log ?? [])
+        .filter((l, i) => from + i >= logStart || EARLIER_RESULT.test(l))
+        .map((l) => plainText(l))
+        .filter((l) => l && !LOG_NOISE.test(l));
       if (lines.length > LOG_LINES) since.earlier = lines.length - LOG_LINES;
       if (lines.length) since.log = lines.slice(-LOG_LINES);
       told.log = logCount;
@@ -151,7 +170,7 @@ export class SeatMemory {
     if (opts.stale) view.stale = true;
     if (opts.unchanged) view.unchanged = true;
     if (game.inGame === false && !over) view.inGame = false;
-    if (over) Object.assign(view, { gameOver: true, winner: game.winner });
+    if (over) Object.assign(view, { gameOver: true, winner: game.winner }, game.match != null && { match: game.match });
     for (const key of ["turn", "phase", "activePlayer"]) if (game[key] !== null && game[key] !== undefined) view[key] = game[key];
     if (game.waiting === true) view.waiting = true;
     const b = (game.buttons ?? {}) as Json;
