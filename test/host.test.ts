@@ -40,6 +40,11 @@ describe("LobbyHost", () => {
     await expect(host.start(settings)).rejects.toThrow("Already hosting on port 36750");
   });
 
+  it("reads a ready line that ends as Java ends a line on Windows", async () => {
+    const { host } = fakeHost("MATCH_HOST_READY port=36750 games=3\r\n");
+    expect(await host.start({ ...settings, games: 3 })).toMatchObject({ running: true, games: 3 });
+  });
+
   it("refuses a longer match on a bridge jar that ignores the games", async () => {
     const { host, killed } = fakeHost("MATCH_HOST_READY port=36750\n");
     await expect(host.start({ ...settings, games: 3 })).rejects.toThrow("forge_host with games 3 needs forge-agent-bridge 0.1.11 or later");

@@ -112,6 +112,19 @@ describe("forge_copilot_view", () => {
     expect(view.selection).toBeUndefined();
   });
 
+  it("gives the game log lines that are new since the last read", async () => {
+    const { host } = copilotHost();
+    await host.start(settings);
+    const first = { ...recorded, logCount: 3, log: ["Turn: Turn 1 (Johnny)", "Land: Johnny played Mountain (31)", "Phase: Johnny's End step"] };
+    const second = { ...first, revision: Number(recorded.revision) + 1, logCount: 5, log: [...first.log, "Turn: Turn 2 (Opponent)", "Land: Opponent played Forest (60)"] };
+    const port = copilotPort(host, [first, first, second]);
+    const view = await copilotView(host, { fetch: port.fetch });
+    expect((view.since as Json).log).toEqual(["Turn: Turn 1 (Johnny)", "Land: Johnny played Mountain (31)"]);
+    expect(view.log).toBeUndefined();
+    expect((await copilotView(host, { fetch: port.fetch })).since).toBeUndefined();
+    expect(((await copilotView(host, { fetch: port.fetch })).since as Json).log).toEqual(["Turn: Turn 2 (Opponent)", "Land: Opponent played Forest (60)"]);
+  });
+
   it("waits for the revision to change, and says when it did not", async () => {
     const { host } = copilotHost();
     await host.start(settings);

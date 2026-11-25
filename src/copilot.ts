@@ -7,8 +7,19 @@ type Json = Record<string, unknown>;
 /** How often a waiting read asks the host again. */
 const POLL_MS = 500;
 
-/** The watched seat's view has no game log to fetch, so its memory never calls a bridge. */
-const NO_BRIDGE = { get: async () => ({}) } as unknown as Bridge;
+/**
+ * Stands in for a seat's bridge when its memory asks for the game log: the lines from `since` on, out of the
+ * last lines the host's answer carries. Bridge 0.1.11 hosts send `logCount` and `log`.
+ */
+function logOf(body: Json): Bridge {
+  const lines = Array.isArray(body.log) ? (body.log as string[]) : [];
+  const count = Number(body.logCount ?? 0);
+  const get = async (_path: string, query?: Record<string, string | number | undefined>) => {
+    const wanted = count - Number(query?.since ?? 0);
+    return { log: wanted > 0 ? lines.slice(-Math.min(wanted, lines.length)) : [] };
+  };
+  return { get } as unknown as Bridge;
+}
 
 /** What the agent has been told of the watched seat's game, kept while the same host runs. */
 const memories = new WeakMap<LobbyHost, { token: string; memory: SeatMemory }>();
@@ -29,6 +40,7 @@ const filled = (value: unknown): boolean => Array.isArray(value) && value.length
  */
 function asGame(body: Json): Json {
   const game: Json = { ...body, waiting: false, priorityPrompt: true };
+  delete game.log;
   const selection = body.selection as Json | null | undefined;
   delete game.selection;
   if (selection) {
@@ -82,7 +94,7 @@ export async function copilotView(host: LobbyHost, opts: CopilotViewOptions = {}
   if (body.watching !== true) {
     return { seat: access.seat, watching: false, message: `${access.seat} is in no game now. The view starts when a game with that seat starts.` };
   }
-  const view = await memoryFor(host, access).view(NO_BRIDGE, asGame(body), { commit: true, board: true });
+  const view = await memoryFor(host, access).view(logOf(body), asGame(body), { commit: true, board: true });
   const out: Json = { seat: access.seat, watching: true, revision: body.revision, ...view };
   if (opts.since !== undefined && body.revision === opts.since) out.unchanged = true;
   if (body.waiting === true) out.waiting = true;
