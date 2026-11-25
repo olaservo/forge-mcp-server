@@ -1,5 +1,5 @@
-import { randomBytes } from "node:crypto";
-import { mkdtempSync } from "node:fs";
+import { generateKeyPairSync, randomBytes } from "node:crypto";
+import { mkdtempSync, readFileSync, writeFileSync } from "node:fs";
 import { createServer as createHttpServer } from "node:http";
 import type { AddressInfo } from "node:net";
 import { tmpdir } from "node:os";
@@ -8,10 +8,11 @@ import { Webhook } from "standardwebhooks";
 import { describe, expect, it, vi } from "vitest";
 import { z } from "zod";
 import { EventLog } from "../src/event-log.js";
+import { openSeq, setupR } from "../src/hpke.js";
 import { CHAT, MoveTracker, YOUR_MOVE } from "../src/seat-events.js";
 import { skillCatalog } from "../src/server.js";
 import { listenHttp } from "../src/transports/http.js";
-import { DeliveryError, type SubscribeResult, type WebhookGet, WebhookHub, type WebhookPost, isPublicAddress, isSigningSecret, retryDelays, subscriptionId, webhookPost } from "../src/webhooks.js";
+import { DeliveryError, ENCRYPTION_SCHEME, type SubscribeResult, type WebhookGet, WebhookHub, type WebhookPost, isPublicAddress, isSigningSecret, retryDelays, subscriptionId, webhookPost } from "../src/webhooks.js";
 import { connect, fakeBridge } from "./helpers.js";
 
 const newSecret = () => `whsec_${randomBytes(32).toString("base64")}`;
@@ -586,5 +587,138 @@ describe("webhook delivery", () => {
 
     server.close();
     callback.close();
+  });
+});
+
+const URL_B = "https://receiver.example.com/mcp-events/callback_2";
+
+/** A client's key pair: what it sends as `delivery.encryption`, and how it opens a body sealed for subscription `id`. */
+function clientKey() {
+  const { privateKey } = generateKeyPairSync("x25519");
+  const open = (id: string, body: string) => {
+    const { encrypted, ...clear } = JSON.parse(body) as { eventId: string; name: string; timestamp: string; cursor: string; encrypted: { enc: string; ct: string } };
+    const context = setupR(1, Buffer.from(encrypted.enc, "base64url"), privateKey, Buffer.from(`mcp-events v1 ${id}`));
+    const aad = Buffer.from(`${clear.eventId}\n${clear.name}\n${clear.timestamp}`);
+    return { ...clear, data: JSON.parse(openSeq(1, context, 0, aad, Buffer.from(encrypted.ct, "base64url")).toString("utf8")) as unknown };
+  };
+  return { encryption: { scheme: ENCRYPTION_SCHEME, publicKey: privateKey.export({ format: "jwk" }).x! }, open };
+}
+
+const sealedParams = (secret: string, encryption: { scheme: string; publicKey: string }, url = URL_A) => ({
+  ...subscribeParams(secret),
+  delivery: { mode: "webhook", url, secret, encryption },
+});
+
+describe("webhook payload encryption", () => {
+  it("lists the scheme, seals data to the key a subscription names and says so in the result", async () => {
+    const log = new EventLog();
+    const { post, events } = receiver();
+    const hub = new WebhookHub(log, { post });
+    const client = await connect(fakeBridge({}).bridge, undefined, log, { hub, principal: "ola" });
+    const secret = newSecret();
+    const key = clientKey();
+
+    const listed = (await client.request({ method: "events/list", params: {} }, Any)) as { events: { encryption?: string[] }[] };
+    expect(listed.events.map((e) => e.encryption)).toEqual([[ENCRYPTION_SCHEME], [ENCRYPTION_SCHEME]]);
+
+    // An event replayed from a cursor is sealed like a new one.
+    const start = log.head();
+    const replayed = log.emit(YOUR_MOVE, { kind: "priority", prompt: "Priority: Agent" });
+    const params = { ...sealedParams(secret, key.encryption), cursor: start };
+    const sub = (await client.request({ method: "events/subscribe", params }, Any)) as unknown as SubscribeResult;
+    expect(sub.delivery).toEqual({ encryption: { scheme: ENCRYPTION_SCHEME } });
+    const emitted = log.emit(YOUR_MOVE, { kind: "decision" });
+    await hub.idle();
+
+    expect(events()).toHaveLength(2);
+    for (const [i, event] of [replayed, emitted].entries()) {
+      const { body, headers } = events()[i]!;
+      const sent = new Webhook(secret).verify(body, headers) as { cursor: string };
+      expect(Object.keys(sent)).toEqual(["eventId", "name", "timestamp", "cursor", "encrypted"]);
+      expect(key.open(sub.id, body)).toEqual({ ...event, cursor: sent.cursor });
+      expect(() => key.open(subscriptionId("ola", URL_B, YOUR_MOVE, {}), body)).toThrow();
+    }
+
+    // A subscription that names no key is sent the data as before.
+    expect((await hub.subscribe("ola", { ...subscribeParams(secret), name: CHAT })).delivery).toBeUndefined();
+    const chat = log.emit(CHAT, { from: "Ola", text: "in the clear" });
+    await hub.idle();
+    expect(JSON.parse(events()[2]!.body)).toMatchObject({ data: chat.data });
+    await client.close();
+  });
+
+  it("refuses an unknown scheme, a key it cannot seal to and a refresh that drops the key", async () => {
+    const file = join(mkdtempSync(join(tmpdir(), "forge-subs-")), "subscriptions.json");
+    const log = new EventLog();
+    const { post, events } = receiver();
+    const hub = new WebhookHub(log, { post, file });
+    const secret = newSecret();
+    const [old, next] = [clientKey(), clientKey()];
+    const { publicKey } = old.encryption;
+
+    await expect(hub.subscribe("ola", sealedParams(secret, { scheme: "rot13", publicKey }))).rejects.toMatchObject({ code: -32026, data: { feature: "encryption", value: "rot13" } });
+    // Empty, short, padded, and a low-order point.
+    for (const bad of ["", "c2hvcnQ", `${publicKey}=`, "A".repeat(43)]) {
+      await expect(hub.subscribe("ola", sealedParams(secret, { scheme: ENCRYPTION_SCHEME, publicKey: bad }))).rejects.toMatchObject({ code: -32602 });
+    }
+    expect(hub.size).toBe(0);
+
+    const sub = await hub.subscribe("ola", sealedParams(secret, old.encryption));
+    await expect(hub.subscribe("ola", subscribeParams(secret))).rejects.toMatchObject({ code: -32602 });
+    log.emit(YOUR_MOVE, { kind: "priority" });
+    await hub.idle();
+    expect(old.open(sub.id, events()[0]!.body).data).toEqual({ kind: "priority" });
+
+    // A refresh with another key replaces the key.
+    expect((await hub.subscribe("ola", sealedParams(secret, next.encryption))).delivery).toEqual({ encryption: { scheme: ENCRYPTION_SCHEME } });
+    log.emit(YOUR_MOVE, { kind: "decision" });
+    await hub.idle();
+    expect(next.open(sub.id, events()[1]!.body).data).toEqual({ kind: "decision" });
+
+    // The key is kept in the file, so a restarted server still seals.
+    const later = new EventLog();
+    const restarted = new WebhookHub(later, { post, file });
+    later.emit(YOUR_MOVE, { kind: "priority" });
+    await restarted.idle();
+    expect(next.open(sub.id, events()[2]!.body).data).toEqual({ kind: "priority" });
+
+    // After an unsubscribe the same callback can subscribe in the clear.
+    restarted.unsubscribe("ola", subscribeParams(secret));
+    expect((await restarted.subscribe("ola", subscribeParams(secret))).delivery).toBeUndefined();
+  });
+
+  it("holds the 256 KiB limit against the body as sent", async () => {
+    const log = new EventLog();
+    const { post, events } = receiver();
+    const hub = new WebhookHub(log, { post });
+    const secret = newSecret();
+    const sealed = sealedParams(secret, clientKey().encryption, URL_B);
+    await hub.subscribe("ola", subscribeParams(secret));
+    await hub.subscribe("ola", sealed);
+
+    // Under the limit in the clear, over it in base64url.
+    log.emit(YOUR_MOVE, { kind: "priority", prompt: "x".repeat(200 * 1024) });
+    await hub.idle();
+    expect(events().map((p) => p.url)).toEqual([URL_A]);
+    expect((await hub.subscribe("ola", sealed)).deliveryStatus).toMatchObject({ abandoned: 1 });
+    expect((await hub.subscribe("ola", subscribeParams(secret))).deliveryStatus).not.toHaveProperty("abandoned");
+  });
+
+  it("gives up on a delivery when the key in the file cannot be sealed to", async () => {
+    const file = join(mkdtempSync(join(tmpdir(), "forge-subs-")), "subscriptions.json");
+    const secret = newSecret();
+    const sealed = sealedParams(secret, clientKey().encryption);
+    const sub = await new WebhookHub(new EventLog(), { post: receiver().post, file }).subscribe("ola", sealed);
+    const stored = JSON.parse(readFileSync(file, "utf8")) as { subscriptions: { encryption: { publicKey: string } }[] };
+    stored.subscriptions[0]!.encryption.publicKey = "A".repeat(43);
+    writeFileSync(file, JSON.stringify(stored));
+
+    const log = new EventLog();
+    const { post, events } = receiver();
+    const hub = new WebhookHub(log, { post, file });
+    log.emit(YOUR_MOVE, { kind: "priority" });
+    await hub.idle();
+    expect(events()).toEqual([]);
+    expect(await hub.subscribe("ola", sealed)).toMatchObject({ id: sub.id, deliveryStatus: { abandoned: 1 } });
   });
 });

@@ -30,6 +30,20 @@ Both are delivered by poll and push, and by webhook when the HTTP endpoint has a
 
 Webhook subscriptions need an authenticated caller, so they are offered only to a request that carries a token: `FORGE_MCP_TOKEN`, `FORGE_MCP_PROXY_TOKEN`, or the token a stdio server writes to its registry file (see [Claude Code](claude-code.md)). With either variable set, every request to `/mcp` must carry `Authorization: Bearer <token>`.
 
+### Payload encryption
+
+A client whose callback is a relay it does not trust with the events can ask for `data` to be encrypted to its own key. SEP-3415 does not define this. It is the experiment in [issue 9](https://github.com/olaservo/forge-mcp-server/issues/9), and the reader in [mcp-mailbox](https://github.com/olaservo/mcp-mailbox) is the client for it.
+
+- `events/list` names the scheme for each event, as `"encryption": ["hpke-x25519-sha256-aes128gcm"]`, when webhooks are offered. That is RFC 9180 base mode with DHKEM(X25519, HKDF-SHA256), HKDF-SHA256 and AES-128-GCM, done in `src/hpke.ts` with Node's `crypto`.
+- `events/subscribe` takes `delivery.encryption: {"scheme", "publicKey"}`, with the 32-byte X25519 public key in base64url. The result carries `delivery.encryption.scheme` when deliveries will be encrypted. Another scheme gets `Unsupported` with `{feature: "encryption", value}`, and a key that is not 32 bytes or cannot be used gets `-32602`.
+- Each delivery to that subscription has `"encrypted": {"enc", "ct"}` in base64url where `data` was. `eventId`, `name`, `timestamp` and `cursor` stay in the clear. It is one HPKE seal per attempt, with `info` = `"mcp-events v1 " + <subscription id>`, `aad` = `eventId + "\n" + name + "\n" + timestamp`, and the JSON of `data` as the plaintext. The signature is over the body as sent.
+- Replayed events and the pending ask are encrypted like any other. The verification challenge is not.
+- A refresh with another key replaces the key. A refresh without `delivery.encryption` on an encrypted subscription gets `-32602`. To go back to the clear, unsubscribe first.
+- The 256 KiB limit is held against the body as sent, which is about a third larger than `data`.
+- The public key is kept with the subscription, in `FORGE_MCP_SUBSCRIPTIONS` when that is set.
+
+Tested in `test/webhooks.test.ts`, and from mcp-mailbox with its reader against this server in one process. Not run in a game.
+
 ## Settings
 
 - The HTTP server logs one line to stderr for each subscribe, unsubscribe and delivery attempt, with the callback's status and the time it took, and one line for each tool call by an authenticated caller.
