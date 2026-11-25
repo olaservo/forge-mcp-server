@@ -60,6 +60,17 @@ describe("the pack view", () => {
     expect(new DraftMemory().pack({ ...pack, picks: [] }, { commit: true }).drafted).toBeUndefined();
   });
 
+  it("says how many packs wait behind the one shown", () => {
+    // In the recording the host seat had already picked from its first pack of the round and passed it on.
+    // The seat's own count includes the pack in front of it.
+    expect(pack).toMatchObject({ seatIndex: 1, seatQueueDepths: [0, 2] });
+    expect(new DraftMemory().pack(pack, { commit: true }).queued).toBe(1);
+    expect(new DraftMemory().pack({ ...pack, seatQueueDepths: [0, 0] }, { commit: true })).not.toHaveProperty("queued");
+    expect(new DraftMemory().pack({ ...pack, seatQueueDepths: [0, 1] }, { commit: true })).not.toHaveProperty("queued");
+    expect(new DraftMemory().pack({ ...pack, seatQueueDepths: [0, 3] }, { commit: true }).queued).toBe(2);
+    expect(new DraftMemory().pack({ ...pack, pickPending: false, seatQueueDepths: [0, 3], picks: [] }, { commit: true })).toEqual({ waiting: true });
+  });
+
   it("reads a cost's mana value", () => {
     expect([manaValue("{3}{W}{W}"), manaValue("{X}{R}"), manaValue("{2/W}{W/U}"), manaValue("no cost"), manaValue(null)]).toEqual([5, 1, 3, 0, 0]);
     expect(tally([{ type: "Creature - Wurm", colors: "G", manaCost: "{6}{G}" }]).curve).toEqual({ "6+": 1 });

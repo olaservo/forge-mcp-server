@@ -207,6 +207,7 @@ export const EVENT_TYPES = [
         packNumber: { type: "integer" },
         pickNumber: { type: "integer" },
         pack: { type: "array", description: "For kind draft_pick: the cards to pick from" },
+        queued: { type: "integer", description: "Packs waiting for the seat behind this one" },
         drafted: { type: "object", description: "Counts of the seat's picks so far" },
         autoPicks: { type: "array", description: "Picks the host made for the seat when the clock ran out" },
         pool: { type: "object", description: "For kind deck: the pool, one entry per card name, with counts" },

@@ -164,6 +164,10 @@ export class DraftMemory {
       view.packNumber = draft.packNumber;
       view.pickNumber = draft.pickNumber;
       if (typeof draft.secondsLeft === "number") view.secondsLeft = draft.secondsLeft;
+      // The host counts the packs at each seat when any seat picks. The seat's own count includes the pack shown.
+      const depths = Array.isArray(draft.seatQueueDepths) ? (draft.seatQueueDepths as number[]) : [];
+      const behind = (depths[Number(draft.seatIndex)] ?? 0) - 1;
+      if (behind > 0) view.queued = behind;
       view.pack = cards.map(shown);
       const told = new Set(this.told);
       const text = this.texts(cards, told, opts.allText);

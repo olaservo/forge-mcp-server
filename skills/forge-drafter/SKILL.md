@@ -16,7 +16,7 @@ A client with no events calls `forge_wait` where this guide says to end the turn
 ## Pick loop
 
 1. `forge_connect`, then `forge_lobby_ready` straight away. The host cannot start the event while a seat is unready, and no deck is needed to ready before a draft. End your turn.
-2. A `draft_pick` event carries the pack. `packNumber` and `pickNumber` count from 1. `secondsLeft` is the pick clock, when the host set one. `pack` has each card's `name`, `manaCost`, `type`, `pt`, and its `rarity` unless it is Common.
+2. A `draft_pick` event carries the pack. `packNumber` and `pickNumber` count from 1. `secondsLeft` is the pick clock, when the host set one. `queued` is the number of packs waiting behind this one, when other seats are waiting on you. `pack` has each card's `name`, `manaCost`, `type`, `pt`, and its `rarity` unless it is Common.
 3. Rules text is in `cardText` under the card's name. It is sent once per card name in a draft. A pack that comes round the table again has no text for cards you were already sent, and a creature with no abilities has none. `forge_draft_pack {allText: true}` sends the text of the current pack again.
 4. `drafted` counts your picks so far: `colors`, `creatures`, `other` spells, `lands`, and `curve`, the number of spells at each mana value. `unknown` counts picks the server never saw in a pack.
 5. Pick with `forge_draft_pick {card: "<exact name>", at: "<the pack's at>"}`. `picked` confirms the card. If the clock ran out and another pack is waiting, nothing is picked and the answer has `stale: true` with that pack: pick from it.
@@ -59,4 +59,4 @@ The answer has `cards`: each pool card of the main deck with its count, cost, ty
 
 ## Sealed
 
-A sealed event has no picks. Ready up, and when the host starts it the pool arrives at once (six boosters, about 84 cards) with the text of every card. Build the deck from it the same way.
+A sealed event has no picks. Ready up, and when the host starts it the pool arrives at once (six boosters, 84 to 90 cards) with the text of every card. Build the deck from it the same way.

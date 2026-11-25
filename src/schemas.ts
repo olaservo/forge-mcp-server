@@ -323,7 +323,14 @@ const CardText = z.record(z.string(), z.string()).nullish();
  * What forge_draft_pack returns and `forge.your_move` carries for a pick: the pack, rules text for card names not
  * sent before in this draft, and counts of the picks. `waiting` when no pack is waiting and no pool has arrived.
  */
-export const PackView = Draft.extend({ pack: z.array(DraftCard).nullish(), waiting: bool, cardText: CardText, drafted: DraftTally.nullish() });
+export const PackView = Draft.extend({
+  pack: z.array(DraftCard).nullish(),
+  waiting: bool,
+  /** Packs waiting for the seat behind the one shown, when there are any. */
+  queued: num,
+  cardText: CardText,
+  drafted: DraftTally.nullish(),
+});
 /** What forge_draft_pool returns and `forge.your_move` carries for a pool: one entry per card name, with counts. */
 export const PoolView = Pool.extend({ cards: z.array(DraftCard).nullish(), cardText: CardText, counts: DraftTally.nullish() });
 /** What forge_draft_pick returns: the pick, then the pack view of what the seat is asked next, with the pool once it has arrived. */
