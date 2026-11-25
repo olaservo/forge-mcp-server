@@ -1,7 +1,8 @@
 import { z } from "zod";
+import { copilotView } from "../copilot.js";
 import type { LobbyHost } from "../host.js";
 import * as out from "../schemas.js";
-import { acting, run, type RegisterTool } from "./common.js";
+import { acting, readOnly, run, type RegisterTool } from "./common.js";
 
 export function registerHostTools(tool: RegisterTool, host: LobbyHost): void {
   if (process.env.FORGE_HOSTING === "0") return;
@@ -15,6 +16,7 @@ export function registerHostTools(tool: RegisterTool, host: LobbyHost): void {
         "every slot is open, and it starts the match once every slot is taken and each seat is ready with a legal deck. " +
         "Take your own seat with forge_connect at 127.0.0.1 and the port, and set its deck and avatar before forge_lobby_ready: the match starts 3 seconds after the last seat is ready. Other players join from a Forge client at one of `addresses` and the port. " +
         "A match is one game, or the best of 3 or 5 with `games`. " +
+        "With `copilot` the host watches that seat for forge_copilot_view, and tells each player in the lobby so in chat. " +
         "The port is open to the local network with no password. Loading cards takes about 40 seconds. " +
         "Called while a host runs with the same settings, it answers that host's state.",
       inputSchema: z.object({
@@ -22,11 +24,31 @@ export function registerHostTools(tool: RegisterTool, host: LobbyHost): void {
         seats: z.number().int().min(2).max(8).default(2).describe("Number of players, your own seat included"),
         limited: z.boolean().default(false).describe("Limited lobby, for 40-card decks"),
         games: z.literal([1, 3, 5]).default(1).describe("Games per match: 1, or the best of 3 or 5, which needs forge-agent-bridge 0.1.11"),
+        copilot: z.string().min(1).optional().describe("The lobby name of a seat to watch for forge_copilot_view, a human player you advise. Needs forge-agent-bridge 0.1.11"),
       }),
       outputSchema: out.Host,
       annotations: acting,
     },
     async (settings) => run(() => host.start(settings)),
+  );
+
+  tool(
+    "forge_copilot_view",
+    {
+      title: "See what the watched seat sees",
+      description:
+        "What the player in the seat named by forge_host's `copilot` is shown now: the prompt, the buttons, the hand, the stack, the selection, an open dialog, both battlefields, and rules text once per card name. " +
+        "It holds what that player may see and nothing of the other player's hidden cards. " +
+        "It only reads: this tool and this server have no way to act for the watched seat. " +
+        "With `since` set to a `revision` you have read, it waits up to `timeout` seconds for the view to change and says `unchanged` when it did not.",
+      inputSchema: z.object({
+        since: z.number().int().optional().describe("A `revision` already read: wait until the view differs from it"),
+        timeout: z.number().min(0).max(300).default(60).describe("With `since`, the longest wait in seconds"),
+      }),
+      outputSchema: out.CopilotView,
+      annotations: readOnly,
+    },
+    async ({ since, timeout }) => run(() => copilotView(host, { since, timeout })),
   );
 
   tool(

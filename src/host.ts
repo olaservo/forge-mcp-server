@@ -1,4 +1,6 @@
 import { spawn, type ChildProcess } from "node:child_process";
+import { randomBytes } from "node:crypto";
+import { createServer } from "node:net";
 import { networkInterfaces } from "node:os";
 import { delimiter } from "node:path";
 
@@ -8,6 +10,15 @@ export interface HostSettings {
   limited: boolean;
   /** Games per match: 1, 3 or 5. More than 1 needs forge-agent-bridge 0.1.11. */
   games: number;
+  /** The lobby name of a seat the host watches for an advising agent. Needs forge-agent-bridge 0.1.11. */
+  copilot?: string;
+}
+
+/** Where the host serves the watched seat's view, and the token it asks for. */
+export interface CopilotAccess {
+  seat: string;
+  url: string;
+  token: string;
 }
 
 export interface HostState extends Partial<HostSettings> {
@@ -24,10 +35,23 @@ export interface LobbyHostOptions {
   /** Working directory, the folder that holds `res/`. Default: FORGE_HOME. */
   cwd?: string;
   spawn?: typeof spawn;
+  /** A free loopback port for the copilot view. */
+  freePort?: () => Promise<number>;
   addresses?: () => string[];
 }
 
 const READY = "MATCH_HOST_READY";
+
+function freeLoopbackPort(): Promise<number> {
+  return new Promise((resolve, reject) => {
+    const server = createServer();
+    server.once("error", reject);
+    server.listen(0, "127.0.0.1", () => {
+      const address = server.address();
+      server.close(() => (address && typeof address === "object" ? resolve(address.port) : reject(new Error("no free port"))));
+    });
+  });
+}
 
 function lanAddresses(): string[] {
   return Object.values(networkInterfaces())
@@ -44,12 +68,18 @@ export class LobbyHost {
   private child?: ChildProcess;
   private settings?: HostSettings;
   private starting?: Promise<HostState>;
+  private access?: CopilotAccess;
 
   constructor(private readonly opts: LobbyHostOptions = {}) {}
 
   state(): HostState {
     const addresses = (this.opts.addresses ?? lanAddresses)();
     return this.child && this.settings ? { running: true, ...this.settings, addresses } : { running: false, addresses };
+  }
+
+  /** How to read the watched seat, when the host was started with one. The token is never part of the state. */
+  copilot(): CopilotAccess | undefined {
+    return this.child ? this.access : undefined;
   }
 
   /** Starts the host and resolves once it listens. With a host already running, answers its state when the settings match. */
@@ -59,7 +89,8 @@ export class LobbyHost {
         this.settings.port === settings.port &&
         this.settings.seats === settings.seats &&
         this.settings.limited === settings.limited &&
-        this.settings.games === settings.games;
+        this.settings.games === settings.games &&
+        this.settings.copilot === settings.copilot;
       if (!same) {
         return Promise.reject(new Error(`Already hosting on port ${this.settings.port} with other settings. Stop it with forge_host_stop first.`));
       }
@@ -70,12 +101,23 @@ export class LobbyHost {
     return this.starting;
   }
 
-  private launch(settings: HostSettings, timeoutMs: number): Promise<HostState> {
+  private async launch(settings: HostSettings, timeoutMs: number): Promise<HostState> {
     const jar = this.opts.jar ?? process.env.FORGE_JAR;
     const bridgeJar = this.opts.bridgeJar ?? process.env.FORGE_BRIDGE_JAR;
     if (!jar || !bridgeJar) {
       this.settings = undefined;
-      return Promise.reject(new Error("Set FORGE_JAR, FORGE_BRIDGE_JAR and FORGE_HOME so this server can start a host."));
+      throw new Error("Set FORGE_JAR, FORGE_BRIDGE_JAR and FORGE_HOME so this server can start a host.");
+    }
+    let access: CopilotAccess | undefined;
+    let copilotPort = 0;
+    if (settings.copilot !== undefined) {
+      try {
+        copilotPort = await (this.opts.freePort ?? freeLoopbackPort)();
+      } catch (e) {
+        this.settings = undefined;
+        throw e;
+      }
+      access = { seat: settings.copilot, url: `http://127.0.0.1:${copilotPort}/copilot`, token: randomBytes(32).toString("hex") };
     }
     const args = [
       "-Djava.awt.headless=true",
@@ -91,11 +133,15 @@ export class LobbyHost {
       String(settings.seats),
       ...(settings.games !== 1 ? ["--games", String(settings.games)] : []),
       ...(settings.limited ? ["--limited"] : []),
+      ...(access ? ["--copilot", access.seat, "--copilot-port", String(copilotPort)] : []),
       "--exit-with-parent",
     ];
     const cwd = this.opts.cwd ?? process.env.FORGE_HOME ?? process.cwd();
-    const child = (this.opts.spawn ?? spawn)("java", args, { cwd, stdio: ["ignore", "pipe", "pipe"] });
+    // The token goes by environment, so it is not in the process list.
+    const env = access ? { ...process.env, FORGE_COPILOT_TOKEN: access.token } : process.env;
+    const child = (this.opts.spawn ?? spawn)("java", args, { cwd, env, stdio: ["ignore", "pipe", "pipe"] });
     this.child = child;
+    this.access = access;
     return new Promise<HostState>((resolve, reject) => {
       let errors = "";
       let output = "";
@@ -116,6 +162,10 @@ export class LobbyHost {
         // A MatchHost before 0.1.11 ignores --games and does not name the games in this line.
         if (settings.games !== 1 && !line.includes(` games=${settings.games}`)) {
           return fail(`forge_host with games ${settings.games} needs forge-agent-bridge 0.1.11 or later. The host was stopped.`);
+        }
+        // A MatchHost before 0.1.11 ignores --copilot and names no copilot port in this line.
+        if (access && !line.includes(` copilotPort=${copilotPort}`)) {
+          return fail("forge_host with copilot needs forge-agent-bridge 0.1.11 or later. The host was stopped.");
         }
         clearTimeout(timer);
         resolve(this.state());
@@ -138,6 +188,7 @@ export class LobbyHost {
     const child = this.child;
     this.child = undefined;
     this.settings = undefined;
+    this.access = undefined;
     child?.kill();
     return this.state();
   }

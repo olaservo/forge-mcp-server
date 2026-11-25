@@ -78,6 +78,7 @@ export function createServer(opts: CreateServerOptions = {}): McpServer {
       "If your client starts a turn for you when forge.your_move fires (an MCP Events client, or Claude Code with the " +
       "mcp-events mod), end your turn after acting. forge_wait is refused for such a client, and the refusal says so. " +
       "A client with no event subscription calls forge_wait instead of polling, or subscribes to forge://status through subscriptions/listen. " +
+      "To advise a person who plays a seat themselves, host with forge_host and `copilot`, and load forge-copilot. " +
       "To report a problem with the server or its skills, load forge-feedback.",
   });
 

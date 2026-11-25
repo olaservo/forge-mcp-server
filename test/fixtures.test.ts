@@ -137,6 +137,7 @@ describe("bridge fixtures", () => {
       forge_wait: [{ since: 3, timeout: 5 }, "GET /wait"],
       forge_host: [{ port: 36750 }, null],
       forge_host_stop: [{}, null],
+      forge_copilot_view: [{}, null],
     };
     const { tools } = await client.listTools();
     expect(tools.map((t) => t.name).sort()).toEqual(Object.keys(cases).sort());
