@@ -4,7 +4,7 @@ What the game tools return and how they keep a game short in calls and in contex
 
 ## What an action returns
 
-`forge_game_act` and `forge_game_decide` read the whole game from the bridge after the host has reacted and return a view of it (`src/view.ts`): the prompt, the enabled buttons, life totals, the seat's hand when it has priority, the stack with who put each item there and its targets, floating mana, combat, the selection the prompt offers, and a pending decision. A field with nothing to say is left out. `forge.your_move` carries the same view for a priority prompt or a choice in a game.
+`forge_game_act` and `forge_game_decide` read the whole game from the bridge after the host has reacted and return a view of it (`src/view.ts`): the prompt, the enabled buttons, life totals, the seat's hand when it has priority, the top card of its library while an effect lets the player look at it, the stack with who put each item there and its targets, floating mana, combat, the selection the prompt offers, and a pending decision. A field with nothing to say is left out. `forge.your_move` carries the same view for a priority prompt or a choice in a game.
 
 The server remembers what it has told the seat in the current game, so nothing is sent twice:
 
@@ -14,7 +14,7 @@ The server remembers what it has told the seat in the current game, so nothing i
 
 An event may never reach the model: a client can drop one that a later event replaced. So what an event carried counts as told only when an action names that event's prompt with `at`. Without `at`, the next tool result repeats it.
 
-A prompt that takes a spell or ability on the stack as a target, as a counterspell's does, lists the entries it accepts in `selection.stack`, and `forge_game_act` answers it with `selectStack` and the entry's `id`. Forge 2.0.16 has a network player pick these in the stack view, so a card id does not answer the prompt, and the bridge refuses a `selectCard` there. Before 2026-11-25 the bridge had no such action and a seat could not counter a spell.
+A prompt that takes a spell or ability on the stack as a target, as a counterspell's does, lists the entries it accepts in `selection.stack`, and `forge_game_act` answers it with `selectStack` and the entry's `id`. Each entry of `stack` has the same `id`. Forge 2.0.16 has a network player pick these in the stack view, so a card id does not answer the prompt, and the bridge refuses a `selectCard` there. Before 2026-11-25 the bridge had no such action and a seat could not counter a spell.
 
 Forge does not tell a network client that it ignored a click: its `NetGameController.selectCard` answers true whatever the host's input did. A bridge after 0.1.10 compares the game before and after a `selectCard`, `selectPlayer` or `selectStack`, and the view has `unchanged: true` when nothing but the prompt count differs. A click the host accepted with no visible effect reads the same way. `refused: true` follows Forge's incorrect-action flash, which 2.0.16 sends a network client for a player that cannot be attacked and for no card click.
 

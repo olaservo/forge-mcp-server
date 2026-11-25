@@ -41,11 +41,13 @@ export function compactGame(game: Record<string, unknown>): Record<string, unkno
     Array.isArray(cards) ? cards.map((c) => compact(c as Card, zone, controller)) : cards;
 
   const players = Array.isArray(game.players)
-    ? game.players.map((p: Record<string, unknown>) => ({
+    ? game.players.map(({ hand, libraryTop, ...p }: Record<string, unknown>) => ({
         ...p,
         battlefield: list(p.battlefield, "Battlefield", p.name),
         graveyard: list(p.graveyard, "Graveyard", p.name),
-        ...(p.hand === undefined ? {} : { hand: list(p.hand, "Hand", p.name) }),
+        // The bridge sends a hand and a library top for the seat's own player only. Another player's is not passed on.
+        ...(p.isMe === true && hand !== undefined ? { hand: list(hand, "Hand", p.name) } : {}),
+        ...(p.isMe === true && libraryTop ? { libraryTop: compact(libraryTop as Card, "Library", p.name) } : {}),
       }))
     : game.players;
   const selection = game.selection as Record<string, unknown> | null | undefined;

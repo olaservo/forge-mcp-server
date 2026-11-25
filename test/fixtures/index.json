@@ -46,5 +46,7 @@
   "counter GET /game#stack-targets": "counter-GET_game_stack_targets.json",
   "combatSignals POST /game/act#unchanged": "combatSignals-POST_game_act_unchanged.json",
   "combatSignals GET /game#plannedBlock": "combatSignals-GET_game_plannedBlock.json",
-  "combatSignals GET /game#blocked": "combatSignals-GET_game_blocked.json"
+  "combatSignals GET /game#blocked": "combatSignals-GET_game_blocked.json",
+  "facedown GET /game#face-down": "facedown-GET_game_face_down.json",
+  "librarytop GET /game#library-top": "librarytop-GET_game_library_top.json"
 }

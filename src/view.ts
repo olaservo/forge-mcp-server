@@ -178,8 +178,11 @@ export class SeatMemory {
     // Before the first turn the seat is asked whether it keeps its hand, in a prompt that offers no priority.
     const opening = asked && (game.phase === null || game.phase === undefined);
     if ((priority || opening) && me && list(me.hand).length) view.hand = show(list(me.hand), "Hand", me.name);
+    // The bridge sends it only while an effect lets the player look at the top card of their library.
+    if (priority && me?.libraryTop) view.libraryTop = show([me.libraryTop as Json], "Library", me.name)[0];
     if (stack.length) {
       view.stack = stack.map((s) => ({
+        id: s.id,
         by: s.by,
         source: s.source,
         text: plainText(String(s.text ?? "")),
@@ -232,7 +235,7 @@ export class SeatMemory {
     const told = this.start(game);
     const compact = compactGame(game);
     const players = list(compact.players);
-    const cards = players.flatMap((p) => [...list(p.battlefield), ...list(p.graveyard), ...list(p.hand)]);
+    const cards = players.flatMap((p) => [...list(p.battlefield), ...list(p.graveyard), ...list(p.hand), ...(p.libraryTop ? [p.libraryTop as Json] : [])]);
     const selection = compact.selection as Json | undefined;
     cards.push(...list(selection?.cards));
     // compactGame has moved each name's text into cardText: put it back so one rule decides what is sent.
