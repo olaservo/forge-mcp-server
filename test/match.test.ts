@@ -250,8 +250,10 @@ describe("sideboarding between games", () => {
     expect(calls.filter((c) => c.path === "/game/act")).toEqual([]);
     await client.close();
 
-    // The best-of-three recordings are from a bridge before sideboarding.
-    const old = fakeBridge({ "GET /game": gameOver, "POST /game/act": gameOver, "GET /game/log": { log: [] } });
+    // A bridge before sideboarding says nothing of it in `match`.
+    const { sideboarding: _none, ...matchBefore } = gameOver.match as Json;
+    const before = { ...gameOver, match: matchBefore };
+    const old = fakeBridge({ "GET /game": before, "POST /game/act": before, "GET /game/log": { log: [] } });
     const oldClient = await connect(old.bridge);
     const res = await oldClient.callTool({ name: "forge_game_act", arguments: { action: "continue", out: ["Mountain"] } });
     expect(res.isError).toBe(true);

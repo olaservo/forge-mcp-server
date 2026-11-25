@@ -2,7 +2,7 @@
   "inGame": true,
   "finished": false,
   "prompt": "Choose optional costs",
-  "promptCount": 17,
+  "promptCount": 23,
   "waiting": false,
   "priorityPrompt": false,
   "promptCard": null,
@@ -14,7 +14,7 @@
   },
   "incorrectActions": 0,
   "pendingDecision": {
-    "id": 1,
+    "id": 3,
     "kind": "choices",
     "prompt": "Choose optional costs",
     "options": [
@@ -24,16 +24,26 @@
     "max": 1,
     "default": null
   },
-  "messages": [
-    "Revealed, Looking at cards in HostAI's library: Blood Crypt (64), Forest (81), Plains (51), Mountain (91), Kratos, Stoic Father (86), Crystal Ball (70)"
-  ],
-  "messageCount": 1,
-  "logCount": 153,
-  "turn": 8,
+  "messages": [],
+  "messageCount": 0,
+  "logCount": 223,
+  "logStart": 0,
+  "gamesOpened": 1,
+  "turn": 12,
   "phase": "MAIN1",
   "activePlayer": "AgentBot",
   "gameOver": false,
   "winner": "",
+  "match": {
+    "gamesPerMatch": 1,
+    "game": 1,
+    "wins": {
+      "AgentBot": 0,
+      "HostAI": 0
+    },
+    "over": false,
+    "sideboarding": false
+  },
   "me": "AgentBot",
   "hasPriority": true,
   "autoPass": "opponent-turns",

@@ -1,8 +1,8 @@
 {
   "inGame": true,
   "finished": false,
-  "prompt": "Priority: AgentBot\nTurn: 7 (AgentBot)\nPhase: Main phase, precombat\nStack: Empty",
-  "promptCount": 17,
+  "prompt": "Priority: AgentBot\nTurn: 8 (AgentBot)\nPhase: Main phase, precombat\nStack: Empty",
+  "promptCount": 15,
   "waiting": false,
   "priorityPrompt": true,
   "promptCard": null,
@@ -15,12 +15,24 @@
   "incorrectActions": 0,
   "messages": [],
   "messageCount": 0,
-  "logCount": 106,
-  "turn": 7,
+  "logCount": 121,
+  "logStart": 0,
+  "gamesOpened": 1,
+  "turn": 8,
   "phase": "MAIN1",
   "activePlayer": "AgentBot",
   "gameOver": false,
   "winner": "",
+  "match": {
+    "gamesPerMatch": 1,
+    "game": 1,
+    "wins": {
+      "AgentBot": 0,
+      "HostAI": 0
+    },
+    "over": false,
+    "sideboarding": false
+  },
   "me": "AgentBot",
   "hasPriority": true,
   "autoPass": "opponent-turns",
@@ -33,12 +45,28 @@
       "life": 20,
       "hasPriority": true,
       "isMe": true,
-      "handSize": 5,
-      "librarySize": 30,
+      "handSize": 6,
+      "librarySize": 29,
       "graveyardSize": 0,
       "exileSize": 0,
       "mana": {},
       "battlefield": [
+        {
+          "id": 31,
+          "name": "Mountain",
+          "zone": "Battlefield",
+          "controller": "AgentBot",
+          "tapped": true,
+          "sick": false,
+          "attacking": false,
+          "blocking": false,
+          "damage": 0,
+          "token": false,
+          "faceDown": false,
+          "type": "Basic Land - Mountain",
+          "manaCost": "no cost",
+          "text": ""
+        },
         {
           "id": 37,
           "name": "Mountain",
@@ -56,7 +84,7 @@
           "text": ""
         },
         {
-          "id": 26,
+          "id": 30,
           "name": "Mountain",
           "zone": "Battlefield",
           "controller": "AgentBot",
@@ -72,7 +100,7 @@
           "text": ""
         },
         {
-          "id": 25,
+          "id": 22,
           "name": "Mountain",
           "zone": "Battlefield",
           "controller": "AgentBot",
@@ -88,23 +116,7 @@
           "text": ""
         },
         {
-          "id": 24,
-          "name": "Mountain",
-          "zone": "Battlefield",
-          "controller": "AgentBot",
-          "tapped": true,
-          "sick": false,
-          "attacking": false,
-          "blocking": false,
-          "damage": 0,
-          "token": false,
-          "faceDown": false,
-          "type": "Basic Land - Mountain",
-          "manaCost": "no cost",
-          "text": ""
-        },
-        {
-          "id": 6,
+          "id": 8,
           "name": "Experimental Frenzy",
           "zone": "Battlefield",
           "controller": "AgentBot",
@@ -123,39 +135,7 @@
       "graveyard": [],
       "hand": [
         {
-          "id": 19,
-          "name": "Experimental Frenzy",
-          "zone": "Hand",
-          "controller": "AgentBot",
-          "tapped": false,
-          "sick": false,
-          "attacking": false,
-          "blocking": false,
-          "damage": 0,
-          "token": false,
-          "faceDown": false,
-          "type": "Enchantment",
-          "manaCost": "{3}{R}",
-          "text": "<span style=\"color:gray;\">You may look at the top card of your library any time.</span>\r\n\r\n<span style=\"color:gray;\">You may play lands and cast spells from the top of your library.</span>\r\n\r\n<span style=\"color:gray;\">You can't play lands from your hand.</span>\r\n\r\n<span style=\"color:gray;\">You can't play lands or cast spells from your hand.</span>\r\n\r\n{3}{R}: Destroy Experimental Frenzy."
-        },
-        {
           "id": 12,
-          "name": "Experimental Frenzy",
-          "zone": "Hand",
-          "controller": "AgentBot",
-          "tapped": false,
-          "sick": false,
-          "attacking": false,
-          "blocking": false,
-          "damage": 0,
-          "token": false,
-          "faceDown": false,
-          "type": "Enchantment",
-          "manaCost": "{3}{R}",
-          "text": "<span style=\"color:gray;\">You may look at the top card of your library any time.</span>\r\n\r\n<span style=\"color:gray;\">You may play lands and cast spells from the top of your library.</span>\r\n\r\n<span style=\"color:gray;\">You can't play lands from your hand.</span>\r\n\r\n<span style=\"color:gray;\">You can't play lands or cast spells from your hand.</span>\r\n\r\n{3}{R}: Destroy Experimental Frenzy."
-        },
-        {
-          "id": 5,
           "name": "Experimental Frenzy",
           "zone": "Hand",
           "controller": "AgentBot",
@@ -184,10 +164,26 @@
           "faceDown": false,
           "type": "Enchantment",
           "manaCost": "{3}{R}",
-          "text": "You may look at the top card of your library any time.\r\n\r\nYou may play lands and cast spells from the top of your library.\r\n\r\nYou can't play lands from your hand.\r\n\r\nYou can't play lands or cast spells from your hand.\r\n\r\n{3}{R}: Destroy Experimental Frenzy."
+          "text": "<span style=\"color:gray;\">You may look at the top card of your library any time.</span>\r\n\r\n<span style=\"color:gray;\">You may play lands and cast spells from the top of your library.</span>\r\n\r\n<span style=\"color:gray;\">You can't play lands from your hand.</span>\r\n\r\n<span style=\"color:gray;\">You can't play lands or cast spells from your hand.</span>\r\n\r\n{3}{R}: Destroy Experimental Frenzy."
         },
         {
-          "id": 1,
+          "id": 29,
+          "name": "Mountain",
+          "zone": "Hand",
+          "controller": "AgentBot",
+          "tapped": false,
+          "sick": false,
+          "attacking": false,
+          "blocking": false,
+          "damage": 0,
+          "token": false,
+          "faceDown": false,
+          "type": "Basic Land - Mountain",
+          "manaCost": "no cost",
+          "text": ""
+        },
+        {
+          "id": 9,
           "name": "Experimental Frenzy",
           "zone": "Hand",
           "controller": "AgentBot",
@@ -201,10 +197,42 @@
           "type": "Enchantment",
           "manaCost": "{3}{R}",
           "text": "You may look at the top card of your library any time.\r\n\r\nYou may play lands and cast spells from the top of your library.\r\n\r\nYou can't play lands from your hand.\r\n\r\nYou can't play lands or cast spells from your hand.\r\n\r\n{3}{R}: Destroy Experimental Frenzy."
+        },
+        {
+          "id": 18,
+          "name": "Experimental Frenzy",
+          "zone": "Hand",
+          "controller": "AgentBot",
+          "tapped": false,
+          "sick": false,
+          "attacking": false,
+          "blocking": false,
+          "damage": 0,
+          "token": false,
+          "faceDown": false,
+          "type": "Enchantment",
+          "manaCost": "{3}{R}",
+          "text": "You may look at the top card of your library any time.\r\n\r\nYou may play lands and cast spells from the top of your library.\r\n\r\nYou can't play lands from your hand.\r\n\r\nYou can't play lands or cast spells from your hand.\r\n\r\n{3}{R}: Destroy Experimental Frenzy."
+        },
+        {
+          "id": 25,
+          "name": "Mountain",
+          "zone": "Hand",
+          "controller": "AgentBot",
+          "tapped": false,
+          "sick": false,
+          "attacking": false,
+          "blocking": false,
+          "damage": 0,
+          "token": false,
+          "faceDown": false,
+          "type": "Basic Land - Mountain",
+          "manaCost": "no cost",
+          "text": ""
         }
       ],
       "libraryTop": {
-        "id": 16,
+        "id": 2,
         "name": "Experimental Frenzy",
         "zone": "Library",
         "controller": "AgentBot",
@@ -226,14 +254,14 @@
       "life": 20,
       "hasPriority": false,
       "isMe": false,
-      "handSize": 5,
+      "handSize": 4,
       "librarySize": 32,
       "graveyardSize": 0,
       "exileSize": 0,
       "mana": {},
       "battlefield": [
         {
-          "id": 44,
+          "id": 51,
           "name": "Forest",
           "zone": "Battlefield",
           "controller": "HostAI",
@@ -249,7 +277,7 @@
           "text": ""
         },
         {
-          "id": 72,
+          "id": 57,
           "name": "Forest",
           "zone": "Battlefield",
           "controller": "HostAI",
@@ -265,7 +293,23 @@
           "text": ""
         },
         {
-          "id": 43,
+          "id": 74,
+          "name": "Forest",
+          "zone": "Battlefield",
+          "controller": "HostAI",
+          "tapped": false,
+          "sick": false,
+          "attacking": false,
+          "blocking": false,
+          "damage": 0,
+          "token": false,
+          "faceDown": false,
+          "type": "Basic Land - Forest",
+          "manaCost": "no cost",
+          "text": ""
+        },
+        {
+          "id": 52,
           "name": "Forest",
           "zone": "Battlefield",
           "controller": "HostAI",

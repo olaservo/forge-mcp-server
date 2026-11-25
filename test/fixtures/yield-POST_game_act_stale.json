@@ -1,7 +1,7 @@
 {
   "inGame": true,
   "finished": false,
-  "prompt": "Priority: AgentBot\nTurn: 8 (AgentBot)\nPhase: Main phase, precombat\nStack: Empty",
+  "prompt": "Priority: AgentBot\nTurn: 7 (AgentBot)\nPhase: Main phase, precombat\nStack: Empty",
   "promptCount": 22,
   "waiting": false,
   "priorityPrompt": true,
@@ -15,12 +15,24 @@
   "incorrectActions": 0,
   "messages": [],
   "messageCount": 0,
-  "logCount": 131,
-  "turn": 8,
+  "logCount": 116,
+  "logStart": 0,
+  "gamesOpened": 1,
+  "turn": 7,
   "phase": "MAIN1",
   "activePlayer": "AgentBot",
   "gameOver": false,
   "winner": "",
+  "match": {
+    "gamesPerMatch": 1,
+    "game": 1,
+    "wins": {
+      "AgentBot": 0,
+      "HostAI": 0
+    },
+    "over": false,
+    "sideboarding": false
+  },
   "me": "AgentBot",
   "hasPriority": true,
   "autoPass": "opponent-turns",

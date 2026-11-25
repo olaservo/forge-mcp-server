@@ -1,7 +1,7 @@
 {
   "inGame": true,
   "finished": false,
-  "prompt": "Priority: AgentBot\nTurn: 1 (AgentBot)\nPhase: Main phase, precombat\nStack: Empty",
+  "prompt": "Priority: AgentBot\nTurn: 2 (AgentBot)\nPhase: Main phase, precombat\nStack: Empty",
   "promptCount": 8,
   "waiting": false,
   "priorityPrompt": true,
@@ -15,12 +15,24 @@
   "incorrectActions": 0,
   "messages": [],
   "messageCount": 0,
-  "logCount": 13,
-  "turn": 1,
+  "logCount": 28,
+  "logStart": 0,
+  "gamesOpened": 1,
+  "turn": 2,
   "phase": "MAIN1",
   "activePlayer": "AgentBot",
   "gameOver": false,
   "winner": "",
+  "match": {
+    "gamesPerMatch": 1,
+    "game": 1,
+    "wins": {
+      "AgentBot": 0,
+      "HostAI": 0
+    },
+    "over": false,
+    "sideboarding": false
+  },
   "me": "AgentBot",
   "hasPriority": true,
   "autoPass": "opponent-turns",
@@ -33,14 +45,14 @@
       "life": 20,
       "hasPriority": true,
       "isMe": true,
-      "handSize": 5,
-      "librarySize": 33,
+      "handSize": 6,
+      "librarySize": 32,
       "graveyardSize": 0,
       "exileSize": 0,
       "mana": {},
       "battlefield": [
         {
-          "id": 39,
+          "id": 35,
           "name": "Forest",
           "zone": "Battlefield",
           "controller": "AgentBot",
@@ -56,7 +68,7 @@
           "text": ""
         },
         {
-          "id": 20,
+          "id": 11,
           "name": "Wild Growth",
           "zone": "Battlefield",
           "controller": "AgentBot",
@@ -69,7 +81,7 @@
           "faceDown": false,
           "attachedTo": {
             "type": "card",
-            "id": 39,
+            "id": 35,
             "name": "Forest"
           },
           "type": "Enchantment - Aura",
@@ -80,23 +92,7 @@
       "graveyard": [],
       "hand": [
         {
-          "id": 12,
-          "name": "Wild Growth",
-          "zone": "Hand",
-          "controller": "AgentBot",
-          "tapped": false,
-          "sick": false,
-          "attacking": false,
-          "blocking": false,
-          "damage": 0,
-          "token": false,
-          "faceDown": false,
-          "type": "Enchantment - Aura",
-          "manaCost": "{G}",
-          "text": "Enchant land\r\n\r\n<span style=\"color:gray;\">Whenever enchanted land is tapped for mana, its controller adds an additional {G}.</span>"
-        },
-        {
-          "id": 40,
+          "id": 39,
           "name": "Forest",
           "zone": "Hand",
           "controller": "AgentBot",
@@ -110,6 +106,22 @@
           "type": "Basic Land - Forest",
           "manaCost": "no cost",
           "text": ""
+        },
+        {
+          "id": 3,
+          "name": "Wild Growth",
+          "zone": "Hand",
+          "controller": "AgentBot",
+          "tapped": false,
+          "sick": false,
+          "attacking": false,
+          "blocking": false,
+          "damage": 0,
+          "token": false,
+          "faceDown": false,
+          "type": "Enchantment - Aura",
+          "manaCost": "{G}",
+          "text": "Enchant land\r\n\r\n<span style=\"color:gray;\">Whenever enchanted land is tapped for mana, its controller adds an additional {G}.</span>"
         },
         {
           "id": 1,
@@ -128,7 +140,7 @@
           "text": "Enchant land\r\n\r\n<span style=\"color:gray;\">Whenever enchanted land is tapped for mana, its controller adds an additional {G}.</span>"
         },
         {
-          "id": 27,
+          "id": 28,
           "name": "Forest",
           "zone": "Hand",
           "controller": "AgentBot",
@@ -144,7 +156,23 @@
           "text": ""
         },
         {
-          "id": 9,
+          "id": 40,
+          "name": "Forest",
+          "zone": "Hand",
+          "controller": "AgentBot",
+          "tapped": false,
+          "sick": false,
+          "attacking": false,
+          "blocking": false,
+          "damage": 0,
+          "token": false,
+          "faceDown": false,
+          "type": "Basic Land - Forest",
+          "manaCost": "no cost",
+          "text": ""
+        },
+        {
+          "id": 15,
           "name": "Wild Growth",
           "zone": "Hand",
           "controller": "AgentBot",
@@ -157,7 +185,7 @@
           "faceDown": false,
           "type": "Enchantment - Aura",
           "manaCost": "{G}",
-          "text": "Enchant land\r\n\r\n<span style=\"color:gray;\">Whenever enchanted land is tapped for mana, its controller adds an additional {G}.</span>"
+          "text": "Enchant land\r\n\r\nWhenever enchanted land is tapped for mana, its controller adds an additional {G}."
         }
       ]
     },
@@ -167,12 +195,29 @@
       "life": 20,
       "hasPriority": false,
       "isMe": false,
-      "handSize": 5,
+      "handSize": 4,
       "librarySize": 35,
       "graveyardSize": 0,
       "exileSize": 0,
       "mana": {},
-      "battlefield": [],
+      "battlefield": [
+        {
+          "id": 73,
+          "name": "Forest",
+          "zone": "Battlefield",
+          "controller": "HostAI",
+          "tapped": false,
+          "sick": false,
+          "attacking": false,
+          "blocking": false,
+          "damage": 0,
+          "token": false,
+          "faceDown": false,
+          "type": "Basic Land - Forest",
+          "manaCost": "no cost",
+          "text": ""
+        }
+      ],
       "graveyard": []
     }
   ],

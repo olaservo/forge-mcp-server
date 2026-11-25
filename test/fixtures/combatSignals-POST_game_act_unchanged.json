@@ -16,11 +16,23 @@
   "messages": [],
   "messageCount": 0,
   "logCount": 105,
+  "logStart": 0,
+  "gamesOpened": 1,
   "turn": 6,
   "phase": "COMBAT_DECLARE_ATTACKERS",
   "activePlayer": "AgentBot",
   "gameOver": false,
   "winner": "",
+  "match": {
+    "gamesPerMatch": 1,
+    "game": 1,
+    "wins": {
+      "AgentBot": 0,
+      "HostAI": 0
+    },
+    "over": false,
+    "sideboarding": false
+  },
   "me": "AgentBot",
   "hasPriority": false,
   "autoPass": "off",

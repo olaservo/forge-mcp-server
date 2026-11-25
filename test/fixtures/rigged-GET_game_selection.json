@@ -1,8 +1,8 @@
 {
   "inGame": true,
   "finished": false,
-  "prompt": "Evolving Wilds (11)\n - {T}, Sacrifice Evolving Wilds: Search your library for a basic land card, put it onto the battlefield tapped, then shuffle.\nSelect a card from your library",
-  "promptCount": 13,
+  "prompt": "Evolving Wilds (23)\n - {T}, Sacrifice Evolving Wilds: Search your library for a basic land card, put it onto the battlefield tapped, then shuffle.\nSelect a card from your library",
+  "promptCount": 12,
   "waiting": false,
   "priorityPrompt": false,
   "promptCard": "Evolving Wilds",
@@ -15,12 +15,24 @@
   "incorrectActions": 0,
   "messages": [],
   "messageCount": 0,
-  "logCount": 43,
+  "logCount": 40,
+  "logStart": 0,
+  "gamesOpened": 1,
   "turn": 3,
   "phase": "MAIN1",
   "activePlayer": "Renamed Bot",
   "gameOver": false,
   "winner": "",
+  "match": {
+    "gamesPerMatch": 1,
+    "game": 1,
+    "wins": {
+      "Renamed Bot": 0,
+      "HostAI": 0
+    },
+    "over": false,
+    "sideboarding": false
+  },
   "me": "Renamed Bot",
   "hasPriority": false,
   "autoPass": "opponent-turns",
@@ -41,7 +53,7 @@
       "battlefield": [],
       "graveyard": [
         {
-          "id": 11,
+          "id": 23,
           "name": "Evolving Wilds",
           "zone": "Graveyard",
           "controller": "Renamed Bot",
@@ -59,23 +71,7 @@
       ],
       "hand": [
         {
-          "id": 32,
-          "name": "Mountain",
-          "zone": "Hand",
-          "controller": "Renamed Bot",
-          "tapped": false,
-          "sick": false,
-          "attacking": false,
-          "blocking": false,
-          "damage": 0,
-          "token": false,
-          "faceDown": false,
-          "type": "Basic Land - Mountain",
-          "manaCost": "no cost",
-          "text": ""
-        },
-        {
-          "id": 8,
+          "id": 4,
           "name": "Evolving Wilds",
           "zone": "Hand",
           "controller": "Renamed Bot",
@@ -89,54 +85,6 @@
           "type": "Land",
           "manaCost": "no cost",
           "text": "{T}, Sacrifice Evolving Wilds: Search your library for a basic land card, put it onto the battlefield tapped, then shuffle."
-        },
-        {
-          "id": 9,
-          "name": "Evolving Wilds",
-          "zone": "Hand",
-          "controller": "Renamed Bot",
-          "tapped": false,
-          "sick": false,
-          "attacking": false,
-          "blocking": false,
-          "damage": 0,
-          "token": false,
-          "faceDown": false,
-          "type": "Land",
-          "manaCost": "no cost",
-          "text": "{T}, Sacrifice Evolving Wilds: Search your library for a basic land card, put it onto the battlefield tapped, then shuffle."
-        },
-        {
-          "id": 26,
-          "name": "Mountain",
-          "zone": "Hand",
-          "controller": "Renamed Bot",
-          "tapped": false,
-          "sick": false,
-          "attacking": false,
-          "blocking": false,
-          "damage": 0,
-          "token": false,
-          "faceDown": false,
-          "type": "Basic Land - Mountain",
-          "manaCost": "no cost",
-          "text": ""
-        },
-        {
-          "id": 38,
-          "name": "Forest",
-          "zone": "Hand",
-          "controller": "Renamed Bot",
-          "tapped": false,
-          "sick": false,
-          "attacking": false,
-          "blocking": false,
-          "damage": 0,
-          "token": false,
-          "faceDown": false,
-          "type": "Basic Land - Forest",
-          "manaCost": "no cost",
-          "text": ""
         },
         {
           "id": 36,
@@ -155,7 +103,71 @@
           "text": ""
         },
         {
-          "id": 18,
+          "id": 6,
+          "name": "Evolving Wilds",
+          "zone": "Hand",
+          "controller": "Renamed Bot",
+          "tapped": false,
+          "sick": false,
+          "attacking": false,
+          "blocking": false,
+          "damage": 0,
+          "token": false,
+          "faceDown": false,
+          "type": "Land",
+          "manaCost": "no cost",
+          "text": "{T}, Sacrifice Evolving Wilds: Search your library for a basic land card, put it onto the battlefield tapped, then shuffle."
+        },
+        {
+          "id": 34,
+          "name": "Forest",
+          "zone": "Hand",
+          "controller": "Renamed Bot",
+          "tapped": false,
+          "sick": false,
+          "attacking": false,
+          "blocking": false,
+          "damage": 0,
+          "token": false,
+          "faceDown": false,
+          "type": "Basic Land - Forest",
+          "manaCost": "no cost",
+          "text": ""
+        },
+        {
+          "id": 32,
+          "name": "Mountain",
+          "zone": "Hand",
+          "controller": "Renamed Bot",
+          "tapped": false,
+          "sick": false,
+          "attacking": false,
+          "blocking": false,
+          "damage": 0,
+          "token": false,
+          "faceDown": false,
+          "type": "Basic Land - Mountain",
+          "manaCost": "no cost",
+          "text": ""
+        },
+        {
+          "id": 17,
+          "name": "Evolving Wilds",
+          "zone": "Hand",
+          "controller": "Renamed Bot",
+          "tapped": false,
+          "sick": false,
+          "attacking": false,
+          "blocking": false,
+          "damage": 0,
+          "token": false,
+          "faceDown": false,
+          "type": "Land",
+          "manaCost": "no cost",
+          "text": "{T}, Sacrifice Evolving Wilds: Search your library for a basic land card, put it onto the battlefield tapped, then shuffle."
+        },
+        {
+          "id": 12,
           "name": "Evolving Wilds",
           "zone": "Hand",
           "controller": "Renamed Bot",
@@ -170,56 +182,10 @@
           "manaCost": "no cost",
           "text": "{T}, Sacrifice Evolving Wilds: Search your library for a basic land card, put it onto the battlefield tapped, then shuffle."
         }
-      ]
-    },
-    {
-      "id": 1,
-      "name": "HostAI",
-      "life": 21,
-      "hasPriority": true,
-      "isMe": false,
-      "handSize": 7,
-      "librarySize": 52,
-      "graveyardSize": 0,
-      "exileSize": 0,
-      "mana": {},
-      "battlefield": [
-        {
-          "id": 92,
-          "name": "Thornwood Falls",
-          "zone": "Battlefield",
-          "controller": "HostAI",
-          "tapped": true,
-          "sick": false,
-          "attacking": false,
-          "blocking": false,
-          "damage": 0,
-          "token": false,
-          "faceDown": false,
-          "type": "Land",
-          "manaCost": "no cost",
-          "text": "Thornwood Falls enters tapped.\r\n\r\nWhen Thornwood Falls enters, you gain 1 life.\r\n\r\n{T}: Add {G} or {U}."
-        }
       ],
-      "graveyard": []
-    }
-  ],
-  "stack": [
-    {
-      "id": 1137,
-      "source": "Evolving Wilds",
-      "by": "Renamed Bot",
-      "text": "Evolving Wilds (11) - Renamed Bot searches their library for a basic land card, puts it onto the battlefield tapped, then shuffles.",
-      "targets": []
-    }
-  ],
-  "selection": {
-    "min": 1,
-    "max": 1,
-    "cards": [
-      {
-        "id": 33,
-        "name": "Forest",
+      "libraryTop": {
+        "id": 19,
+        "name": "Evolving Wilds",
         "zone": "Library",
         "controller": "Renamed Bot",
         "tapped": false,
@@ -229,12 +195,58 @@
         "damage": 0,
         "token": false,
         "faceDown": false,
-        "type": "Basic Land - Forest",
+        "type": "Land",
         "manaCost": "no cost",
-        "text": ""
-      },
+        "text": "{T}, Sacrifice Evolving Wilds: Search your library for a basic land card, put it onto the battlefield tapped, then shuffle."
+      }
+    },
+    {
+      "id": 1,
+      "name": "HostAI",
+      "life": 20,
+      "hasPriority": true,
+      "isMe": false,
+      "handSize": 6,
+      "librarySize": 53,
+      "graveyardSize": 0,
+      "exileSize": 0,
+      "mana": {},
+      "battlefield": [
+        {
+          "id": 78,
+          "name": "Forest",
+          "zone": "Battlefield",
+          "controller": "HostAI",
+          "tapped": false,
+          "sick": false,
+          "attacking": false,
+          "blocking": false,
+          "damage": 0,
+          "token": false,
+          "faceDown": false,
+          "type": "Basic Land - Forest",
+          "manaCost": "no cost",
+          "text": ""
+        }
+      ],
+      "graveyard": []
+    }
+  ],
+  "stack": [
+    {
+      "id": 1090,
+      "source": "Evolving Wilds",
+      "by": "Renamed Bot",
+      "text": "Evolving Wilds (23) - Renamed Bot searches their library for a basic land card, puts it onto the battlefield tapped, then shuffles.",
+      "targets": []
+    }
+  ],
+  "selection": {
+    "min": 1,
+    "max": 1,
+    "cards": [
       {
-        "id": 34,
+        "id": 33,
         "name": "Forest",
         "zone": "Library",
         "controller": "Renamed Bot",
@@ -267,6 +279,22 @@
       },
       {
         "id": 37,
+        "name": "Forest",
+        "zone": "Library",
+        "controller": "Renamed Bot",
+        "tapped": false,
+        "sick": false,
+        "attacking": false,
+        "blocking": false,
+        "damage": 0,
+        "token": false,
+        "faceDown": false,
+        "type": "Basic Land - Forest",
+        "manaCost": "no cost",
+        "text": ""
+      },
+      {
+        "id": 38,
         "name": "Forest",
         "zone": "Library",
         "controller": "Renamed Bot",
@@ -315,6 +343,22 @@
       },
       {
         "id": 25,
+        "name": "Mountain",
+        "zone": "Library",
+        "controller": "Renamed Bot",
+        "tapped": false,
+        "sick": false,
+        "attacking": false,
+        "blocking": false,
+        "damage": 0,
+        "token": false,
+        "faceDown": false,
+        "type": "Basic Land - Mountain",
+        "manaCost": "no cost",
+        "text": ""
+      },
+      {
+        "id": 26,
         "name": "Mountain",
         "zone": "Library",
         "controller": "Renamed Bot",

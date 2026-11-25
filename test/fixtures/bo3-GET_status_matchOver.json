@@ -3,7 +3,7 @@
   "connection": {
     "connected": true,
     "host": "127.0.0.1",
-    "port": 58604,
+    "port": 61638,
     "name": "FirstBot",
     "reconnectState": "CONNECTED",
     "closeReason": null
@@ -45,6 +45,7 @@
     "seatIndex": -1,
     "packNumber": 0,
     "pickNumber": 0,
+    "at": null,
     "timerSeconds": 0,
     "pickPending": false,
     "packSize": 0,
@@ -74,6 +75,7 @@
     "messageCount": 0,
     "logCount": 24,
     "logStart": 16,
+    "gamesOpened": 3,
     "turn": 0,
     "phase": null,
     "activePlayer": null,
@@ -86,7 +88,8 @@
         "FirstBot": 1,
         "SecondBot": 2
       },
-      "over": true
+      "over": true,
+      "sideboarding": false
     },
     "me": "FirstBot",
     "hasPriority": false,

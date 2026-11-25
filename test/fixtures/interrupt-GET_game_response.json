@@ -1,8 +1,8 @@
 {
   "inGame": true,
   "finished": false,
-  "prompt": "Priority: AgentBot\nTurn: 8 (AgentBot)\nPhase: Main phase, precombat\nStack: 2 to Resolve.",
-  "promptCount": 19,
+  "prompt": "Priority: AgentBot\nTurn: 13 (AgentBot)\nPhase: Main phase, precombat\nStack: 2 to Resolve.",
+  "promptCount": 43,
   "waiting": false,
   "priorityPrompt": true,
   "promptCard": null,
@@ -15,12 +15,24 @@
   "incorrectActions": 0,
   "messages": [],
   "messageCount": 0,
-  "logCount": 129,
-  "turn": 8,
+  "logCount": 203,
+  "logStart": 0,
+  "gamesOpened": 1,
+  "turn": 13,
   "phase": "MAIN1",
   "activePlayer": "AgentBot",
   "gameOver": false,
   "winner": "",
+  "match": {
+    "gamesPerMatch": 1,
+    "game": 1,
+    "wins": {
+      "AgentBot": 0,
+      "HostAI": 0
+    },
+    "over": false,
+    "sideboarding": false
+  },
   "me": "AgentBot",
   "hasPriority": true,
   "autoPass": "opponent-turns",
@@ -34,11 +46,27 @@
       "hasPriority": true,
       "isMe": true,
       "handSize": 5,
-      "librarySize": 29,
-      "graveyardSize": 1,
+      "librarySize": 27,
+      "graveyardSize": 3,
       "exileSize": 0,
       "mana": {},
       "battlefield": [
+        {
+          "id": 18,
+          "name": "Forest",
+          "zone": "Battlefield",
+          "controller": "AgentBot",
+          "tapped": true,
+          "sick": false,
+          "attacking": false,
+          "blocking": false,
+          "damage": 0,
+          "token": false,
+          "faceDown": false,
+          "type": "Basic Land - Forest",
+          "manaCost": "no cost",
+          "text": ""
+        },
         {
           "id": 26,
           "name": "Forest",
@@ -56,39 +84,23 @@
           "text": ""
         },
         {
+          "id": 21,
+          "name": "Forest",
+          "zone": "Battlefield",
+          "controller": "AgentBot",
+          "tapped": true,
+          "sick": false,
+          "attacking": false,
+          "blocking": false,
+          "damage": 0,
+          "token": false,
+          "faceDown": false,
+          "type": "Basic Land - Forest",
+          "manaCost": "no cost",
+          "text": ""
+        },
+        {
           "id": 30,
-          "name": "Forest",
-          "zone": "Battlefield",
-          "controller": "AgentBot",
-          "tapped": true,
-          "sick": false,
-          "attacking": false,
-          "blocking": false,
-          "damage": 0,
-          "token": false,
-          "faceDown": false,
-          "type": "Basic Land - Forest",
-          "manaCost": "no cost",
-          "text": ""
-        },
-        {
-          "id": 15,
-          "name": "Forest",
-          "zone": "Battlefield",
-          "controller": "AgentBot",
-          "tapped": true,
-          "sick": false,
-          "attacking": false,
-          "blocking": false,
-          "damage": 0,
-          "token": false,
-          "faceDown": false,
-          "type": "Basic Land - Forest",
-          "manaCost": "no cost",
-          "text": ""
-        },
-        {
-          "id": 16,
           "name": "Forest",
           "zone": "Battlefield",
           "controller": "AgentBot",
@@ -122,12 +134,46 @@
           "power": 3,
           "toughness": 3,
           "text": ""
+        },
+        {
+          "id": 38,
+          "name": "Fog",
+          "zone": "Graveyard",
+          "controller": "AgentBot",
+          "tapped": false,
+          "sick": false,
+          "attacking": false,
+          "blocking": false,
+          "damage": 0,
+          "token": false,
+          "faceDown": false,
+          "type": "Instant",
+          "manaCost": "{G}",
+          "text": "Prevent all combat damage that would be dealt this turn."
+        },
+        {
+          "id": 8,
+          "name": "Centaur Courser",
+          "zone": "Graveyard",
+          "controller": "AgentBot",
+          "tapped": false,
+          "sick": false,
+          "attacking": false,
+          "blocking": false,
+          "damage": 0,
+          "token": false,
+          "faceDown": false,
+          "type": "Creature - Centaur Warrior",
+          "manaCost": "{2}{G}",
+          "power": 3,
+          "toughness": 3,
+          "text": ""
         }
       ],
       "hand": [
         {
-          "id": 29,
-          "name": "Forest",
+          "id": 35,
+          "name": "Fog",
           "zone": "Hand",
           "controller": "AgentBot",
           "tapped": false,
@@ -137,13 +183,13 @@
           "damage": 0,
           "token": false,
           "faceDown": false,
-          "type": "Basic Land - Forest",
-          "manaCost": "no cost",
-          "text": ""
+          "type": "Instant",
+          "manaCost": "{G}",
+          "text": "Prevent all combat damage that would be dealt this turn."
         },
         {
-          "id": 24,
-          "name": "Forest",
+          "id": 9,
+          "name": "Centaur Courser",
           "zone": "Hand",
           "controller": "AgentBot",
           "tapped": false,
@@ -153,13 +199,15 @@
           "damage": 0,
           "token": false,
           "faceDown": false,
-          "type": "Basic Land - Forest",
-          "manaCost": "no cost",
+          "type": "Creature - Centaur Warrior",
+          "manaCost": "{2}{G}",
+          "power": 3,
+          "toughness": 3,
           "text": ""
         },
         {
-          "id": 17,
-          "name": "Forest",
+          "id": 7,
+          "name": "Centaur Courser",
           "zone": "Hand",
           "controller": "AgentBot",
           "tapped": false,
@@ -169,13 +217,15 @@
           "damage": 0,
           "token": false,
           "faceDown": false,
-          "type": "Basic Land - Forest",
-          "manaCost": "no cost",
+          "type": "Creature - Centaur Warrior",
+          "manaCost": "{2}{G}",
+          "power": 3,
+          "toughness": 3,
           "text": ""
         },
         {
-          "id": 20,
-          "name": "Forest",
+          "id": 10,
+          "name": "Centaur Courser",
           "zone": "Hand",
           "controller": "AgentBot",
           "tapped": false,
@@ -185,12 +235,14 @@
           "damage": 0,
           "token": false,
           "faceDown": false,
-          "type": "Basic Land - Forest",
-          "manaCost": "no cost",
+          "type": "Creature - Centaur Warrior",
+          "manaCost": "{2}{G}",
+          "power": 3,
+          "toughness": 3,
           "text": ""
         },
         {
-          "id": 33,
+          "id": 37,
           "name": "Fog",
           "zone": "Hand",
           "controller": "AgentBot",
@@ -213,14 +265,14 @@
       "life": 20,
       "hasPriority": false,
       "isMe": false,
-      "handSize": 4,
-      "librarySize": 30,
+      "handSize": 5,
+      "librarySize": 27,
       "graveyardSize": 1,
       "exileSize": 0,
       "mana": {},
       "battlefield": [
         {
-          "id": 60,
+          "id": 49,
           "name": "Island",
           "zone": "Battlefield",
           "controller": "HostAI",
@@ -252,7 +304,7 @@
           "text": ""
         },
         {
-          "id": 51,
+          "id": 48,
           "name": "Island",
           "zone": "Battlefield",
           "controller": "HostAI",
@@ -268,7 +320,39 @@
           "text": ""
         },
         {
-          "id": 41,
+          "id": 54,
+          "name": "Island",
+          "zone": "Battlefield",
+          "controller": "HostAI",
+          "tapped": false,
+          "sick": false,
+          "attacking": false,
+          "blocking": false,
+          "damage": 0,
+          "token": false,
+          "faceDown": false,
+          "type": "Basic Land - Island",
+          "manaCost": "no cost",
+          "text": ""
+        },
+        {
+          "id": 50,
+          "name": "Island",
+          "zone": "Battlefield",
+          "controller": "HostAI",
+          "tapped": false,
+          "sick": false,
+          "attacking": false,
+          "blocking": false,
+          "damage": 0,
+          "token": false,
+          "faceDown": false,
+          "type": "Basic Land - Island",
+          "manaCost": "no cost",
+          "text": ""
+        },
+        {
+          "id": 59,
           "name": "Island",
           "zone": "Battlefield",
           "controller": "HostAI",
@@ -286,7 +370,7 @@
       ],
       "graveyard": [
         {
-          "id": 70,
+          "id": 74,
           "name": "Counterspell",
           "zone": "Graveyard",
           "controller": "HostAI",
@@ -306,16 +390,16 @@
   ],
   "stack": [
     {
-      "id": 958,
+      "id": 924,
       "source": "Counterspell",
       "by": "HostAI",
-      "text": "Counterspell (77) - Counter Centaur Courser (6).",
+      "text": "Counterspell (68) - Counter Centaur Courser (11).",
       "targets": [
         "Centaur Courser"
       ]
     },
     {
-      "id": 945,
+      "id": 911,
       "source": "Centaur Courser",
       "by": "AgentBot",
       "text": "Centaur Courser - Creature 3 / 3",
@@ -324,7 +408,11 @@
   ],
   "actionable": [
     {
-      "id": 33,
+      "id": 35,
+      "name": "Fog"
+    },
+    {
+      "id": 37,
       "name": "Fog"
     }
   ]

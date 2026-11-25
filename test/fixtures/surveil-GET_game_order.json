@@ -18,8 +18,8 @@
     "kind": "order",
     "prompt": "Select cards to be put into the graveyard / Cards to put in the graveyard",
     "options": [
-      "Curate (16)",
-      "Island (37)"
+      "Curate (7)",
+      "Island (21)"
     ],
     "min": 0,
     "max": 2,
@@ -28,11 +28,23 @@
   "messages": [],
   "messageCount": 0,
   "logCount": 58,
+  "logStart": 0,
+  "gamesOpened": 1,
   "turn": 4,
   "phase": "MAIN1",
   "activePlayer": "AgentBot",
   "gameOver": false,
   "winner": "",
+  "match": {
+    "gamesPerMatch": 1,
+    "game": 1,
+    "wins": {
+      "AgentBot": 0,
+      "HostAI": 0
+    },
+    "over": false,
+    "sideboarding": false
+  },
   "me": "AgentBot",
   "hasPriority": false,
   "autoPass": "opponent-turns",
@@ -52,7 +64,7 @@
       "mana": {},
       "battlefield": [
         {
-          "id": 39,
+          "id": 35,
           "name": "Island",
           "zone": "Battlefield",
           "controller": "AgentBot",
@@ -68,7 +80,7 @@
           "text": ""
         },
         {
-          "id": 31,
+          "id": 23,
           "name": "Island",
           "zone": "Battlefield",
           "controller": "AgentBot",
@@ -87,7 +99,7 @@
       "graveyard": [],
       "hand": [
         {
-          "id": 13,
+          "id": 16,
           "name": "Curate",
           "zone": "Hand",
           "controller": "AgentBot",
@@ -103,7 +115,7 @@
           "text": "Surveil 2. (Look at the top two cards of your library, then put any number of them into your graveyard and the rest on top of your library in any order.) Draw a card."
         },
         {
-          "id": 9,
+          "id": 1,
           "name": "Curate",
           "zone": "Hand",
           "controller": "AgentBot",
@@ -119,23 +131,7 @@
           "text": "Surveil 2. (Look at the top two cards of your library, then put any number of them into your graveyard and the rest on top of your library in any order.) Draw a card."
         },
         {
-          "id": 18,
-          "name": "Curate",
-          "zone": "Hand",
-          "controller": "AgentBot",
-          "tapped": false,
-          "sick": false,
-          "attacking": false,
-          "blocking": false,
-          "damage": 0,
-          "token": false,
-          "faceDown": false,
-          "type": "Instant",
-          "manaCost": "{1}{U}",
-          "text": "Surveil 2. (Look at the top two cards of your library, then put any number of them into your graveyard and the rest on top of your library in any order.) Draw a card."
-        },
-        {
-          "id": 21,
+          "id": 25,
           "name": "Island",
           "zone": "Hand",
           "controller": "AgentBot",
@@ -151,23 +147,7 @@
           "text": ""
         },
         {
-          "id": 32,
-          "name": "Island",
-          "zone": "Hand",
-          "controller": "AgentBot",
-          "tapped": false,
-          "sick": false,
-          "attacking": false,
-          "blocking": false,
-          "damage": 0,
-          "token": false,
-          "faceDown": false,
-          "type": "Basic Land - Island",
-          "manaCost": "no cost",
-          "text": ""
-        },
-        {
-          "id": 14,
+          "id": 10,
           "name": "Curate",
           "zone": "Hand",
           "controller": "AgentBot",
@@ -181,8 +161,56 @@
           "type": "Instant",
           "manaCost": "{1}{U}",
           "text": "Surveil 2. (Look at the top two cards of your library, then put any number of them into your graveyard and the rest on top of your library in any order.) Draw a card."
+        },
+        {
+          "id": 11,
+          "name": "Curate",
+          "zone": "Hand",
+          "controller": "AgentBot",
+          "tapped": false,
+          "sick": false,
+          "attacking": false,
+          "blocking": false,
+          "damage": 0,
+          "token": false,
+          "faceDown": false,
+          "type": "Instant",
+          "manaCost": "{1}{U}",
+          "text": "Surveil 2. (Look at the top two cards of your library, then put any number of them into your graveyard and the rest on top of your library in any order.) Draw a card."
+        },
+        {
+          "id": 22,
+          "name": "Island",
+          "zone": "Hand",
+          "controller": "AgentBot",
+          "tapped": false,
+          "sick": false,
+          "attacking": false,
+          "blocking": false,
+          "damage": 0,
+          "token": false,
+          "faceDown": false,
+          "type": "Basic Land - Island",
+          "manaCost": "no cost",
+          "text": ""
         }
-      ]
+      ],
+      "libraryTop": {
+        "id": 7,
+        "name": "Curate",
+        "zone": "Library",
+        "controller": "AgentBot",
+        "tapped": false,
+        "sick": false,
+        "attacking": false,
+        "blocking": false,
+        "damage": 0,
+        "token": false,
+        "faceDown": false,
+        "type": "Instant",
+        "manaCost": "{1}{U}",
+        "text": "Surveil 2. (Look at the top two cards of your library, then put any number of them into your graveyard and the rest on top of your library in any order.) Draw a card."
+      }
     },
     {
       "id": 1,
@@ -197,7 +225,7 @@
       "mana": {},
       "battlefield": [
         {
-          "id": 72,
+          "id": 46,
           "name": "Forest",
           "zone": "Battlefield",
           "controller": "HostAI",
@@ -213,7 +241,7 @@
           "text": ""
         },
         {
-          "id": 80,
+          "id": 64,
           "name": "Forest",
           "zone": "Battlefield",
           "controller": "HostAI",
@@ -234,10 +262,10 @@
   ],
   "stack": [
     {
-      "id": 1146,
+      "id": 1332,
       "source": "Curate",
       "by": "AgentBot",
-      "text": "Curate (6) - AgentBot surveils (2). AgentBot draws a card.",
+      "text": "Curate (13) - AgentBot surveils (2). AgentBot draws a card.",
       "targets": []
     }
   ]

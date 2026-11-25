@@ -17,6 +17,7 @@
   "messageCount": 0,
   "logCount": 8,
   "logStart": 8,
+  "gamesOpened": 2,
   "turn": 0,
   "phase": null,
   "activePlayer": null,
@@ -29,7 +30,8 @@
       "FirstBot": 0,
       "SecondBot": 1
     },
-    "over": false
+    "over": false,
+    "sideboarding": false
   },
   "me": "FirstBot",
   "hasPriority": false,
@@ -52,39 +54,7 @@
       "graveyard": [],
       "hand": [
         {
-          "id": 28,
-          "name": "Mountain",
-          "zone": "Hand",
-          "controller": "FirstBot",
-          "tapped": false,
-          "sick": false,
-          "attacking": false,
-          "blocking": false,
-          "damage": 0,
-          "token": false,
-          "faceDown": false,
-          "type": "Basic Land - Mountain",
-          "manaCost": "no cost",
-          "text": ""
-        },
-        {
-          "id": 36,
-          "name": "Mountain",
-          "zone": "Hand",
-          "controller": "FirstBot",
-          "tapped": false,
-          "sick": false,
-          "attacking": false,
-          "blocking": false,
-          "damage": 0,
-          "token": false,
-          "faceDown": false,
-          "type": "Basic Land - Mountain",
-          "manaCost": "no cost",
-          "text": ""
-        },
-        {
-          "id": 2,
+          "id": 14,
           "name": "Goblin Piker",
           "zone": "Hand",
           "controller": "FirstBot",
@@ -102,7 +72,7 @@
           "text": ""
         },
         {
-          "id": 25,
+          "id": 30,
           "name": "Mountain",
           "zone": "Hand",
           "controller": "FirstBot",
@@ -118,8 +88,8 @@
           "text": ""
         },
         {
-          "id": 26,
-          "name": "Mountain",
+          "id": 3,
+          "name": "Goblin Piker",
           "zone": "Hand",
           "controller": "FirstBot",
           "tapped": false,
@@ -129,8 +99,10 @@
           "damage": 0,
           "token": false,
           "faceDown": false,
-          "type": "Basic Land - Mountain",
-          "manaCost": "no cost",
+          "type": "Creature - Goblin Warrior",
+          "manaCost": "{1}{R}",
+          "power": 2,
+          "toughness": 1,
           "text": ""
         },
         {
@@ -152,7 +124,25 @@
           "text": ""
         },
         {
-          "id": 34,
+          "id": 13,
+          "name": "Goblin Piker",
+          "zone": "Hand",
+          "controller": "FirstBot",
+          "tapped": false,
+          "sick": false,
+          "attacking": false,
+          "blocking": false,
+          "damage": 0,
+          "token": false,
+          "faceDown": false,
+          "type": "Creature - Goblin Warrior",
+          "manaCost": "{1}{R}",
+          "power": 2,
+          "toughness": 1,
+          "text": ""
+        },
+        {
+          "id": 23,
           "name": "Mountain",
           "zone": "Hand",
           "controller": "FirstBot",
@@ -165,6 +155,24 @@
           "faceDown": false,
           "type": "Basic Land - Mountain",
           "manaCost": "no cost",
+          "text": ""
+        },
+        {
+          "id": 9,
+          "name": "Goblin Piker",
+          "zone": "Hand",
+          "controller": "FirstBot",
+          "tapped": false,
+          "sick": false,
+          "attacking": false,
+          "blocking": false,
+          "damage": 0,
+          "token": false,
+          "faceDown": false,
+          "type": "Creature - Goblin Warrior",
+          "manaCost": "{1}{R}",
+          "power": 2,
+          "toughness": 1,
           "text": ""
         }
       ]

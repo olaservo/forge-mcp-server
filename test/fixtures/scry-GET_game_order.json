@@ -18,8 +18,8 @@
     "kind": "order",
     "prompt": "Move cards to top or bottom of library / Choose the cards to keep on top, the first one topmost. The rest go to the bottom.",
     "options": [
-      "Island (28)",
-      "Island (30)"
+      "Preordain (2)",
+      "Island (25)"
     ],
     "min": 0,
     "max": 2,
@@ -28,11 +28,23 @@
   "messages": [],
   "messageCount": 0,
   "logCount": 27,
+  "logStart": 0,
+  "gamesOpened": 1,
   "turn": 2,
   "phase": "MAIN1",
   "activePlayer": "AgentBot",
   "gameOver": false,
   "winner": "",
+  "match": {
+    "gamesPerMatch": 1,
+    "game": 1,
+    "wins": {
+      "AgentBot": 0,
+      "HostAI": 0
+    },
+    "over": false,
+    "sideboarding": false
+  },
   "me": "AgentBot",
   "hasPriority": false,
   "autoPass": "opponent-turns",
@@ -52,7 +64,7 @@
       "mana": {},
       "battlefield": [
         {
-          "id": 23,
+          "id": 28,
           "name": "Island",
           "zone": "Battlefield",
           "controller": "AgentBot",
@@ -71,38 +83,6 @@
       "graveyard": [],
       "hand": [
         {
-          "id": 17,
-          "name": "Preordain",
-          "zone": "Hand",
-          "controller": "AgentBot",
-          "tapped": false,
-          "sick": false,
-          "attacking": false,
-          "blocking": false,
-          "damage": 0,
-          "token": false,
-          "faceDown": false,
-          "type": "Sorcery",
-          "manaCost": "{U}",
-          "text": "Scry 2, then draw a card. (To scry 2, look at the top two cards of your library, then put any number of them on the bottom and the rest on top in any order.) "
-        },
-        {
-          "id": 39,
-          "name": "Island",
-          "zone": "Hand",
-          "controller": "AgentBot",
-          "tapped": false,
-          "sick": false,
-          "attacking": false,
-          "blocking": false,
-          "damage": 0,
-          "token": false,
-          "faceDown": false,
-          "type": "Basic Land - Island",
-          "manaCost": "no cost",
-          "text": ""
-        },
-        {
           "id": 36,
           "name": "Island",
           "zone": "Hand",
@@ -119,7 +99,7 @@
           "text": ""
         },
         {
-          "id": 24,
+          "id": 29,
           "name": "Island",
           "zone": "Hand",
           "controller": "AgentBot",
@@ -151,7 +131,39 @@
           "text": ""
         },
         {
-          "id": 5,
+          "id": 18,
+          "name": "Preordain",
+          "zone": "Hand",
+          "controller": "AgentBot",
+          "tapped": false,
+          "sick": false,
+          "attacking": false,
+          "blocking": false,
+          "damage": 0,
+          "token": false,
+          "faceDown": false,
+          "type": "Sorcery",
+          "manaCost": "{U}",
+          "text": "Scry 2, then draw a card. (To scry 2, look at the top two cards of your library, then put any number of them on the bottom and the rest on top in any order.) "
+        },
+        {
+          "id": 35,
+          "name": "Island",
+          "zone": "Hand",
+          "controller": "AgentBot",
+          "tapped": false,
+          "sick": false,
+          "attacking": false,
+          "blocking": false,
+          "damage": 0,
+          "token": false,
+          "faceDown": false,
+          "type": "Basic Land - Island",
+          "manaCost": "no cost",
+          "text": ""
+        },
+        {
+          "id": 3,
           "name": "Preordain",
           "zone": "Hand",
           "controller": "AgentBot",
@@ -166,7 +178,23 @@
           "manaCost": "{U}",
           "text": "Scry 2, then draw a card. (To scry 2, look at the top two cards of your library, then put any number of them on the bottom and the rest on top in any order.) "
         }
-      ]
+      ],
+      "libraryTop": {
+        "id": 2,
+        "name": "Preordain",
+        "zone": "Library",
+        "controller": "AgentBot",
+        "tapped": false,
+        "sick": false,
+        "attacking": false,
+        "blocking": false,
+        "damage": 0,
+        "token": false,
+        "faceDown": false,
+        "type": "Sorcery",
+        "manaCost": "{U}",
+        "text": "Scry 2, then draw a card. (To scry 2, look at the top two cards of your library, then put any number of them on the bottom and the rest on top in any order.) "
+      }
     },
     {
       "id": 1,
@@ -181,7 +209,7 @@
       "mana": {},
       "battlefield": [
         {
-          "id": 44,
+          "id": 62,
           "name": "Forest",
           "zone": "Battlefield",
           "controller": "HostAI",
@@ -202,10 +230,10 @@
   ],
   "stack": [
     {
-      "id": 1139,
+      "id": 1092,
       "source": "Preordain",
       "by": "AgentBot",
-      "text": "Preordain (18) - AgentBot scries 2. AgentBot draws a card.",
+      "text": "Preordain (16) - AgentBot scries 2. AgentBot draws a card.",
       "targets": []
     }
   ]

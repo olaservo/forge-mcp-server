@@ -2,7 +2,7 @@
   "inGame": true,
   "finished": false,
   "prompt": "Goblin Bushwhacker - Creature 1 / 1\n\nPay Mana Cost: {R}{R}",
-  "promptCount": 18,
+  "promptCount": 15,
   "waiting": false,
   "priorityPrompt": false,
   "promptCard": "Goblin Bushwhacker",
@@ -13,16 +13,26 @@
     "cancelEnabled": true
   },
   "incorrectActions": 0,
-  "messages": [
-    "Revealed, Looking at cards in HostAI's library: Blood Crypt (64), Forest (81), Plains (51), Mountain (91), Kratos, Stoic Father (86), Crystal Ball (70)"
-  ],
-  "messageCount": 1,
-  "logCount": 153,
+  "messages": [],
+  "messageCount": 0,
+  "logCount": 145,
+  "logStart": 0,
+  "gamesOpened": 1,
   "turn": 8,
   "phase": "MAIN1",
   "activePlayer": "AgentBot",
   "gameOver": false,
   "winner": "",
+  "match": {
+    "gamesPerMatch": 1,
+    "game": 1,
+    "wins": {
+      "AgentBot": 0,
+      "HostAI": 0
+    },
+    "over": false,
+    "sideboarding": false
+  },
   "me": "AgentBot",
   "hasPriority": true,
   "autoPass": "opponent-turns",

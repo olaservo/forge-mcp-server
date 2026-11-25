@@ -17,6 +17,7 @@
   "messageCount": 0,
   "logCount": 8,
   "logStart": 0,
+  "gamesOpened": 1,
   "turn": 0,
   "phase": null,
   "activePlayer": null,
@@ -29,7 +30,8 @@
       "FirstBot": 0,
       "SecondBot": 1
     },
-    "over": false
+    "over": false,
+    "sideboarding": false
   },
   "me": "FirstBot",
   "hasPriority": false,

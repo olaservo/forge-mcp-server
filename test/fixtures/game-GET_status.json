@@ -1,5 +1,5 @@
 {
-  "revision": 392,
+  "revision": 432,
   "connection": {
     "connected": true,
     "host": "127.0.0.1",
@@ -45,6 +45,7 @@
     "seatIndex": -1,
     "packNumber": 0,
     "pickNumber": 0,
+    "at": null,
     "timerSeconds": 0,
     "pickPending": false,
     "packSize": 0,
@@ -59,7 +60,7 @@
     "inGame": false,
     "finished": true,
     "prompt": "Game over. Winner: HostAI",
-    "promptCount": 34,
+    "promptCount": 42,
     "waiting": false,
     "priorityPrompt": false,
     "promptCard": null,
@@ -70,16 +71,26 @@
       "cancelEnabled": false
     },
     "incorrectActions": 0,
-    "messages": [
-      "Revealed, Looking at cards in HostAI's library: Blood Crypt (64), Forest (81), Plains (51), Mountain (91), Kratos, Stoic Father (86), Crystal Ball (70)"
-    ],
-    "messageCount": 1,
-    "logCount": 299,
-    "turn": 13,
+    "messages": [],
+    "messageCount": 0,
+    "logCount": 311,
+    "logStart": 0,
+    "gamesOpened": 1,
+    "turn": 15,
     "phase": "COMBAT_DAMAGE",
     "activePlayer": "HostAI",
     "gameOver": true,
     "winner": "HostAI",
+    "match": {
+      "gamesPerMatch": 1,
+      "game": 1,
+      "wins": {
+        "AgentBot": 0,
+        "HostAI": 1
+      },
+      "over": true,
+      "sideboarding": false
+    },
     "me": "AgentBot",
     "hasPriority": false,
     "autoPass": "opponent-turns",

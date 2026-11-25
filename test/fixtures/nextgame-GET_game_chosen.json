@@ -1,7 +1,7 @@
 {
   "inGame": true,
   "finished": false,
-  "prompt": "Forked Bolt (16) - Forked Bolt deals 2 damage divided as you choose among one or two targets.\n\nSelect any target to distribute damage to\nTargeted: \nHostAI\n(1 more can be targeted)",
+  "prompt": "Forked Bolt (20) - Forked Bolt deals 2 damage divided as you choose among one or two targets.\n\nSelect any target to distribute damage to\nTargeted: \nHostAI\n(1 more can be targeted)",
   "promptCount": 6,
   "waiting": false,
   "priorityPrompt": false,
@@ -16,11 +16,23 @@
   "messages": [],
   "messageCount": 0,
   "logCount": 8,
+  "logStart": 0,
+  "gamesOpened": 1,
   "turn": 1,
   "phase": "MAIN1",
   "activePlayer": "AgentBot",
   "gameOver": false,
   "winner": "",
+  "match": {
+    "gamesPerMatch": 1,
+    "game": 1,
+    "wins": {
+      "AgentBot": 0,
+      "HostAI": 0
+    },
+    "over": false,
+    "sideboarding": false
+  },
   "me": "AgentBot",
   "hasPriority": true,
   "autoPass": "opponent-turns",
@@ -40,7 +52,7 @@
       "mana": {},
       "battlefield": [
         {
-          "id": 36,
+          "id": 22,
           "name": "Mountain",
           "zone": "Battlefield",
           "controller": "AgentBot",
@@ -59,7 +71,7 @@
       "graveyard": [],
       "hand": [
         {
-          "id": 4,
+          "id": 13,
           "name": "Forked Bolt",
           "zone": "Hand",
           "controller": "AgentBot",
@@ -75,23 +87,7 @@
           "text": "Forked Bolt deals 2 damage divided as you choose among one or two targets."
         },
         {
-          "id": 40,
-          "name": "Mountain",
-          "zone": "Hand",
-          "controller": "AgentBot",
-          "tapped": false,
-          "sick": false,
-          "attacking": false,
-          "blocking": false,
-          "damage": 0,
-          "token": false,
-          "faceDown": false,
-          "type": "Basic Land - Mountain",
-          "manaCost": "no cost",
-          "text": ""
-        },
-        {
-          "id": 19,
+          "id": 15,
           "name": "Forked Bolt",
           "zone": "Hand",
           "controller": "AgentBot",
@@ -107,8 +103,8 @@
           "text": "Forked Bolt deals 2 damage divided as you choose among one or two targets."
         },
         {
-          "id": 21,
-          "name": "Mountain",
+          "id": 17,
+          "name": "Forked Bolt",
           "zone": "Hand",
           "controller": "AgentBot",
           "tapped": false,
@@ -118,12 +114,28 @@
           "damage": 0,
           "token": false,
           "faceDown": false,
-          "type": "Basic Land - Mountain",
-          "manaCost": "no cost",
-          "text": ""
+          "type": "Sorcery",
+          "manaCost": "{R}",
+          "text": "Forked Bolt deals 2 damage divided as you choose among one or two targets."
         },
         {
-          "id": 6,
+          "id": 10,
+          "name": "Forked Bolt",
+          "zone": "Hand",
+          "controller": "AgentBot",
+          "tapped": false,
+          "sick": false,
+          "attacking": false,
+          "blocking": false,
+          "damage": 0,
+          "token": false,
+          "faceDown": false,
+          "type": "Sorcery",
+          "manaCost": "{R}",
+          "text": "Forked Bolt deals 2 damage divided as you choose among one or two targets."
+        },
+        {
+          "id": 12,
           "name": "Forked Bolt",
           "zone": "Hand",
           "controller": "AgentBot",

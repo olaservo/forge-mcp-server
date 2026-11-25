@@ -1,7 +1,7 @@
 {
   "inGame": true,
   "finished": false,
-  "prompt": "Shock (12) - Shock deals 2 damage to any target.\n\nSelect any target",
+  "prompt": "Shock (9) - Shock deals 2 damage to any target.\n\nSelect any target",
   "promptCount": 4,
   "waiting": false,
   "priorityPrompt": false,
@@ -16,11 +16,23 @@
   "messages": [],
   "messageCount": 0,
   "logCount": 26,
+  "logStart": 0,
+  "gamesOpened": 1,
   "turn": 2,
   "phase": "MAIN1",
   "activePlayer": "AgentBot",
   "gameOver": false,
   "winner": "",
+  "match": {
+    "gamesPerMatch": 1,
+    "game": 1,
+    "wins": {
+      "AgentBot": 0,
+      "HostAI": 0
+    },
+    "over": false,
+    "sideboarding": false
+  },
   "me": "AgentBot",
   "hasPriority": true,
   "autoPass": "opponent-turns",
@@ -40,7 +52,7 @@
       "mana": {},
       "battlefield": [
         {
-          "id": 27,
+          "id": 33,
           "name": "Mountain",
           "zone": "Battlefield",
           "controller": "AgentBot",
@@ -59,7 +71,23 @@
       "graveyard": [],
       "hand": [
         {
-          "id": 38,
+          "id": 4,
+          "name": "Shock",
+          "zone": "Hand",
+          "controller": "AgentBot",
+          "tapped": false,
+          "sick": false,
+          "attacking": false,
+          "blocking": false,
+          "damage": 0,
+          "token": false,
+          "faceDown": false,
+          "type": "Instant",
+          "manaCost": "{R}",
+          "text": "Shock deals 2 damage to any target."
+        },
+        {
+          "id": 25,
           "name": "Mountain",
           "zone": "Hand",
           "controller": "AgentBot",
@@ -91,55 +119,7 @@
           "text": ""
         },
         {
-          "id": 29,
-          "name": "Mountain",
-          "zone": "Hand",
-          "controller": "AgentBot",
-          "tapped": false,
-          "sick": false,
-          "attacking": false,
-          "blocking": false,
-          "damage": 0,
-          "token": false,
-          "faceDown": false,
-          "type": "Basic Land - Mountain",
-          "manaCost": "no cost",
-          "text": ""
-        },
-        {
-          "id": 28,
-          "name": "Mountain",
-          "zone": "Hand",
-          "controller": "AgentBot",
-          "tapped": false,
-          "sick": false,
-          "attacking": false,
-          "blocking": false,
-          "damage": 0,
-          "token": false,
-          "faceDown": false,
-          "type": "Basic Land - Mountain",
-          "manaCost": "no cost",
-          "text": ""
-        },
-        {
-          "id": 34,
-          "name": "Mountain",
-          "zone": "Hand",
-          "controller": "AgentBot",
-          "tapped": false,
-          "sick": false,
-          "attacking": false,
-          "blocking": false,
-          "damage": 0,
-          "token": false,
-          "faceDown": false,
-          "type": "Basic Land - Mountain",
-          "manaCost": "no cost",
-          "text": ""
-        },
-        {
-          "id": 2,
+          "id": 3,
           "name": "Shock",
           "zone": "Hand",
           "controller": "AgentBot",
@@ -153,6 +133,38 @@
           "type": "Instant",
           "manaCost": "{R}",
           "text": "Shock deals 2 damage to any target."
+        },
+        {
+          "id": 11,
+          "name": "Shock",
+          "zone": "Hand",
+          "controller": "AgentBot",
+          "tapped": false,
+          "sick": false,
+          "attacking": false,
+          "blocking": false,
+          "damage": 0,
+          "token": false,
+          "faceDown": false,
+          "type": "Instant",
+          "manaCost": "{R}",
+          "text": "Shock deals 2 damage to any target."
+        },
+        {
+          "id": 32,
+          "name": "Mountain",
+          "zone": "Hand",
+          "controller": "AgentBot",
+          "tapped": false,
+          "sick": false,
+          "attacking": false,
+          "blocking": false,
+          "damage": 0,
+          "token": false,
+          "faceDown": false,
+          "type": "Basic Land - Mountain",
+          "manaCost": "no cost",
+          "text": ""
         }
       ]
     },
@@ -169,7 +181,7 @@
       "mana": {},
       "battlefield": [
         {
-          "id": 80,
+          "id": 75,
           "name": "Forest",
           "zone": "Battlefield",
           "controller": "HostAI",
@@ -185,7 +197,7 @@
           "text": ""
         },
         {
-          "id": 52,
+          "id": 58,
           "name": "Llanowar Elves",
           "zone": "Battlefield",
           "controller": "HostAI",
@@ -212,7 +224,7 @@
     "max": 1,
     "cards": [
       {
-        "id": 52,
+        "id": 58,
         "name": "Llanowar Elves",
         "zone": "Battlefield",
         "controller": "HostAI",

@@ -43,7 +43,9 @@
     "incorrectActions": 0,
     "messages": [],
     "messageCount": 0,
-    "logCount": 0
+    "logCount": 0,
+    "logStart": 0,
+    "gamesOpened": 0
   },
   "chat": [],
   "chatCount": 0

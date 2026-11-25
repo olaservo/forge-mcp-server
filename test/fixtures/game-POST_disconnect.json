@@ -1,5 +1,5 @@
 {
-  "revision": 394,
+  "revision": 434,
   "connection": {
     "connected": false,
     "host": "127.0.0.1",
@@ -15,6 +15,7 @@
     "seatIndex": -1,
     "packNumber": 0,
     "pickNumber": 0,
+    "at": null,
     "timerSeconds": 0,
     "pickPending": false,
     "packSize": 0,
@@ -29,7 +30,7 @@
     "inGame": false,
     "finished": false,
     "prompt": "",
-    "promptCount": 34,
+    "promptCount": 42,
     "waiting": false,
     "priorityPrompt": false,
     "promptCard": null,
@@ -42,7 +43,9 @@
     "incorrectActions": 0,
     "messages": [],
     "messageCount": 0,
-    "logCount": 0
+    "logCount": 0,
+    "logStart": 0,
+    "gamesOpened": 1
   },
   "chat": [
     {

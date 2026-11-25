@@ -13,8 +13,9 @@ describe("compactGame", () => {
     expect(JSON.stringify(compact).length).toBeLessThan(JSON.stringify(game).length * 0.6);
     const me = (compact.players as { hand?: Record<string, unknown>[] }[]).find((p) => p.hand)!;
     const bushwhacker = me.hand!.find((c) => c.name === "Goblin Bushwhacker")!;
-    // The id is whatever the recorded game dealt.
-    expect(bushwhacker).toEqual({ id: bushwhacker.id, name: "Goblin Bushwhacker", type: "Creature - Goblin Warrior", manaCost: "{R}", power: 1, toughness: 1 });
+    // The id is whatever the recorded game dealt. So is whether an earlier copy had other text, which leaves this one its own.
+    const { text: _own, ...fields } = bushwhacker;
+    expect(fields).toEqual({ id: bushwhacker.id, name: "Goblin Bushwhacker", type: "Creature - Goblin Warrior", manaCost: "{R}", power: 1, toughness: 1 });
     expect((compact.cardText as Record<string, string>)["Goblin Bushwhacker"]).toMatch(/^Kicker/);
   });
 

@@ -1,7 +1,7 @@
 {
   "inGame": true,
   "finished": false,
-  "prompt": "Select creatures to block Goblin Brigand (78) or select another attacker to declare blockers for.",
+  "prompt": "Select creatures to block Goblin Brigand (70) or select another attacker to declare blockers for.",
   "promptCount": 26,
   "waiting": false,
   "priorityPrompt": false,
@@ -15,12 +15,24 @@
   "incorrectActions": 0,
   "messages": [],
   "messageCount": 0,
-  "logCount": 143,
+  "logCount": 145,
+  "logStart": 0,
+  "gamesOpened": 1,
   "turn": 8,
   "phase": "COMBAT_DECLARE_BLOCKERS",
   "activePlayer": "HostAI",
   "gameOver": false,
   "winner": "",
+  "match": {
+    "gamesPerMatch": 1,
+    "game": 1,
+    "wins": {
+      "AgentBot": 0,
+      "HostAI": 0
+    },
+    "over": false,
+    "sideboarding": false
+  },
   "me": "AgentBot",
   "hasPriority": true,
   "autoPass": "opponent-turns",
@@ -33,14 +45,14 @@
       "life": 20,
       "hasPriority": true,
       "isMe": true,
-      "handSize": 5,
+      "handSize": 3,
       "librarySize": 30,
       "graveyardSize": 0,
       "exileSize": 0,
       "mana": {},
       "battlefield": [
         {
-          "id": 32,
+          "id": 29,
           "name": "Forest",
           "zone": "Battlefield",
           "controller": "AgentBot",
@@ -54,13 +66,47 @@
           "type": "Basic Land - Forest",
           "manaCost": "no cost",
           "text": ""
+        },
+        {
+          "id": 34,
+          "name": "Forest",
+          "zone": "Battlefield",
+          "controller": "AgentBot",
+          "tapped": true,
+          "sick": false,
+          "attacking": false,
+          "blocking": false,
+          "damage": 0,
+          "token": false,
+          "faceDown": false,
+          "type": "Basic Land - Forest",
+          "manaCost": "no cost",
+          "text": ""
+        },
+        {
+          "id": 2,
+          "name": "Garruk's Companion",
+          "zone": "Battlefield",
+          "controller": "AgentBot",
+          "tapped": false,
+          "sick": false,
+          "attacking": false,
+          "blocking": false,
+          "damage": 0,
+          "token": false,
+          "faceDown": false,
+          "type": "Creature - Beast",
+          "manaCost": "{G}{G}",
+          "power": 3,
+          "toughness": 2,
+          "text": "Trample"
         },
         {
           "id": 25,
           "name": "Forest",
           "zone": "Battlefield",
           "controller": "AgentBot",
-          "tapped": true,
+          "tapped": false,
           "sick": false,
           "attacking": false,
           "blocking": false,
@@ -72,7 +118,7 @@
           "text": ""
         },
         {
-          "id": 7,
+          "id": 1,
           "name": "Garruk's Companion",
           "zone": "Battlefield",
           "controller": "AgentBot",
@@ -90,8 +136,8 @@
           "text": "Trample"
         },
         {
-          "id": 9,
-          "name": "Garruk's Companion",
+          "id": 38,
+          "name": "Forest",
           "zone": "Battlefield",
           "controller": "AgentBot",
           "tapped": false,
@@ -101,14 +147,12 @@
           "damage": 0,
           "token": false,
           "faceDown": false,
-          "type": "Creature - Beast",
-          "manaCost": "{G}{G}",
-          "power": 3,
-          "toughness": 2,
-          "text": "Trample"
+          "type": "Basic Land - Forest",
+          "manaCost": "no cost",
+          "text": ""
         },
         {
-          "id": 19,
+          "id": 13,
           "name": "Garruk's Companion",
           "zone": "Battlefield",
           "controller": "AgentBot",
@@ -129,8 +173,8 @@
       "graveyard": [],
       "hand": [
         {
-          "id": 8,
-          "name": "Garruk's Companion",
+          "id": 39,
+          "name": "Forest",
           "zone": "Hand",
           "controller": "AgentBot",
           "tapped": false,
@@ -140,29 +184,9 @@
           "damage": 0,
           "token": false,
           "faceDown": false,
-          "type": "Creature - Beast",
-          "manaCost": "{G}{G}",
-          "power": 3,
-          "toughness": 2,
-          "text": "Trample"
-        },
-        {
-          "id": 15,
-          "name": "Garruk's Companion",
-          "zone": "Hand",
-          "controller": "AgentBot",
-          "tapped": false,
-          "sick": false,
-          "attacking": false,
-          "blocking": false,
-          "damage": 0,
-          "token": false,
-          "faceDown": false,
-          "type": "Creature - Beast",
-          "manaCost": "{G}{G}",
-          "power": 3,
-          "toughness": 2,
-          "text": "Trample"
+          "type": "Basic Land - Forest",
+          "manaCost": "no cost",
+          "text": ""
         },
         {
           "id": 14,
@@ -183,25 +207,7 @@
           "text": "Trample"
         },
         {
-          "id": 13,
-          "name": "Garruk's Companion",
-          "zone": "Hand",
-          "controller": "AgentBot",
-          "tapped": false,
-          "sick": false,
-          "attacking": false,
-          "blocking": false,
-          "damage": 0,
-          "token": false,
-          "faceDown": false,
-          "type": "Creature - Beast",
-          "manaCost": "{G}{G}",
-          "power": 3,
-          "toughness": 2,
-          "text": "Trample"
-        },
-        {
-          "id": 12,
+          "id": 17,
           "name": "Garruk's Companion",
           "zone": "Hand",
           "controller": "AgentBot",
@@ -233,7 +239,7 @@
       "mana": {},
       "battlefield": [
         {
-          "id": 69,
+          "id": 66,
           "name": "Mountain",
           "zone": "Battlefield",
           "controller": "HostAI",
@@ -247,6 +253,58 @@
           "type": "Basic Land - Mountain",
           "manaCost": "no cost",
           "text": ""
+        },
+        {
+          "id": 46,
+          "name": "Razorgrass Screen",
+          "zone": "Battlefield",
+          "controller": "HostAI",
+          "tapped": false,
+          "sick": false,
+          "attacking": false,
+          "blocking": false,
+          "damage": 0,
+          "token": false,
+          "faceDown": false,
+          "type": "Artifact Creature - Wall",
+          "manaCost": "{1}",
+          "power": 2,
+          "toughness": 1,
+          "text": "Defender\r\n\r\nRazorgrass Screen blocks each combat if able."
+        },
+        {
+          "id": 53,
+          "name": "Mountain",
+          "zone": "Battlefield",
+          "controller": "HostAI",
+          "tapped": true,
+          "sick": false,
+          "attacking": false,
+          "blocking": false,
+          "damage": 0,
+          "token": false,
+          "faceDown": false,
+          "type": "Basic Land - Mountain",
+          "manaCost": "no cost",
+          "text": ""
+        },
+        {
+          "id": 47,
+          "name": "Razorgrass Screen",
+          "zone": "Battlefield",
+          "controller": "HostAI",
+          "tapped": false,
+          "sick": false,
+          "attacking": false,
+          "blocking": false,
+          "damage": 0,
+          "token": false,
+          "faceDown": false,
+          "type": "Artifact Creature - Wall",
+          "manaCost": "{1}",
+          "power": 2,
+          "toughness": 1,
+          "text": "Defender\r\n\r\nRazorgrass Screen blocks each combat if able."
         },
         {
           "id": 51,
@@ -267,59 +325,7 @@
           "text": "Defender\r\n\r\nRazorgrass Screen blocks each combat if able."
         },
         {
-          "id": 67,
-          "name": "Mountain",
-          "zone": "Battlefield",
-          "controller": "HostAI",
-          "tapped": true,
-          "sick": false,
-          "attacking": false,
-          "blocking": false,
-          "damage": 0,
-          "token": false,
-          "faceDown": false,
-          "type": "Basic Land - Mountain",
-          "manaCost": "no cost",
-          "text": ""
-        },
-        {
-          "id": 48,
-          "name": "Razorgrass Screen",
-          "zone": "Battlefield",
-          "controller": "HostAI",
-          "tapped": false,
-          "sick": false,
-          "attacking": false,
-          "blocking": false,
-          "damage": 0,
-          "token": false,
-          "faceDown": false,
-          "type": "Artifact Creature - Wall",
-          "manaCost": "{1}",
-          "power": 2,
-          "toughness": 1,
-          "text": "Defender\r\n\r\nRazorgrass Screen blocks each combat if able."
-        },
-        {
-          "id": 49,
-          "name": "Razorgrass Screen",
-          "zone": "Battlefield",
-          "controller": "HostAI",
-          "tapped": false,
-          "sick": false,
-          "attacking": false,
-          "blocking": false,
-          "damage": 0,
-          "token": false,
-          "faceDown": false,
-          "type": "Artifact Creature - Wall",
-          "manaCost": "{1}",
-          "power": 2,
-          "toughness": 1,
-          "text": "Defender\r\n\r\nRazorgrass Screen blocks each combat if able."
-        },
-        {
-          "id": 78,
+          "id": 70,
           "name": "Goblin Brigand",
           "zone": "Battlefield",
           "controller": "HostAI",
@@ -337,7 +343,7 @@
           "text": "Goblin Brigand attacks each combat if able."
         },
         {
-          "id": 63,
+          "id": 64,
           "name": "Mountain",
           "zone": "Battlefield",
           "controller": "HostAI",
@@ -353,7 +359,7 @@
           "text": ""
         },
         {
-          "id": 70,
+          "id": 77,
           "name": "Goblin Brigand",
           "zone": "Battlefield",
           "controller": "HostAI",
@@ -378,23 +384,24 @@
   "combat": [
     {
       "attacker": "Goblin Brigand",
-      "attackerId": 78,
+      "attackerId": 70,
       "defender": "AgentBot",
       "blockers": [],
-      "blocked": false
+      "blocked": false,
+      "blocksFinal": false
     }
   ],
   "actionable": [
     {
-      "id": 7,
+      "id": 2,
       "name": "Garruk's Companion"
     },
     {
-      "id": 9,
+      "id": 1,
       "name": "Garruk's Companion"
     },
     {
-      "id": 19,
+      "id": 13,
       "name": "Garruk's Companion"
     }
   ],
@@ -406,7 +413,7 @@
     "chosen": [
       {
         "type": "card",
-        "id": 78,
+        "id": 70,
         "name": "Goblin Brigand"
       }
     ]
