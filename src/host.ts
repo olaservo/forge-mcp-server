@@ -110,7 +110,8 @@ export class LobbyHost {
         process.stderr.write(`[forge-host] ${d}`);
         if (ready) return;
         output = (output + String(d)).slice(-2000);
-        const line = new RegExp(`${READY}.*\\n`).exec(output)?.[0];
+        // Java ends the line with a carriage return and a line feed on Windows, and "." stops at the first.
+        const line = new RegExp(`${READY}[^\\n]*\\n`).exec(output)?.[0];
         if (line === undefined) return;
         ready = true;
         // A MatchHost before 0.1.11 ignores --games and does not name the games in this line.
