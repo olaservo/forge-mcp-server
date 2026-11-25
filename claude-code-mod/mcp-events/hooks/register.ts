@@ -289,7 +289,8 @@ export const register: Register = (on, options) => {
     const names = name !== undefined && waitTools.includes(name) ? following(url, ownOnly) : []
     if (names.length) return { deny: waitDenied(server, names) }
     const result = await next(e)
-    if (name !== undefined && stateTools.has(name)) {
+    // A call that failed or was denied showed the model no state.
+    if (name !== undefined && stateTools.has(name) && result.deny === undefined && result.isError !== true) {
       const kind = stateTools.get(name)
       if (kind) lastKindAt.set(kind, Date.now() - TOOL_MARGIN_MS)
       else lastToolAt = Date.now() - TOOL_MARGIN_MS

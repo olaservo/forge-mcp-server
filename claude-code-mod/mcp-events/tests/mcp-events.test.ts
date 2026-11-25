@@ -7,7 +7,13 @@ type Poll = { events: unknown[]; cursor: string; truncated?: boolean }
  * Stands in for the engine and for a server that lists one event and answers polls from `polls`.
  * `status` is what the session's own server answers to forge_status. `shown` is each text set in the status bar.
  */
-function session(on: On, polls: Poll[], status: unknown = { structuredContent: { revision: 3, events: { source: 'c', http: true } } }) {
+function session(
+  on: On,
+  polls: Poll[],
+  status: unknown = { structuredContent: { revision: 3, events: { source: 'c', http: true } } },
+  /** What the host answers a call of that tool, when it is not the status. */
+  answers?: (tool: string) => unknown,
+) {
   const sent: { method: string; params: { cursor?: string | null } }[] = []
   const prompts: string[] = []
   const stored = new Map<string, unknown>()
@@ -28,7 +34,7 @@ function session(on: On, polls: Poll[], status: unknown = { structuredContent: {
     prompts.push(e.text)
     return { text: e.text }
   })
-  on('tool.call', () => ({ result: status }))
+  on('tool.call', (_, e) => (answers?.(String(e.tool)) ?? { result: status }) as never)
   on('http.fetch', (_, e) => {
     const request = JSON.parse(String(e.init?.body)) as { id: number; method: string; params: { cursor?: string | null } }
     sent.push(request)
@@ -222,10 +228,10 @@ test('the status tool is named by an option', { options: { statusTool: 'seat_sta
 
 const pause = (ms: number) => new Promise(resolve => setTimeout(resolve, ms))
 
-/** Holds one event of `kind` during a turn, then calls `tool` and ends the turn. Returns the prompts submitted. */
-async function heldThenCalled($: Parameters<Parameters<typeof test>[1]>[0], on: On, kind: string, tool: string) {
+/** Holds one event of `kind` during a turn, then calls `tool` and ends the turn. Returns the prompts submitted. `answer` is what the host answers that call. */
+async function heldThenCalled($: Parameters<Parameters<typeof test>[1]>[0], on: On, kind: string, tool: string, answer?: unknown) {
   const polls: Poll[] = [{ events: [], cursor: 'c:0' }]
-  const { prompts } = session(on, polls)
+  const { prompts } = session(on, polls, undefined, called => (called === `mcp__forge__${tool}` ? answer : undefined))
   on('turn.start', (_, e) => ({ turnId: e.turnId }) as never)
   await $.tool.call(callStatus)
   await $.command.run({ command: 'mcp-events' })
@@ -249,6 +255,18 @@ test('a lobby tool called after a held game event does not drop it', async ($, o
 
 test('a state tool called after a held event drops it', async ($, on) => {
   expect(await heldThenCalled($, on, 'priority', 'forge_game_state')).toHaveLength(0)
+})
+
+test('a draft pick called after a held pick event drops it', async ($, on) => {
+  expect(await heldThenCalled($, on, 'draft_pick', 'forge_draft_pick')).toHaveLength(0)
+})
+
+test('a state tool that fails or is denied does not drop a held event', async ($, on) => {
+  expect(await heldThenCalled($, on, 'draft_pick', 'forge_draft_pick', { result: 'not in the current pack', isError: true })).toHaveLength(1)
+})
+
+test('a game tool that is denied does not drop a held event', async ($, on) => {
+  expect(await heldThenCalled($, on, 'priority', 'forge_game_act', { deny: 'not allowed' })).toHaveLength(1)
 })
 
 test('after a reload, the first poll of a state event sends no cursor, so the pending ask comes back', async ($, on) => {
