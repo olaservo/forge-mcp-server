@@ -26,6 +26,7 @@ export class EventLog {
   private readonly entries: { seq: number; event: EventOccurrence }[] = [];
   private readonly listeners: ((event: EventOccurrence) => void)[] = [];
   private readonly pendingSources = new Map<string, () => EventOccurrence | undefined>();
+  private readonly streams = new Map<string, number>();
   private seq = 0;
 
   constructor(private readonly capacity = 1000) {}
@@ -42,6 +43,21 @@ export class EventLog {
       const at = this.listeners.indexOf(listener);
       if (at >= 0) this.listeners.splice(at, 1);
     };
+  }
+
+  /** Counts a push stream for `name` as open. Returns a function that ends it. */
+  stream(name: string): () => void {
+    this.streams.set(name, (this.streams.get(name) ?? 0) + 1);
+    let isOpen = true;
+    return () => {
+      if (isOpen) this.streams.set(name, (this.streams.get(name) ?? 1) - 1);
+      isOpen = false;
+    };
+  }
+
+  /** Whether a client has a push stream for `name` open, so each event reaches it as it is emitted. */
+  streaming(name: string): boolean {
+    return (this.streams.get(name) ?? 0) > 0;
   }
 
   /** The cursor after the newest event. */

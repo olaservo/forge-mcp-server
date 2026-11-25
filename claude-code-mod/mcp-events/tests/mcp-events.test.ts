@@ -43,6 +43,7 @@ function session(on: On, polls: Poll[], status: unknown = { structuredContent: {
 }
 
 const callStatus = { tool: 'mcp__forge__forge_status' } as never
+const callWait = { tool: 'mcp__forge__forge_wait' } as never
 const composing = { model: 'm', promptModel: 'm', surfaces: [], tools: [], outputStyle: null, traits: [] }
 
 // Dated after the test's forge_status call, which would otherwise supersede it.
@@ -87,6 +88,16 @@ test('the system prompt says to end the turn once events are being polled', asyn
   expect(sections[1]!.text).toContain('forge.your_move')
   expect(sections[1]!.text).toContain('do not call forge_wait')
   expect(sections[1]!.scope).toBe('session')
+})
+
+test('a wait tool is refused once the session will be woken, and not before', async ($, on) => {
+  session(on, [{ events: [], cursor: 'c:0' }])
+  await $.command.run({ command: 'mcp-events' })
+  expect((await $.tool.call(callWait)).deny).toBeUndefined()
+  await $.tool.call(callStatus)
+  const refused = await $.tool.call(callWait)
+  expect(refused.deny).toContain('End your turn now')
+  expect(refused.deny).toContain('forge.your_move')
 })
 
 test('the status bar names the events once the session will be woken', async ($, on) => {
@@ -143,6 +154,7 @@ test('a server that does not serve events over HTTP leaves the model its wait to
   await $.command.run({ command: 'mcp-events' })
   const second = await $.command.run({ command: 'mcp-events' })
   expect(second.text).toContain('ids from c, which forge_status says are not served over HTTP')
+  expect((await $.tool.call(callWait)).deny).toBeUndefined()
   expect(shown).toEqual([undefined, undefined])
   expect((await $.prompt.compose(composing)).sections.map(s => s.id)).toEqual(['intro'])
   await $.turn.complete({ turnId: 't1', reason: 'answer', answer: 'ok' } as never)

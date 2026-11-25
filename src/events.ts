@@ -93,6 +93,7 @@ export function registerEvents(server: McpServer, log: EventLog, webhooks?: Webh
         wake = () => done(true);
       });
 
+    const ended = log.stream(params.name);
     activity?.(`stream ${params.name} ${id} opened`);
     try {
       // With events to replay, the stream starts at the client's cursor, so one that drops before the replay keeps them.
@@ -112,6 +113,7 @@ export function registerEvents(server: McpServer, log: EventLog, webhooks?: Webh
       // A notification to a client that has gone away fails, and that ends the stream.
     } finally {
       stop();
+      ended();
       activity?.(`stream ${params.name} ${id} closed`);
     }
     return { resultType: "complete", _meta: meta };

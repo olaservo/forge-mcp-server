@@ -10,7 +10,7 @@ Set `FORGE_MCP_PORT` for the server. With it set, the stdio server also serves `
 
 The mod starts a turn only for the session's own server. `forge_status` returns `events.source`, the prefix of the event ids this server process emits, and `events.http`, whether the process serves `/mcp` over HTTP. The mod reads both from the result of each `forge_status` call. It drops an event whose id does not start with that prefix, and it drops every event until `forge_status` has been called. A truncated poll means the server may have restarted, so the prefix is read again from the next `forge_status` call.
 
-Once `events.http` is true, the mod tells the agent in its system prompt to end its turn when the seat has nothing to do and not to call `forge_wait`.
+Once `events.http` is true, the mod tells the agent in its system prompt to end its turn when the seat has nothing to do, and it refuses a `forge_wait` call with the same advice. The refusal is what reaches an agent on a session's first turn: the system prompt of that turn is written before `forge_status` has been called. A seat that got its instructions 22 seconds after its session started played 13 turns inside one turn with 21 `forge_wait` calls on 2026-11-24, and no event started a turn.
 
 ## Several sessions on one machine
 
@@ -37,7 +37,7 @@ After a `/mcp` reconnect the server is a new process. The session is woken again
 - `events`: event names to follow, separated by commas. Default: every event the server lists with poll delivery.
 - `superseded`: event names dropped when the agent has called a state tool since the event. The first poll of each after the mod loads sends no cursor, so the server sends the ask pending then, however long it has waited. Default `forge.your_move`.
 - `stateTools`: the tools whose results show the server's state. A name written `tool:kind` counts only for events whose data has that `kind`, so a lobby tool drops a held lobby event and not a game prompt. Default `forge_status,forge_connect,forge_wait,forge_game_state,forge_game_act,forge_game_decide,forge_lobby_ready:lobby,forge_lobby_deck:lobby,forge_lobby_name:lobby,forge_lobby_avatar:lobby`.
-- `waitTools`: the tools the agent is told not to call. Default `forge_wait`.
+- `waitTools`: the tools the agent is told not to call, and that are refused while the session is woken by events. Default `forge_wait`.
 - `ownOnly`: start turns only for the session's own server, as above. Default on. The prefix is kept in the session's state, so a `/reload-plugins` keeps it until the status tool reports another. Turned off, every event at the URL starts a turn and the system prompt note is added as soon as the mod is polling.
 - `statusTool`: the tool whose result has `events.source`, `events.http` and `events.url`. Default `forge_status`.
 - `relay`: the endpoint is a reader that relays every server's events, so the session is woken whatever `events.url` its server reports. Default off.

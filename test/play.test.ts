@@ -53,6 +53,14 @@ describe("forge_game_act", () => {
     await client.close();
   });
 
+  it("does not blame the bridge when the game ended during the action", async () => {
+    const gone = { inGame: false, finished: false, prompt: "", promptCount: 70, waiting: false };
+    const client = await connect(fakeBridge({ "POST /game/act": gone, "GET /game": gone, "GET /game/log": { log: [] } }).bridge);
+    const res = await client.callTool({ name: "forge_game_act", arguments: { action: "selectCard", id: 41, at: 69 } });
+    expect(JSON.stringify(res.content)).not.toContain("0.1.10");
+    await client.close();
+  });
+
   it("marks an action the bridge did not send", async () => {
     const client = await connect(fakeBridge({ "POST /game/act": { ...summary, stale: true }, "GET /game": game }).bridge);
     const res = await client.callTool({ name: "forge_game_act", arguments: { action: "ok", at: 3 } });

@@ -11,6 +11,7 @@ import { registerEvents } from "./events.js";
 import type { ActivityLog } from "./log.js";
 import type { LobbyHost } from "./host.js";
 import type { GetText } from "./names.js";
+import { YOUR_MOVE } from "./seat-events.js";
 import { registerTools, seatStatus } from "./tools/index.js";
 import type { WebhookHub } from "./webhooks.js";
 
@@ -75,8 +76,8 @@ export function createServer(opts: CreateServerOptions = {}): McpServer {
       "which is the MCP resource skill://forge/forge-player/SKILL.md on this server, and forge-drafter before drafting. forge_decks lists the decks the seat can bring to a lobby; load forge-deck " +
       "before choosing one or importing a new one. While the seat has nothing to do, wait in one of two ways. " +
       "If your client starts a turn for you when forge.your_move fires (an MCP Events client, or Claude Code with the " +
-      "mcp-events mod, which tells you so), end your turn after acting and do not call forge_wait. " +
-      "forge_wait is for a client with no event subscription: call it instead of polling, or subscribe to forge://status through subscriptions/listen. " +
+      "mcp-events mod), end your turn after acting. forge_wait is refused for such a client, and the refusal says so. " +
+      "A client with no event subscription calls forge_wait instead of polling, or subscribes to forge://status through subscriptions/listen. " +
       "To report a problem with the server or its skills, load forge-feedback.",
   });
 
@@ -85,7 +86,7 @@ export function createServer(opts: CreateServerOptions = {}): McpServer {
     const registry = opts.registryFile?.();
     return { source: events.source, http: opts.servesHttp?.() ?? false, ...(url && { url }), ...(registry && { registry }) };
   };
-  registerTools(server, bridge, opts.log, opts.decks, opts.names, opts.deckSearch, opts.host, eventsInfo);
+  registerTools(server, bridge, opts.log, opts.decks, opts.names, opts.deckSearch, opts.host, eventsInfo, () => events.streaming(YOUR_MOVE));
   registerEvents(server, events, opts.webhooks && { hub: opts.webhooks, principal: opts.principal }, opts.log);
 
   server.registerResource(

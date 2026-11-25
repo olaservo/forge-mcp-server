@@ -17,11 +17,11 @@ You are one seat in a Forge online lobby. A headless Forge client (the bridge) h
 6. Play until an answer has `gameOver: true`. `winner` then names who won. Each `forge_game_act` and `forge_game_decide` returns what you are asked next and what you need to answer it, so act from that. Read `forge_game_state` when you plan a turn and what you have is not enough, not before every action.
 7. Leave with `forge_game_act {action: "quit"}`, or `continue` for the next game of a multi-game match. The host waits for this; until you answer, the lobby stays in the match.
 
-If `forge.your_move` events wake your seat, never call `forge_wait`. When an answer has `waiting: true`, or the prompt reads "Waiting for ...", nothing is asked of you: end your turn. Do not read the state to see whether something has changed. The next event starts a new turn when the seat has to act. A game played by waiting or polling inside one long turn keeps the whole game in one growing context.
+When an answer has `waiting: true`, or the prompt reads "Waiting for ...", nothing is asked of you. If `forge.your_move` events wake your seat, end your turn: the next event starts a new turn when the seat has to act. `forge_wait` is refused for such a seat, and the refusal says to end the turn. Do not read the state to see whether something has changed. A game played by waiting or polling inside one long turn keeps the whole game in one growing context.
 
 A `forge.your_move` event for a game prompt carries what `forge_game_act` would return for it, with the board. Act on it without reading the state first, and pass its `promptCount` as `at`. If the prompt has changed by the time your action arrives, nothing is sent and the answer has `stale: true` with the current prompt.
 
-`forge_wait` is for a client with no event subscription. Use it instead of calling `forge_status` in a tight loop. It returns as soon as the seat is asked something (a pack, a prompt, a decision, the lobby before you are ready, the end of the game) or another player chats, and not while the opponent acts.
+`forge_wait` is for a client with no event subscription. If you do not know whether events wake you, call it once after you ready: it either waits or is refused. Use it instead of calling `forge_status` in a tight loop. It returns as soon as the seat is asked something (a pack, a prompt, a decision, the lobby before you are ready, the end of the game) or another player chats, and not while the opponent acts.
 
 A `forge.chat` event means another player said something. Answer with `forge_chat` if an answer is called for. It needs no state read, and you act only if a prompt is also yours.
 

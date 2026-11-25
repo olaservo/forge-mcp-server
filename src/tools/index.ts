@@ -27,6 +27,10 @@ async function lobbyChange(bridge: Bridge, path: string, body: unknown): Promise
   return (await bridge.get<{ lobby?: unknown }>("/status")).lobby ?? answer;
 }
 
+/** What forge_wait answers a client that is sent forge.your_move as it fires. */
+export const WAIT_WITH_STREAM =
+  "A forge.your_move event stream is open, and the next event starts a turn when the seat is asked something. End your turn. forge_wait is for a client with no event subscription.";
+
 /** A status without the draft block when the seat has no draft and no pool, as in a constructed lobby. */
 export function withoutIdleDraft<T extends object>(status: T): T {
   const draft = (status as { draft?: { packNumber?: number | null; pickPending?: boolean | null; poolReceived?: boolean | null; picks?: unknown[] | null } | null }).draft;
@@ -51,6 +55,8 @@ export function registerTools(
   deckSearch?: SearchIo,
   host: LobbyHost = sharedHost(),
   events?: () => { source: string; http: boolean; url?: string; registry?: string },
+  /** Whether a client has a forge.your_move stream open. */
+  isStreaming?: () => boolean,
 ): void {
   /** Registers a tool and logs each call. */
   const tool: RegisterTool = <In extends z.ZodType>(name: string, config: ToolConfig<In>, handler: (args: z.output<In>) => Promise<CallToolResult>) => {
@@ -375,7 +381,8 @@ export function registerTools(
         memory.saw(at);
         const extras = { ...(pay && { pay }), ...(pass && { pass }), ...(once && { once }), ...(endTurn && { endTurn }), ...(at !== undefined && { at }) };
         const answer = await bridge.post<Record<string, unknown>>("/game/act", { action, id, color, ...extras });
-        if (Object.keys(extras).length > 0 && answer.stops === undefined) {
+        // A summary with no game has no `stops` on any bridge: the host may have ended the game during the action.
+        if (Object.keys(extras).length > 0 && answer.inGame === true && answer.stops === undefined) {
           throw new Error("pay, pass, once, endTurn and at need forge-agent-bridge 0.1.10 or later. The action was sent without them.");
         }
         if (action === "quit") {
@@ -420,7 +427,7 @@ export function registerTools(
         "Block until the seat is asked something (a pick, a prompt, a decision, the lobby before it is ready, the end of a game), another player chats, or `timeout` seconds pass, " +
         "then return the same payload as forge_status. A change that asks nothing of the seat, such as the opponent holding priority, does not return. " +
         "Pass the `revision` from the last status so only newer changes wake it. " +
-        "For a client with no event subscription. A seat woken by forge.your_move events ends its turn and does not call this.",
+        "For a client with no event subscription. A seat woken by forge.your_move events ends its turn, and this is refused while a client has a stream of them open.",
       inputSchema: z.object({
         since: z.number().int().default(-1).describe("Last seen revision; -1 returns immediately"),
         timeout: z.number().int().min(1).max(120).default(30),
@@ -429,6 +436,10 @@ export function registerTools(
       annotations: readOnly,
     },
     async ({ since, timeout }) =>
-      run(async () => withoutIdleDraft(await waitForAsk((s, t) => bridge.get<SeatStatus>("/wait", { since: s, timeout: t }), since, timeout))),
+      run(async () => {
+        // The stream starts the client's next turn, and a wait would hold this one open through it.
+        if (isStreaming?.()) throw new Error(WAIT_WITH_STREAM);
+        return withoutIdleDraft(await waitForAsk((s, t) => bridge.get<SeatStatus>("/wait", { since: s, timeout: t }), since, timeout));
+      }),
   );
 }

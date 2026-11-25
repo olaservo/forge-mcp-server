@@ -325,6 +325,37 @@ describe("events", () => {
     await client.close();
   });
 
+  it("refuses forge_wait while a forge.your_move stream is open", async () => {
+    const status = { revision: 4, game: { inGame: false } };
+    const { bridge, calls } = fakeBridge({ "GET /wait": status });
+    const log = new EventLog();
+    const server = createServer({ bridge, skills: await skillCatalog(), events: log });
+    const [clientSide, serverSide] = InMemoryTransport.createLinkedPair();
+    await server.connect(serverSide);
+    const client = new Client({ name: "test", version: "0.0.0" }, { versionNegotiation: { mode: "auto" } });
+    await client.connect(clientSide);
+    const wait = () => client.callTool({ name: "forge_wait", arguments: { since: -1, timeout: 1 } });
+
+    expect((await wait()).isError).toBeFalsy();
+    const abort = new AbortController();
+    const done = client.request({ method: "events/stream", params: { name: YOUR_MOVE, cursor: null } }, z.looseObject({}), { signal: abort.signal, timeout: 60_000 });
+    done.catch(() => {});
+    await vi.waitFor(() => expect(log.streaming(YOUR_MOVE)).toBe(true));
+    // A stream of chat alone wakes nobody for a prompt.
+    expect(log.streaming(CHAT)).toBe(false);
+
+    const refused = await wait();
+    expect(refused.isError).toBe(true);
+    expect(JSON.stringify(refused.content)).toContain("End your turn");
+    expect(calls.filter((c) => c.path === "/wait")).toHaveLength(1);
+
+    abort.abort();
+    await expect(done).rejects.toThrow();
+    await vi.waitFor(() => expect(log.streaming(YOUR_MOVE)).toBe(false));
+    expect((await wait()).isError).toBeFalsy();
+    await client.close();
+  });
+
   it("marks a cursor older than the retained window as truncated", () => {
     const log = new EventLog(2);
     const { cursor } = log.poll(YOUR_MOVE, null);

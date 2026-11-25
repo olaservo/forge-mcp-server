@@ -2,6 +2,8 @@
 
 An agent can wait for the seat's next ask in three ways: by calling `forge_wait`, by subscribing to `forge://status`, or through MCP Events.
 
+`forge_wait` is refused while a client has an `events/stream` open for `forge.your_move`, with an answer that says to end the turn. The stream starts the client's next turn, and a wait would hold the current one open through it. The server cannot tell this for poll or webhook delivery, where the caller may be a relay. There the Claude Code mod refuses the call.
+
 A watcher long-polls the bridge and pushes `notifications/resources/updated` for `forge://status` to `subscriptions/listen` subscribers (on stdio through the server, on HTTP through the handler's event bus), so a client that subscribes does not need `forge_wait`. The same watcher emits the events below.
 
 ## MCP Events

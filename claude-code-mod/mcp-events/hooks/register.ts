@@ -88,6 +88,11 @@ function standingNote(server: string, names: readonly string[], waitTools: reado
   ].join('\n')
 }
 
+/** What a wait tool answers while events wake the session. A wait holds the turn open, and an event starts a turn only between turns. */
+function waitDenied(server: string, names: readonly string[]): string {
+  return `The mcp-events mod starts a new turn when ${names.join(' or ')} fires on the ${server} server, so there is nothing to wait for inside this turn. End your turn now. Events that fire during a turn are held and delivered when it ends.`
+}
+
 /** The `events` object in a status tool's result, which carries the tool's JSON as structuredContent or as text. */
 function eventsOf(result: unknown, text: string | undefined): Own | undefined {
   const record = result as { structuredContent?: { events?: unknown }; events?: unknown } | null | undefined
@@ -277,9 +282,12 @@ export const register: Register = (on, options) => {
   })
 
   on('tool.call', async ($, e, next) => {
-    const result = await next(e)
     const tool = String(e.tool)
     const name = tool.startsWith(toolPrefix) ? tool.slice(toolPrefix.length) : undefined
+    // The system prompt's note is not there on a session's first turn, before its status tool has been called.
+    const names = name !== undefined && waitTools.includes(name) ? following(url, ownOnly) : []
+    if (names.length) return { deny: waitDenied(server, names) }
+    const result = await next(e)
     if (name !== undefined && stateTools.has(name)) {
       const kind = stateTools.get(name)
       if (kind) lastKindAt.set(kind, Date.now() - TOOL_MARGIN_MS)
