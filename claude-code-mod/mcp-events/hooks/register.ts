@@ -22,7 +22,8 @@ const MAX_AGE_MS = 300_000
 const TOOL_MARGIN_MS = 100
 const DEFAULT_STATE_TOOLS =
   'forge_status,forge_connect,forge_wait,forge_game_state,forge_game_act,forge_game_decide,' +
-  'forge_lobby_ready:lobby,forge_lobby_deck:lobby,forge_lobby_name:lobby,forge_lobby_avatar:lobby'
+  'forge_lobby_ready:lobby,forge_lobby_deck:lobby,forge_lobby_name:lobby,forge_lobby_avatar:lobby,' +
+  'forge_draft_pick,forge_draft_pack:draft_pick,forge_draft_pool:deck,forge_draft_deck:deck'
 
 let subscriptions: Subscription[] | undefined
 let listAt = 0
