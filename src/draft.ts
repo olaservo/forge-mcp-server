@@ -3,7 +3,7 @@ import { plainText } from "./view.js";
 
 type Json = Record<string, unknown>;
 
-/** How long forge_draft_pick holds its answer for the next pack or the pool. */
+/** How long forge_draft_pick holds its answer for the next pack or the pool. The bridge waits in whole seconds, so it can be up to a second more. */
 export const PICK_HOLD_MS = 2000;
 /** How many event views are kept for a pick or a deck to name. */
 const PEEKS = 4;
@@ -91,28 +91,19 @@ export class DraftMemory {
   private deckTold = new Set<string>();
   private pickCount = 0;
   private poolEvent: string | undefined;
-  /** The packs the seat may have been shown last: one after a tool result, more once an event has reported a later pack. */
-  private shown: string[] = [];
+  /** The latest pack seen waiting, as pack number times 100 plus pick number. */
+  private lastPack = 0;
   /** Whether the bridge checks a pick's `at` with the pick, known once a draft answer of its has been read. Bridge 0.1.11. */
   bridgeChecks: boolean | undefined;
 
-  /** The `at` of the pack the seat was last told of, when there is no doubt which pack that was. */
-  lastTold(): string | undefined {
-    return this.shown.length === 1 ? this.shown[0] : undefined;
-  }
-
-  /** A pick was sent, and what the seat is shown next could not be read. */
-  picked(): void {
-    this.shown = [];
-  }
-
+  /** A new event: nothing of it has been sent. `known` stays, since a card's cost and type are the same in any event. */
   private reset(): void {
-    this.shown = [];
     this.told.clear();
     this.peeks.clear();
-    this.known.clear();
     this.deckTold.clear();
     this.poolEvent = undefined;
+    this.lastPack = 0;
+    this.pickCount = 0;
   }
 
   /** Rules text for the names not sent before, or for every name with `all`. Adds them to `told`. */
@@ -148,23 +139,24 @@ export class DraftMemory {
    */
   pack(draft: Json, opts: { commit: boolean; allText?: boolean }): Json {
     const picks = Array.isArray(draft.picks) ? (draft.picks as string[]) : [];
-    // The bridge clears the pick list when a new event starts.
-    if (picks.length < this.pickCount) this.reset();
+    const pending = draft.pickPending === true;
+    const order = pending ? Number(draft.packNumber) * 100 + Number(draft.pickNumber) : 0;
+    // A new draft: the bridge has cleared the pick list, or a pack waits though the last thing seen was a pool, as
+    // after a sealed event, or a pack waits that comes before the last one seen, as when a draft ended without pools.
+    if (picks.length < this.pickCount || (pending && (this.poolEvent !== undefined || order < this.lastPack))) this.reset();
     this.pickCount = picks.length;
+    if (pending) this.lastPack = order;
     const cards = list(draft.pack);
     for (const card of cards) this.known.set(key(card.name), card);
     const view: Json = {};
     this.bridgeChecks = "at" in draft;
-    if (draft.pickPending !== true && opts.commit) this.shown = [];
-    if (draft.pickPending === true) {
-      const at = packAt(draft)!;
-      if (opts.commit) this.shown = [at];
-      else if (!this.shown.includes(at)) this.shown.push(at);
-      view.at = at;
+    if (pending) {
+      view.at = packAt(draft)!;
       view.packNumber = draft.packNumber;
       view.pickNumber = draft.pickNumber;
       if (typeof draft.secondsLeft === "number") view.secondsLeft = draft.secondsLeft;
       // The host counts the packs at each seat when any seat picks. The seat's own count includes the pack shown.
+      // Two picks close together can deliver their counts out of order, so this can be a pack off either way.
       const depths = Array.isArray(draft.seatQueueDepths) ? (draft.seatQueueDepths as number[]) : [];
       const behind = (depths[Number(draft.seatIndex)] ?? 0) - 1;
       if (behind > 0) view.queued = behind;
@@ -263,18 +255,18 @@ export function draftFor(bridge: Bridge): DraftMemory {
  * After a pick: the draft as it stands once the next pack or the pool has arrived, or after `holdMs` with neither.
  * A pack that was queued for the seat arrives at once, so most picks are answered with the next pack.
  */
-export async function afterPick(bridge: Bridge, holdMs = PICK_HOLD_MS): Promise<Json> {
+export async function afterPick(bridge: Bridge, holdMs = PICK_HOLD_MS): Promise<{ draft: Json; revision?: number }> {
   const deadline = Date.now() + holdMs;
   let status = await bridge.get<{ revision?: number; draft?: Json }>("/wait", { since: -1, timeout: 1 });
   for (;;) {
-    const draft = status.draft ?? {};
+    const now = { draft: status.draft ?? {}, revision: status.revision };
     // The pick cleared `pickPending`, so a pending pick is the next pack.
-    if (draft.pickPending === true || draft.poolReceived === true) return draft;
+    if (now.draft.pickPending === true || now.draft.poolReceived === true) return now;
     const left = Math.ceil((deadline - Date.now()) / 1000);
-    if (left <= 0) return draft;
+    if (left <= 0) return now;
     const since = status.revision ?? -1;
     status = await bridge.get<{ revision?: number; draft?: Json }>("/wait", { since, timeout: left });
     // The bridge answers with an unchanged revision when its own timeout ran out.
-    if ((status.revision ?? since) <= since) return status.draft ?? {};
+    if ((status.revision ?? since) <= since) return { draft: status.draft ?? {}, revision: status.revision };
   }
 }

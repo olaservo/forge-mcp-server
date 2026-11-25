@@ -127,7 +127,7 @@ describe("bridge fixtures", () => {
       forge_deck_search: [{ query: "burn" }, null],
       forge_chat: [{ text: "hi" }, "POST /chat"],
       forge_draft_pack: [{}, "GET /draft/pack"],
-      forge_draft_pick: [{ card: "0" }, "POST /draft/pick"],
+      forge_draft_pick: [{ card: "0", at: "3:1" }, "POST /draft/pick"],
       forge_draft_pool: [{}, "GET /draft/pool"],
       forge_draft_deck: [{ main: ["Doom Blade"], lands: { Swamp: 17 } }, "POST /draft/deck"],
       forge_game_state: [{}, "GET /game"],

@@ -29,6 +29,9 @@ async function lobbyChange(bridge: Bridge, path: string, body: unknown): Promise
   return (await bridge.get<{ lobby?: unknown }>("/status")).lobby ?? answer;
 }
 
+/** What forge_draft_pick answers a pick that names no pack. */
+export const PICK_WITHOUT_AT = "The pick named no pack, so nothing was picked. Pass `at`, the `at` of the pack you pick from.";
+
 /** What forge_wait answers a client that is sent forge.your_move as it fires. */
 export const WAIT_WITH_STREAM =
   "A forge.your_move event stream is open, and the next event starts a turn when the seat is asked something. End your turn. forge_wait is for a client with no event subscription.";
@@ -257,7 +260,7 @@ export function registerTools(
       title: "Current draft pack",
       description:
         "The pack in front of us. A forge.your_move event of kind draft_pick and a forge_draft_pick answer carry the same, so call this only when you have neither. " +
-        "`packNumber` and `pickNumber` count from 1, and `at` names the pack: pass it to forge_draft_pick. `secondsLeft` is the pick clock when the host set one. `queued` is the number of packs waiting for you behind this one, when there are any: other seats are waiting on your picks. `pack` has each card's name, mana cost, type, `pt` and its `rarity` unless Common. " +
+        "`packNumber` and `pickNumber` count from 1, and `at` names the pack: pass it to forge_draft_pick. `secondsLeft` is the pick clock when the host set one. `queued` is the host's last count of packs waiting for you behind this one, when there are any: other seats are waiting on your picks. It can be a pack off. `pack` has each card's name, mana cost, type, `pt` and its `rarity` unless Common. " +
         "Rules text is in `cardText` under the card's name, and only for names this draft has not sent you yet: a pack that comes round again does not repeat it. `allText: true` sends every name's text again. " +
         "`drafted` counts your picks so far: by colour, creatures and other spells, lands, and the mana values of the spells in `curve`. `autoPicks` lists picks the host made for you when the clock ran out. " +
         "`waiting: true` means you have picked and the next pack has not arrived. `poolReceived: true` means the draft is over. `full: true` returns the bridge's own answer, with every card's printing and your pick list by name.",
@@ -281,15 +284,16 @@ export function registerTools(
       title: "Draft pick",
       description:
         "Pick a card from the current pack by exact name (or its 0-based index in the pack). `picked` confirms the card. " +
-        "`at` is the `at` of the pack you chose from. If that pack is no longer the one waiting, because the clock ran out and the host picked for you, nothing is sent and the answer has `stale: true` with the pack waiting now. " +
-        "Without `at` the server names the pack it last showed you, when it can tell which that was, and otherwise the pick is made from whatever pack is waiting. " +
+        "`at` is the `at` of the pack you chose from, and it is needed: a pick that names no pack is not sent. " +
+        "If the pack you name is no longer the one waiting, because the clock ran out and the host picked for you, nothing is sent either. " +
+        "Both answer `stale: true` with no `picked` and what is waiting now: the pack with its `at`, or `waiting: true` when the next pack has not come, in which case you are told when it arrives. " +
         "`weakCheck: true` means the bridge is older than 0.1.11 and does not check `at` with the pick: the server compared it just before sending. " +
-        "The answer then has what you are asked next, as forge_draft_pack returns it: the next pack when it arrives within 2 seconds, so pick again from it in the same turn. " +
-        "`waiting: true` means the next pack has not come yet: another seat is still picking, and you are told when it arrives. " +
+        "The answer then has what you are asked next, as forge_draft_pack returns it: the next pack when it arrives within about 2 seconds, so pick again from it in the same turn. " +
+        "`waiting: true` means the next pack has not come yet: another seat is still picking, and you are told when it arrives. It comes with `revision`, which a client with no events passes to forge_wait as `since`. " +
         "After the last pick, `poolReceived: true` comes with `pool`, what forge_draft_pool returns, when the pool has arrived.",
       inputSchema: z.object({
         card: z.string().min(1),
-        at: z.string().regex(/^\d+:\d+$/).optional().describe("The `at` of the pack this pick is from, such as \"2:7\""),
+        at: z.string().regex(/^\d+:\d+$/).optional().describe("The `at` of the pack this pick is from, such as \"2:7\". Without it nothing is picked"),
       }),
       outputSchema: out.PickAnswer,
       annotations: acting,
@@ -297,22 +301,24 @@ export function registerTools(
     async ({ card, at }) =>
       run(async () => {
         const drafts = draftFor(bridge);
-        // A seat that names a pack has read the event or the answer that showed it, whatever becomes of the pick.
-        if (at !== undefined) drafts.saw(`pack:${at}`);
-        const wanted = at ?? drafts.lastTold();
         const stale = (now: Record<string, unknown>) => ({ stale: true, ...drafts.pack(now, { commit: true }) });
+        // The server cannot tell which pack a pick without `at` was chosen from: the clock may have run out since
+        // the seat read its pack, and a pick sent again after a lost answer would land on the pack after it.
+        if (at === undefined) return { ...stale(await bridge.get<Record<string, unknown>>("/draft/pack")), problem: PICK_WITHOUT_AT };
+        // A seat that names a pack has read the event or the answer that showed it, whatever becomes of the pick.
+        drafts.saw(`pack:${at}`);
         let weak = false;
-        if (wanted !== undefined && drafts.bridgeChecks !== true) {
+        if (drafts.bridgeChecks !== true) {
           const now = await bridge.get<Record<string, unknown>>("/draft/pack");
           if ("at" in now) {
             drafts.bridgeChecks = true;
           } else {
             // A bridge that does not take `at`: the pack can still change between this read and the pick.
-            if (packAt(now) !== wanted) return stale(now);
+            if (packAt(now) !== at) return stale(now);
             weak = true;
           }
         }
-        const body = wanted !== undefined && !weak ? { card, at: wanted } : { card };
+        const body = weak ? { card } : { card, at };
         const answer = await bridge.post<{ picked?: { name?: string }; packNumber?: number; pickNumber?: number; stale?: boolean }>("/draft/pick", body);
         if (answer.stale === true) return stale(await bridge.get<Record<string, unknown>>("/draft/pack"));
         const picked = { name: answer.picked?.name, packNumber: answer.packNumber, pickNumber: answer.pickNumber };
@@ -320,14 +326,14 @@ export function registerTools(
         drafts.saw(`pack:${answer.packNumber}:${answer.pickNumber}`);
         // The pick is made. What comes next is read on top of it, and a failed read does not fail the pick.
         try {
-          const next = await afterPick(bridge);
+          const { draft: next, revision } = await afterPick(bridge);
           if (next.poolReceived === true) {
             return { picked, ...(weak && { weakCheck: true }), ...drafts.pack(next, { commit: true }), pool: drafts.pool(await bridge.get<Record<string, unknown>>("/draft/pool"), { commit: true }) };
           }
           const pack = next.pickPending === true ? await bridge.get<Record<string, unknown>>("/draft/pack") : next;
-          return { picked, ...(weak && { weakCheck: true }), ...drafts.pack(pack, { commit: true }) };
+          const view = drafts.pack(pack, { commit: true });
+          return { picked, ...(weak && { weakCheck: true }), ...view, ...(view.waiting === true && typeof revision === "number" && { revision }) };
         } catch {
-          drafts.picked();
           return { picked, ...(weak && { weakCheck: true }) };
         }
       }),

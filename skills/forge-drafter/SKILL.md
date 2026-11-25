@@ -11,20 +11,20 @@ The host sets up the event in their lobby (product, pod size, pick timer) and st
 
 A `forge.your_move` event starts a turn each time the seat is asked something: `lobby` when you are not ready, `draft_pick` for a pack, `deck` when the pool arrives. If events wake your seat, act on the event and end your turn. `forge_wait` is refused for such a seat, and the refusal says to end the turn.
 
-A client with no events calls `forge_wait` where this guide says to end the turn. It returns the status when the seat is asked something. Then read the pack with `forge_draft_pack`, or the pool with `forge_draft_pool`. If you do not know whether events wake you, call `forge_wait` once after you ready: it either waits or is refused.
+A client with no events calls `forge_wait` where this guide says to end the turn. It returns the status when the seat is asked something. Pass it the `revision` of your last status as `since`, or the `revision` of a pick answered `waiting: true`: with no `since` it returns at once. Then read the pack with `forge_draft_pack`, or the pool with `forge_draft_pool`. If you do not know whether events wake you, call `forge_wait` once after you ready: it either waits or is refused.
 
 ## Pick loop
 
 1. `forge_connect`, then `forge_lobby_ready` straight away. The host cannot start the event while a seat is unready, and no deck is needed to ready before a draft. End your turn.
-2. A `draft_pick` event carries the pack. `packNumber` and `pickNumber` count from 1. `secondsLeft` is the pick clock, when the host set one. `queued` is the number of packs waiting behind this one, when other seats are waiting on you. `pack` has each card's `name`, `manaCost`, `type`, `pt`, and its `rarity` unless it is Common.
-3. Rules text is in `cardText` under the card's name. It is sent once per card name in a draft. A pack that comes round the table again has no text for cards you were already sent, and a creature with no abilities has none. `forge_draft_pack {allText: true}` sends the text of the current pack again.
+2. A `draft_pick` event carries the pack. If it has no `pack`, read the pack with `forge_draft_pack`. `packNumber` and `pickNumber` count from 1. `secondsLeft` is the pick clock, when the host set one. `queued` is the host's last count of packs waiting behind this one, when other seats are waiting on you. `pack` has each card's `name`, `manaCost`, `type`, `pt`, and its `rarity` unless it is Common.
+3. Rules text is in `cardText` under the card's name. It is sent once per card name in a draft. A pack that comes round the table again has no text for cards you were already sent, and a creature with no abilities has none. `forge_draft_pack {allText: true}` sends the text of the current pack again. The server remembers what it sent for as long as it runs, whatever conversation asked. In a new conversation, or after your context was compacted, ask for the text again with `allText: true` on `forge_draft_pack` or `forge_draft_pool`.
 4. `drafted` counts your picks so far: `colors`, `creatures`, `other` spells, `lands`, and `curve`, the number of spells at each mana value. `unknown` counts picks the server never saw in a pack.
-5. Pick with `forge_draft_pick {card: "<exact name>", at: "<the pack's at>"}`. `picked` confirms the card. If the clock ran out and another pack is waiting, nothing is picked and the answer has `stale: true` with that pack: pick from it.
+5. Pick with `forge_draft_pick {card: "<exact name>", at: "<the pack's at>"}`. `picked` confirms the card. A pick without `at` is not made. If the clock ran out and another pack is waiting, nothing is picked and the answer has `stale: true` with that pack: pick from it. If it has `stale: true` and `waiting: true`, the host picked for you and the next pack has not come: end your turn.
 6. The answer has what you are asked next. If it has a `pack`, the next pack was already waiting: pick from it in the same turn. If it has `waiting: true`, another seat is still picking: end your turn, and the next event brings the pack. After the last pick it has `poolReceived: true`, with `pool` when the pool has arrived.
 
-A pick made from the event's pack needs no other call. Do not call `forge_draft_pack` or `forge_status` before a pick.
+A pick made from the event's pack needs no other call. When you have the pack, do not call `forge_draft_pack` or `forge_status` before the pick.
 
-If the clock runs out the host takes the first card of the pack for you. Those picks are listed in `autoPicks`. The clock runs from when the pack arrived. Decide from the pack you have, and do not look cards up on the clock unless `secondsLeft` is generous.
+If the clock runs out the host takes the first card of the pack for you. Those picks are listed in `autoPicks`. The clock runs from when the pack arrived. `secondsLeft` was read when the event was made, so an event that waited while you were busy has less left than it says. Decide from the pack you have, and do not look cards up on the clock unless `secondsLeft` is generous.
 
 ## Pick heuristics
 
