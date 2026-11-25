@@ -2,6 +2,7 @@ import { readFileSync } from "node:fs";
 import { describe, expect, it } from "vitest";
 import { Bridge } from "../src/bridge.js";
 import { EventLog } from "../src/event-log.js";
+import { eventView } from "../src/seat.js";
 import { MoveTracker, type SeatStatus } from "../src/seat-events.js";
 import { SeatMemory } from "../src/view.js";
 import { connect, fakeBridge } from "./helpers.js";
@@ -178,5 +179,73 @@ describe("a second match in the same lobby", () => {
     expect(main.board).toBeDefined();
     expect(main.cardText).toEqual(opening.cardText);
     expect(main.since?.newInHand).toBeUndefined();
+  });
+});
+
+/** Recorded by the bridge's AgentSideboardTest from the first seat after game one of a best of three, with one card in its sideboard. */
+const sideboardFixture = <T = Json>(name: string) => JSON.parse(readFileSync(new URL(`./fixtures/sideboard-${name}.json`, import.meta.url), "utf8")) as T;
+const decks = sideboardFixture("GET_game_sideboard_open");
+const sideboarding = sideboardFixture("GET_game_sideboarding");
+const HASTE = "Haste (This creature can attack and {T} as soon as it comes under your control.)";
+const sideboardingBridge = () => fakeBridge({ "GET /game": sideboarding, "GET /game/sideboard": decks, "POST /game/act": sideboardFixture("POST_game_act_swap"), "GET /game/log": { log: [] } });
+
+describe("sideboarding between games", () => {
+  it("is in the recordings: one Raging Goblin in the sideboard after a game that did not end the match", () => {
+    expect(sideboarding).toMatchObject({ gameOver: true, match: { over: false, sideboarding: true } });
+    expect(decks).toMatchObject({ open: true, minMain: 40, sideboard: [{ count: 1, name: "Raging Goblin", text: HASTE }] });
+  });
+
+  it("game_over says sideboarding is open and gives the sideboard, with card text once", async () => {
+    const status = sideboardFixture<SeatStatus>("GET_status_sideboarding");
+    const { bridge } = sideboardingBridge();
+    const memory = new SeatMemory();
+    const moves = new MoveTracker(new EventLog());
+    const event = await moves.observeWith(status, (data) => eventView(bridge, memory, status, data));
+    expect(event?.data).toMatchObject({ kind: "game_over", matchOver: false, sideboarding: true, sideboard: [{ count: 1, name: "Raging Goblin" }], cardText: { "Raging Goblin": HASTE } });
+    expect((event?.data.sideboard as Json[])[0]).not.toHaveProperty("text");
+    // The seat reads the game's end with a tool: the list again, and the text only once.
+    expect(await memory.view(bridge, structuredClone(sideboarding), { commit: true })).toMatchObject({ sideboarding: true, cardText: { "Raging Goblin": HASTE } });
+    const again = await memory.view(bridge, structuredClone(sideboarding), { commit: true });
+    expect(again).toMatchObject({ sideboarding: true, sideboard: [{ count: 1, name: "Raging Goblin" }] });
+    expect(again).not.toHaveProperty("cardText");
+  });
+
+  it("game_over of a match's last game has neither", async () => {
+    const { bridge } = sideboardingBridge();
+    const moves = new MoveTracker(new EventLog());
+    const event = await moves.observeWith(afterGameThree, (data) => eventView(bridge, new SeatMemory(), afterGameThree, data));
+    expect(event?.data).toMatchObject({ kind: "game_over", matchOver: true });
+    expect(event?.data).not.toHaveProperty("sideboarding");
+    expect(event?.data).not.toHaveProperty("sideboard");
+  });
+
+  it("continue sends the cards to move", async () => {
+    const { bridge, calls } = sideboardingBridge();
+    const client = await connect(bridge);
+    const res = await client.callTool({ name: "forge_game_act", arguments: { action: "continue", in: ["Raging Goblin"], out: ["Hill Giant"] } });
+    expect(res.isError, JSON.stringify(res.content)).toBeFalsy();
+    expect(calls.find((c) => c.path === "/game/act")?.body).toEqual({ action: "continue", in: ["Raging Goblin"], out: ["Hill Giant"] });
+    await client.callTool({ name: "forge_game_act", arguments: { action: "continue" } });
+    expect(calls.filter((c) => c.path === "/game/act").at(-1)?.body).toEqual({ action: "continue" });
+    await client.close();
+  });
+
+  it("refuses the cards with another action, and with a bridge that would ignore them", async () => {
+    const { bridge, calls } = sideboardingBridge();
+    const client = await connect(bridge);
+    const other = await client.callTool({ name: "forge_game_act", arguments: { action: "ok", in: ["Raging Goblin"] } });
+    expect(other.isError).toBe(true);
+    expect(JSON.stringify(other.content)).toContain("go with continue");
+    expect(calls.filter((c) => c.path === "/game/act")).toEqual([]);
+    await client.close();
+
+    // The best-of-three recordings are from a bridge before sideboarding.
+    const old = fakeBridge({ "GET /game": gameOver, "POST /game/act": gameOver, "GET /game/log": { log: [] } });
+    const oldClient = await connect(old.bridge);
+    const res = await oldClient.callTool({ name: "forge_game_act", arguments: { action: "continue", out: ["Mountain"] } });
+    expect(res.isError).toBe(true);
+    expect(JSON.stringify(res.content)).toContain("forge-agent-bridge 0.1.11");
+    expect(old.calls.filter((c) => c.path === "/game/act")).toEqual([]);
+    await oldClient.close();
   });
 });

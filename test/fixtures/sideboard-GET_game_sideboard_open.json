@@ -1,0 +1,30 @@
+{
+  "open": true,
+  "minMain": 40,
+  "maxSideboard": 41,
+  "main": [
+    {
+      "count": 19,
+      "name": "Goblin Piker"
+    },
+    {
+      "count": 20,
+      "name": "Mountain"
+    },
+    {
+      "count": 1,
+      "name": "Hill Giant"
+    }
+  ],
+  "sideboard": [
+    {
+      "count": 1,
+      "name": "Raging Goblin",
+      "manaCost": "{R}",
+      "type": "Creature - Goblin Berserker",
+      "power": "1",
+      "toughness": "1",
+      "text": "Haste (This creature can attack and {T} as soon as it comes under your control.)"
+    }
+  ]
+}

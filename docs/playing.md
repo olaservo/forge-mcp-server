@@ -54,6 +54,10 @@ Magic gives a player priority in every step. A seat that is asked at every one o
 
 `forge_lobby_deck` answers with the deck's description and `cards`: each card of the main deck with its count, cost, type, power and toughness and rules text, read from Forge's card scripts in `FORGE_HOME`. `forge_decks` with an `id` lists a deck as one row per card name, and `dck: true` adds the file's text.
 
+## Sideboarding between games
+
+After a game that did not end the match, the view of the finished game and its `forge.your_move` event have `sideboarding: true` when the seat has cards it may move, and `sideboard`: the cards of its sideboard by name, with count, cost, type, power and toughness. Their rules text comes in `cardText`, once per name like any other card. `forge_game_act` with `continue` takes `in` and `out`, card names to move from the sideboard to the main deck and back, one entry per copy. The bridge checks the change against Forge's limits and refuses it as an error, with nothing sent. `continue` alone keeps the deck. Forge's host asks for the deck only after every player has continued, and waits for the answer with no time limit, so the bridge gives it at once. This needs forge-agent-bridge 0.1.11. With an older bridge `in` and `out` are refused.
+
 ## Smaller answers
 
 - `forge_status`, `forge_connect`, `forge_disconnect` and `forge_wait` leave out `draft` when the seat has no draft and no pool.

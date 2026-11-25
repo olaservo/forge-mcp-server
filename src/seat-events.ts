@@ -13,7 +13,7 @@ type Move = { key: string; data: Record<string, unknown> };
 function gameOver(game: NonNullable<SeatStatus["game"]>, revision: SeatStatus["revision"]): Move {
   // Bridge 0.1.11 says where the match stands. Without it the seat cannot tell whether another game follows.
   const match = game.match;
-  const standing = match ? { matchOver: match.over, score: match.wins } : {};
+  const standing = match ? { matchOver: match.over, score: match.wins, ...(match.sideboarding === true && { sideboarding: true }) } : {};
   const data = { kind: "game_over", prompt: `Game over. Winner: ${game.winner ?? ""}`, revision, turn: game.turn, phase: game.phase, ...standing };
   return { key: `game_over:${match?.game ?? ""}:${game.turn}:${game.winner}`, data };
 }
@@ -205,6 +205,8 @@ export const EVENT_TYPES = [
         promptCount: { type: "integer", description: "For kinds priority and decision: the prompt this event reports. Pass it as `at` to forge_game_act." },
         matchOver: { type: "boolean", description: "For kind game_over: whether that game decided the match. False means another game follows." },
         score: { type: "object", description: "For kind game_over: games won in the match, by player name" },
+        sideboarding: { type: "boolean", description: "For kind game_over: the seat may change its deck for the next game, with `in` and `out` on its `continue`" },
+        sideboard: { type: "array", description: "With sideboarding: the cards in the seat's sideboard, by name with counts" },
         activePlayer: { type: "string" },
         buttons: { type: "object", description: "The labels of the enabled buttons" },
         life: { type: "object" },
