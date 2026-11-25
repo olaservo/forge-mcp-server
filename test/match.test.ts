@@ -249,3 +249,37 @@ describe("sideboarding between games", () => {
     await oldClient.close();
   });
 });
+
+describe("an answer to a game's end while a game is running", () => {
+  /** A bridge that refuses the action as forge-agent-bridge 0.1.11 does, with its text. */
+  const refusing = (error: string) => {
+    const posts: unknown[] = [];
+    const fetchImpl: typeof fetch = async (input, init) => {
+      if (init?.method !== "POST") return new Response(JSON.stringify(firstGame), { status: 200, headers: { "content-type": "application/json" } });
+      posts.push(JSON.parse(String(init.body)));
+      return new Response(JSON.stringify({ error }), { status: 400, headers: { "content-type": "application/json" } });
+    };
+    return { bridge: new Bridge({ baseUrl: "http://bridge.test", fetch: fetchImpl }), posts };
+  };
+
+  it("is an error with the bridge's text", async () => {
+    const text = "no game has ended: quit answers the end of a game. Nothing was sent. Concede first, or disconnect.";
+    const { bridge, posts } = refusing(text);
+    const client = await connect(bridge);
+    const res = await client.callTool({ name: "forge_game_act", arguments: { action: "quit" } });
+    expect(res.isError).toBe(true);
+    expect(JSON.stringify(res.content)).toContain(text);
+    expect(res.structuredContent).toBeUndefined();
+    expect(posts).toEqual([{ action: "quit" }]);
+    await client.close();
+  });
+
+  it("is an error for a second continue", async () => {
+    const text = "you have already answered the end of this game with continue. The next game starts when every player has answered. Nothing was sent.";
+    const client = await connect(refusing(text).bridge);
+    const res = await client.callTool({ name: "forge_game_act", arguments: { action: "continue" } });
+    expect(res.isError).toBe(true);
+    expect(JSON.stringify(res.content)).toContain(text);
+    await client.close();
+  });
+});

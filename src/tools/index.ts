@@ -360,6 +360,7 @@ export function registerTools(
         "`alphaStrike` attacks with everything, `undo` takes back the last action, `concede` ends the game. " +
         "Once `gameOver` is true, `match.over` says whether the match is decided. While it is not, `continue` plays the next game, which starts when every player has continued. " +
         "When it is, send `quit` once: it leaves the match and returns everyone to the lobby. `newMatch` restarts the match. " +
+        "The three are refused while a game is running, and a second `continue` after the same game is refused too: to leave a running game, `concede` first or use forge_disconnect. " +
         "With `sideboarding: true` you may change your deck for the next game as you continue: `in` names cards from `sideboard` to bring into your main deck and `out` names main deck cards to take out, one entry per copy. " +
         "A change that names a card you do not have, or leaves the deck outside its size limits, is an error and nothing is sent. `continue` without them keeps the deck. " +
         "`at` is the `promptCount` you are answering: if the prompt has changed, nothing is sent and the answer has `stale: true`. Pass it when you act on an event. " +
