@@ -36,4 +36,13 @@ describe("compactGame", () => {
     const compact = compactGame({ players: [], selection: { min: 1, max: 1, cards: [{ id: 9, name: "Forest", zone: "Library", tapped: false }] } });
     expect((compact.selection as { cards: object[] }).cards).toEqual([{ id: 9, name: "Forest", zone: "Library" }]);
   });
+
+  it("passes on a hand and a library top for the seat's own player only", () => {
+    const hidden = { id: 5, name: "Secret", zone: "Hand" };
+    const player = (name: string, isMe: boolean) => ({ name, isMe, battlefield: [], graveyard: [], hand: [{ ...hidden }], libraryTop: { ...hidden, zone: "Library" } });
+    const [me, them] = compactGame({ players: [player("A", true), player("B", false)] }).players as Record<string, unknown>[];
+    expect(me.hand).toEqual([{ id: 5, name: "Secret" }]);
+    expect(me.libraryTop).toEqual({ id: 5, name: "Secret" });
+    expect(them).toEqual({ name: "B", isMe: false, battlefield: [], graveyard: [] });
+  });
 });
