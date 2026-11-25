@@ -58,5 +58,10 @@
   "bo3 GET /status#secondGame": "bo3-GET_status_secondGame.json",
   "bo3 GET /game/log#secondGame": "bo3-GET_game_log_secondGame.json",
   "bo3 GET /status#matchOver": "bo3-GET_status_matchOver.json",
-  "bo3 GET /game#matchOver": "bo3-GET_game_matchOver.json"
+  "bo3 GET /game#matchOver": "bo3-GET_game_matchOver.json",
+  "rematch GET /game#firstMatch": "rematch-GET_game_firstMatch.json",
+  "rematch GET /game#firstMatchOver": "rematch-GET_game_firstMatchOver.json",
+  "rematch GET /game#betweenMatches": "rematch-GET_game_betweenMatches.json",
+  "rematch GET /game#secondMatch": "rematch-GET_game_secondMatch.json",
+  "rematch GET /game/log#secondMatch": "rematch-GET_game_log_secondMatch.json"
 }

@@ -82,12 +82,12 @@ function withText(game: Json): Json {
   return copy;
 }
 
-/** A seat's memory over a bridge that answers `/game/log` with the recorded log, up to the `logCount` of the game last viewed. */
-function seat() {
+/** A seat's memory over a bridge that answers `/game/log` with a recorded log, up to the `logCount` of the game last viewed. */
+function seat(lines = log) {
   let count = 0;
   const fetchImpl: typeof fetch = async (input) => {
     const since = Number(new URL(String(input)).searchParams.get("since") ?? 0);
-    return new Response(JSON.stringify({ log: log.slice(since, count) }), { status: 200, headers: { "content-type": "application/json" } });
+    return new Response(JSON.stringify({ log: lines.slice(since, count) }), { status: 200, headers: { "content-type": "application/json" } });
   };
   const bridge = new Bridge({ baseUrl: "http://bridge.test", fetch: fetchImpl });
   const memory = new SeatMemory();
@@ -143,5 +143,40 @@ describe("the next game of a match", () => {
     expect(after.game).toMatchObject({ turn: before.game?.turn, phase: before.game?.phase });
     expect(moves.observe(after)?.data).toMatchObject({ kind: "priority", turn: after.game?.turn });
     expect(moves.observe(after)).toBeUndefined();
+  });
+});
+
+/** Recorded by the bridge's AgentHostedMatchTest from the first seat of two one-game matches in one lobby. */
+const rematch = <T = Json>(name: string) => JSON.parse(readFileSync(new URL(`./fixtures/rematch-${name}.json`, import.meta.url), "utf8")) as T;
+const firstMatch = rematch("GET_game_firstMatch");
+const firstMatchOver = rematch("GET_game_firstMatchOver");
+const betweenMatches = rematch("GET_game_betweenMatches");
+const secondMatch = rematch("GET_game_secondMatch");
+
+describe("a second match in the same lobby", () => {
+  it("is in the recordings: the same game number and turn, a log that goes on, and another count of games opened", () => {
+    expect(firstMatch).toMatchObject({ match: { game: 1 }, turn: 0 });
+    expect(betweenMatches).toMatchObject({ inGame: false, gameOver: true, logCount: firstMatchOver.logCount });
+    expect(secondMatch).toMatchObject({ match: { game: 1 }, turn: 0, logCount: firstMatchOver.logCount, logStart: firstMatchOver.logCount, messageCount: firstMatchOver.messageCount });
+    expect(secondMatch.gamesOpened).toBeGreaterThan(Number(firstMatch.gamesOpened));
+  });
+
+  it("starts fresh", async () => {
+    const view = seat(rematch<{ log: string[] }>("GET_game_log_secondMatch").log);
+    const opening = await view(mainPhase(firstMatch));
+    expect(opening).toMatchObject({ cardText: { "Goblin Piker": "Sample rules text" } });
+    expect(opening.board).toBeDefined();
+    expect((await view(firstMatchOver)).since?.log?.filter(isResult).length).toBeGreaterThan(0);
+    await view(betweenMatches);
+
+    // The seat waits on the other player at this opening, so the view has no hand of its own.
+    const next = await view(secondMatch);
+    expect(next.since?.newInHand).toBeUndefined();
+    expect(next.since?.log).toBeUndefined();
+    const main = await view(mainPhase(secondMatch));
+    expect(main.hand).toHaveLength(7);
+    expect(main.board).toBeDefined();
+    expect(main.cardText).toEqual(opening.cardText);
+    expect(main.since?.newInHand).toBeUndefined();
   });
 });

@@ -182,6 +182,8 @@ export const Game = z.looseObject({
   logCount: num,
   /** The log lines there were when this game opened: the lines of earlier games of the match. Bridge 0.1.11. */
   logStart: num,
+  /** Goes up each time the host opens a game for the seat: a new match, or the next game of one. Bridge 0.1.11. */
+  gamesOpened: num,
   turn: num,
   phase: str,
   activePlayer: str,
