@@ -30,6 +30,8 @@ The user plays the game. You watch their seat and answer their questions. You do
 ## Setting up
 
 - Host with `forge_host` and `copilot` set to the player's lobby name. The name has to match what they type in their Forge client.
+- Do not take a seat in that game. The session that runs the copilot does not play in it, and `forge_connect` and `forge_copilot_view` refuse it. Another session or a person plays the other seat.
+- No two seats may have the watched name. The host then watches neither, and the view says why.
 - The player joins from a Forge client at one of the returned addresses and the port.
 - The host tells each player in the lobby, once, that the seat has a copilot.
 - The view starts when a game with that seat starts. Before that the tool says the seat is in no game.

@@ -1,7 +1,8 @@
-// Runs a copilot against a real host with no model: one server hosts with `copilot` and plays "Opponent", a second
-// server plays "Johnny", the watched seat. At each of Johnny's prompts it compares forge_copilot_view on the first
-// server with Johnny's own view, searches the copilot view for the names in Opponent's hidden hand, and checks that a
-// waiting forge_copilot_view returns when Johnny's prompt changes. It starts and stops both servers itself.
+// Runs a copilot against a real host with no model, with three servers. Server A hosts with `copilot` and holds no
+// seat: a session that watches does not play. Server B plays "Johnny", the watched seat, and server C plays "Opponent".
+// At each of Johnny's prompts it compares forge_copilot_view on server A with Johnny's own view, searches the copilot
+// view for the names in Opponent's hidden hand, and checks that a waiting forge_copilot_view returns when Johnny's
+// prompt changes. It also checks that server A is refused a seat on its own host. It starts and stops the servers itself.
 //   node scripts/smoke-copilot.mjs [turns]
 // Build first, and set FORGE_JAR, FORGE_HOME and FORGE_BRIDGE_JAR (forge-agent-bridge 0.1.11).
 import { spawn } from "node:child_process";
@@ -59,7 +60,12 @@ async function seat(name, url, deck) {
     return res.events?.at(-1)?.data;
   };
   const tools = async () => (await client.listTools()).tools;
-  return { name, deck, call, pending, tools, landTurn: -1, tried: new Set(), close: () => client.close() };
+  /** A call that may be refused: the structured answer, or `{ error }` with the refusal's text. */
+  const attempt = async (tool, args = {}) => {
+    const res = await client.callTool({ name: tool, arguments: args }, { timeout: 180_000 });
+    return res.isError ? { error: JSON.stringify(res.content) } : res.structuredContent;
+  };
+  return { name, deck, call, attempt, pending, tools, landTurn: -1, tried: new Set(), close: () => client.close() };
 }
 
 /** One action for the prompt in `v`, by the policy of smoke-two-seats.mjs. */
@@ -110,6 +116,12 @@ const fail = (line) => {
 /** Why the copilot view differs from the watched seat's own view of the same prompt, or null. */
 function difference(copilot, own) {
   if (copilot.promptCount !== own.promptCount) return `promptCount ${copilot.promptCount} against ${own.promptCount}`;
+  // While a dialog is open, the seat's own view gives the dialog's question as its prompt. The copilot view keeps
+  // the host's prompt and gives the dialog beside it, with the options the seat is shown.
+  if (own.pendingDecision) {
+    const offered = copilot.dialog?.options?.length;
+    return offered === own.pendingDecision.options?.length ? null : `dialog ${JSON.stringify(copilot.dialog ?? null)} against ${JSON.stringify(own.pendingDecision)}`;
+  }
   if (copilot.prompt !== own.prompt) return `prompt ${JSON.stringify(copilot.prompt)} against ${JSON.stringify(own.prompt)}`;
   if (!same(copilot.buttons, own.buttons)) return `buttons ${JSON.stringify(copilot.buttons)} against ${JSON.stringify(own.buttons)}`;
   if (own.hand && !same(names(copilot.hand), names(own.hand))) return `hand ${names(copilot.hand)} against ${names(own.hand)}`;
@@ -117,11 +129,13 @@ function difference(copilot, own) {
 }
 
 for (const key of ["FORGE_JAR", "FORGE_HOME", "FORGE_BRIDGE_JAR"]) if (!process.env[key]) throw new Error(`Set ${key}.`);
-const [hostPort, portA, portB] = [await freePort(), await freePort(), await freePort()];
-const servers = await Promise.all([server("A", portA), server("B", portB)]);
-const a = await seat("Opponent", servers[0].url, { id: "precons/Abzan Siege" });
+const [hostPort, portA, portB, portC] = [await freePort(), await freePort(), await freePort(), await freePort()];
+const servers = await Promise.all([server("A", portA), server("B", portB), server("C", portC)]);
+/** The session that hosts and watches. It has no deck and takes no seat. */
+const a = await seat("Watcher", servers[0].url, undefined);
 const b = await seat(WATCHED, servers[1].url, { id: "precons/Goblin Mob" });
-const seats = [a, b];
+const c = await seat("Opponent", servers[2].url, { id: "precons/Abzan Siege" });
+const seats = [c, b];
 
 try {
   const copilotTools = (await a.tools()).filter((t) => t.name.includes("copilot")).map((t) => t.name);
@@ -133,6 +147,14 @@ try {
   console.log(`forge_host -> ${JSON.stringify(hosted)}`);
   if (/[0-9a-f]{64}/.test(JSON.stringify(hosted))) fail("forge_host's answer carries the token");
   console.log(`in the lobby, before a game: ${JSON.stringify(await a.call("forge_copilot_view"))}`);
+  for (const address of ["127.0.0.1", "localhost", hosted.addresses[0]].filter(Boolean)) {
+    const refused = await a.attempt("forge_connect", { host: address, port: hostPort, name: "Opponent" });
+    console.log(`server A forge_connect to its own host at ${address} -> ${JSON.stringify(refused).slice(0, 210)}`);
+    if (!refused.error?.includes("does not play in the game it watches")) fail(`server A was not refused a seat at ${address}`);
+  }
+  const noSeat = (await a.call("forge_status")).connection;
+  console.log(`server A's own connection after the refusals: ${JSON.stringify(noSeat ?? null)}`);
+  if (noSeat?.connected) fail("server A holds a seat");
 
   for (const s of seats) {
     await s.call("forge_status");
@@ -147,6 +169,7 @@ try {
   let secrecy = 0;
   let waits = 0;
   let logLines = 0;
+  let dialogs = 0;
   const comparedPrompts = new Set();
   const hiddenNames = new Set();
   let turn = 0;
@@ -161,10 +184,11 @@ try {
       const event = await s.pending();
       if (!event || event.promptCount !== g.promptCount) continue;
 
-      // No name from Opponent's hidden hand. The copilot view is read first, so a card played since is not counted.
+      // No name from Opponent's hidden hand, which server C reads through its own seat. The copilot view is read
+      // first, so a card played since is not counted.
       let view = await a.call("forge_copilot_view");
       if (view.watching) {
-        const state = await a.call("forge_game_state");
+        const state = await c.call("forge_game_state");
         const open = new Set((view.hand ?? []).map((c) => c.name));
         for (const p of state.players ?? []) for (const c of [...(p.battlefield ?? []), ...(p.graveyard ?? [])]) open.add(c.name);
         for (const item of state.stack ?? []) open.add(item.source);
@@ -190,6 +214,7 @@ try {
         else {
           compared++;
           if (event.hand) withHand++;
+          if (event.pendingDecision && dialogs++ === 0) console.log(`dialog on the copilot view: ${JSON.stringify(view.dialog)} for Johnny's decision ${JSON.stringify(event.pendingDecision).slice(0, 200)}`);
           comparedPrompts.add(String(event.prompt).replace(/\n/g, " / ").replace(/[0-9]+/g, "#").slice(0, 70));
         }
         if (waits < 4) waiting = { since: view.revision, started: Date.now(), answer: a.call("forge_copilot_view", { since: view.revision, timeout: 30 }) };
@@ -206,7 +231,7 @@ try {
     if (!moved) await sleep(300);
   }
 
-  console.log(`compared equal at ${compared} of Johnny's prompts through turn ${turn}, ${withHand} with the hand`);
+  console.log(`compared equal at ${compared} of Johnny's prompts through turn ${turn}, ${withHand} with the hand, ${dialogs} with a dialog open`);
   for (const p of comparedPrompts) console.log(`  compared: ${p}`);
   console.log(`secrecy checks ${secrecy}, hidden names checked: ${[...hiddenNames].join(", ")}`);
   console.log(`log lines on copilot views: ${logLines}`);
@@ -224,7 +249,7 @@ try {
     if (told.length !== 1) fail(`${s.name} was told ${told.length} times`);
   }
 
-  await a.call("forge_game_act", { action: "concede" });
+  await c.call("forge_game_act", { action: "concede" });
   await sleep(3000);
   for (const s of seats) await s.call("forge_game_act", { action: "quit" });
   await sleep(1500);
@@ -233,7 +258,7 @@ try {
   console.log(`forge_host_stop -> ${JSON.stringify(await a.call("forge_host_stop"))}`);
   console.log(`after forge_host_stop: ${JSON.stringify(await a.call("forge_copilot_view"))}`);
 } finally {
-  await Promise.all(seats.map((s) => s.close().catch(() => undefined)));
+  await Promise.all([a, ...seats].map((s) => s.close().catch(() => undefined)));
   for (const s of servers) s.stop();
 }
 console.log(failures.length ? `FAILED: ${failures.length} check(s)` : "PASSED: every check");

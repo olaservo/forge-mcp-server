@@ -6,6 +6,7 @@ import { parseDck } from "../decks/decklist.js";
 import { sharedLibrary, type DeckLibrary } from "../decks/library.js";
 import type { SearchIo } from "../decks/search.js";
 import type { ActivityLog } from "../log.js";
+import { isOwnHost, WATCHES_ONLY } from "../copilot.js";
 import { sharedHost, type LobbyHost } from "../host.js";
 import type { GetText } from "../names.js";
 import * as out from "../schemas.js";
@@ -102,10 +103,14 @@ export function registerTools(
       outputSchema: out.Status,
       annotations: acting,
     },
-    async ({ host, port, name }) =>
+    async ({ host: address, port, name }) =>
       run(async () => {
+        const watched = host.copilot()?.seat;
+        if (watched !== undefined && (await isOwnHost(host, address, port))) {
+          throw new Error(`This server's host watches ${watched} for a copilot. ${WATCHES_ONLY} Another session takes the seat, or host again without \`copilot\`.`);
+        }
         await bridge.ensureStarted();
-        return withoutIdleDraft(await bridge.post<Record<string, unknown>>("/connect", { host, port, name }));
+        return withoutIdleDraft(await bridge.post<Record<string, unknown>>("/connect", { host: address, port, name }));
       }),
   );
 
@@ -231,7 +236,7 @@ export function registerTools(
 
   registerDeckTools(tool, decks, deckSearch);
   registerNameTools(tool, names);
-  registerHostTools(tool, host);
+  registerHostTools(tool, host, bridge);
 
   tool(
     "forge_chat",

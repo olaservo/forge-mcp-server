@@ -1,10 +1,11 @@
 import { z } from "zod";
-import { copilotView } from "../copilot.js";
+import type { Bridge } from "../bridge.js";
+import { copilotView, seatAt, WATCHES_ONLY } from "../copilot.js";
 import type { LobbyHost } from "../host.js";
 import * as out from "../schemas.js";
-import { acting, readOnly, run, type RegisterTool } from "./common.js";
+import { acting, failure, readOnly, run, type RegisterTool } from "./common.js";
 
-export function registerHostTools(tool: RegisterTool, host: LobbyHost): void {
+export function registerHostTools(tool: RegisterTool, host: LobbyHost, bridge: Bridge): void {
   if (process.env.FORGE_HOSTING === "0") return;
 
   tool(
@@ -16,7 +17,7 @@ export function registerHostTools(tool: RegisterTool, host: LobbyHost): void {
         "every slot is open, and it starts the match once every slot is taken and each seat is ready with a legal deck. " +
         "Take your own seat with forge_connect at 127.0.0.1 and the port, and set its deck and avatar before forge_lobby_ready: the match starts 3 seconds after the last seat is ready. Other players join from a Forge client at one of `addresses` and the port. " +
         "A match is one game, or the best of 3 or 5 with `games`. " +
-        "With `copilot` the host watches that seat for forge_copilot_view, and tells each player in the lobby so in chat. " +
+        "With `copilot` the host watches that seat for forge_copilot_view, and tells each player in the lobby so in chat. A session that hosts with `copilot` takes no seat in that game: forge_connect to it and forge_copilot_view with a seat there are refused. " +
         "The port is open to the local network with no password. Loading cards takes about 40 seconds. " +
         "Called while a host runs with the same settings, it answers that host's state.",
       inputSchema: z.object({
@@ -29,7 +30,14 @@ export function registerHostTools(tool: RegisterTool, host: LobbyHost): void {
       outputSchema: out.Host,
       annotations: acting,
     },
-    async (settings) => run(() => host.start(settings)),
+    async (settings) => {
+      // In order this cannot happen, since the seat would need the host first. A bridge that sat down by itself could.
+      const seat = settings.copilot === undefined ? undefined : await seatAt(bridge, settings.port).catch(() => undefined);
+      if (seat !== undefined) {
+        return failure(`This server holds the seat "${seat}" at port ${settings.port}. ${WATCHES_ONLY} Leave with forge_disconnect before hosting with a copilot.`);
+      }
+      return run(() => host.start(settings));
+    },
   );
 
   tool(
@@ -38,7 +46,7 @@ export function registerHostTools(tool: RegisterTool, host: LobbyHost): void {
       title: "See what the watched seat sees",
       description:
         "What the player in the seat named by forge_host's `copilot` is shown now: the prompt, the buttons, the hand, the stack, the selection, an open dialog, both battlefields, and rules text once per card name. " +
-        "It holds what that player may see and nothing of the other player's hidden cards. " +
+        "It holds what that player may see and nothing of the other player's hidden cards. It is refused while this server holds a seat on that host. " +
         "It only reads: this tool and this server have no way to act for the watched seat. " +
         "With `since` set to a `revision` you have read, it waits up to `timeout` seconds for the view to change and says `unchanged` when it did not.",
       inputSchema: z.object({
@@ -48,7 +56,7 @@ export function registerHostTools(tool: RegisterTool, host: LobbyHost): void {
       outputSchema: out.CopilotView,
       annotations: readOnly,
     },
-    async ({ since, timeout }) => run(() => copilotView(host, { since, timeout })),
+    async ({ since, timeout }) => run(() => copilotView(host, bridge, { since, timeout })),
   );
 
   tool(
