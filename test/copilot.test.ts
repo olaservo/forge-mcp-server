@@ -2,7 +2,7 @@ import type { spawn } from "node:child_process";
 import { EventEmitter } from "node:events";
 import { readFileSync } from "node:fs";
 import { describe, expect, it } from "vitest";
-import { copilotView } from "../src/copilot.js";
+import { copilotView, isOwnHost } from "../src/copilot.js";
 import { LobbyHost } from "../src/host.js";
 import * as out from "../src/schemas.js";
 import { fakeBridge, connect, fakeHost } from "./helpers.js";
@@ -60,6 +60,29 @@ describe("forge_host with a copilot", () => {
     expect(args.join(" ")).not.toContain(access.token);
     expect(JSON.stringify(state)).not.toContain(access.token);
     expect(out.Host.parse(state)).toMatchObject({ copilot: "Johnny" });
+  });
+
+  it("takes games, ai, aiDecks and copilot in one call and reads each from one ready line", async () => {
+    const ready = (port: number) => `MATCH_HOST_AI slot=1 name=Henry deck=Goblin Mob\r\nMATCH_HOST_READY port=36750 games=3 ai=1 copilotPort=${port} copilot=Johnny\r\n`;
+    const { host, spawned } = copilotHost(ready);
+    const state = await host.start({ ...settings, limited: false, games: 3, ai: 1, aiDecks: ["goblins.dck"] }, 500);
+    expect(state).toMatchObject({ running: true, port: 36750, games: 3, ai: 1, copilot: "Johnny", aiSeats: [{ slot: 1, name: "Henry", deck: "Goblin Mob" }] });
+    const { args } = spawned[0];
+    expect(args.slice(args.indexOf("--seats"))).toEqual(["--seats", "2", "--games", "3", "--ai", "1", "--ai-deck", "goblins.dck", "--copilot", "Johnny", "--copilot-port", "41234", "--exit-with-parent"]);
+    expect(host.copilot()).toMatchObject({ seat: "Johnny", url: "http://127.0.0.1:41234/copilot" });
+    // The refusals of forge_connect and forge_copilot_view find this host by the port in its state.
+    expect(await isOwnHost(host, "127.0.0.1", 36750)).toBe(true);
+    expect(await isOwnHost(host, "127.0.0.1", 36751)).toBe(false);
+    expect(out.Host.parse(state)).toMatchObject({ games: 3, ai: 1, copilot: "Johnny" });
+  });
+
+  it("finds each field's older-bridge check in a line that has the others", async () => {
+    const noCopilot = copilotHost(() => "MATCH_HOST_READY port=36750 games=3 ai=1\r\n");
+    await expect(noCopilot.host.start({ ...settings, limited: false, games: 3, ai: 1 }, 500)).rejects.toThrow("forge_host with copilot needs");
+    const noAi = copilotHost((port) => `MATCH_HOST_READY port=36750 games=3 copilotPort=${port} copilot=Johnny\r\n`);
+    await expect(noAi.host.start({ ...settings, limited: false, games: 3, ai: 1 }, 500)).rejects.toThrow("forge_host with ai 1 needs");
+    const noGames = copilotHost((port) => `MATCH_HOST_READY port=36750 ai=1 copilotPort=${port} copilot=Johnny\r\n`);
+    await expect(noGames.host.start({ ...settings, limited: false, games: 3, ai: 1 }, 500)).rejects.toThrow("forge_host with games 3 needs");
   });
 
   it("has no copilot without the argument, and forgets it when the host stops", async () => {
