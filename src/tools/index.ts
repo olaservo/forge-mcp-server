@@ -251,7 +251,7 @@ export function registerTools(
       title: "Current draft pack",
       description:
         "The pack in front of us: pack and pick numbers (both from 1), the pick timer with `secondsLeft` when the host set one, and every card with mana cost, type, colors, P/T and oracle text. " +
-        "`pickPending` false means we have already picked and the next pack has not arrived; use forge_wait.",
+        "`pickPending` false means we have already picked and the next pack has not arrived: end your turn if forge.your_move events wake the seat, otherwise use forge_wait.",
       inputSchema: z.object({}),
       outputSchema: out.Draft,
       annotations: readOnly,

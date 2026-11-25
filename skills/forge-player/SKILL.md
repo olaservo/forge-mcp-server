@@ -21,7 +21,7 @@ When an answer has `waiting: true`, or the prompt reads "Waiting for ...", nothi
 
 A `forge.your_move` event for a game prompt carries what `forge_game_act` would return for it, with the board. Act on it without reading the state first, and pass its `promptCount` as `at`. If the prompt has changed by the time your action arrives, nothing is sent and the answer has `stale: true` with the current prompt.
 
-`forge_wait` is for a client with no event subscription. If you do not know whether events wake you, call it once after you ready: it either waits or is refused. Use it instead of calling `forge_status` in a tight loop. It returns as soon as the seat is asked something (a pack, a prompt, a decision, the lobby before you are ready, the end of the game) or another player chats, and not while the opponent acts.
+`forge_wait` is for a client with no event subscription. After you ready, end your turn if `forge.your_move` events wake your seat, as they do in Claude Code with the mcp-events mod. Call `forge_wait` after you ready only in a client that has no such events. Use it instead of calling `forge_status` in a tight loop. It returns as soon as the seat is asked something (a pack, a prompt, a decision, the lobby before you are ready, the end of the game) or another player chats, and not while the opponent acts.
 
 A `forge.chat` event means another player said something. Answer with `forge_chat` if an answer is called for. It needs no state read, and you act only if a prompt is also yours.
 
