@@ -14,7 +14,7 @@ This repo is one of three parts. Cloning it alone is not enough to play.
 
 ## Run
 
-Download the [Forge 2.0.16 desktop release](https://github.com/Card-Forge/forge/releases/tag/forge-2.0.16) and `forge-agent-bridge-0.1.6-forge-2.0.16.jar` from the [forge-agent-bridge releases](https://github.com/olaservo/forge-agent-bridge/releases). The events need bridge 0.1.3 or later. From 0.1.4 the bridge marks the priority prompt, and before it the server matches the prompt's English text. From 0.1.5 a chat line names its sender, and before it the server splits the line on the seat names. `forge_draft_deck`, the pick clock's `secondsLeft` and the end of the `deck` ask once a deck is built need 0.1.6. With an older bridge the `deck` ask stays pending after a deck is set. For another Forge version, build the bridge jar against that version's jar, as the forge-agent-bridge README describes. Then set three variables and the server starts the bridge on first use:
+Download the [Forge 2.0.16 desktop release](https://github.com/Card-Forge/forge/releases/tag/forge-2.0.16) and `forge-agent-bridge-0.1.10-forge-2.0.16.jar` from the [forge-agent-bridge releases](https://github.com/olaservo/forge-agent-bridge/releases). The events need bridge 0.1.3 or later. From 0.1.4 the bridge marks the priority prompt, and before it the server matches the prompt's English text. From 0.1.5 a chat line names its sender, and before it the server splits the line on the seat names. `forge_draft_deck`, the pick clock's `secondsLeft` and the end of the `deck` ask once a deck is built need 0.1.6. With an older bridge the `deck` ask stays pending after a deck is set. `forge_game_stops`, `selectStack` and the `pay`, `pass`, `once`, `endTurn` and `at` arguments of `forge_game_act` need 0.1.10, and with an older bridge each says so. For another Forge version, build the bridge jar against that version's jar, as the forge-agent-bridge README describes. Then set three variables and the server starts the bridge on first use:
 
 - `FORGE_JAR`: the Forge `forge-gui-desktop-<version>-jar-with-dependencies.jar`.
 - `FORGE_BRIDGE_JAR`: the bridge jar.
@@ -48,7 +48,7 @@ The server is also on npm as `@olaservo/forge-mcp-server`, so a client can start
       "env": {
         "FORGE_JAR": "C:/tools/forge-2.0.16/forge-gui-desktop-2.0.16-jar-with-dependencies.jar",
         "FORGE_HOME": "C:/tools/forge-2.0.16",
-        "FORGE_BRIDGE_JAR": "C:/tools/forge-agent-bridge/forge-agent-bridge-0.1.9-forge-2.0.16.jar"
+        "FORGE_BRIDGE_JAR": "C:/tools/forge-agent-bridge/forge-agent-bridge-0.1.10-forge-2.0.16.jar"
       }
     }
   }

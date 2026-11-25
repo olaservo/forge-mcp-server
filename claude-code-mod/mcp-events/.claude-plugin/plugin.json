@@ -1,6 +1,6 @@
 {
   "name": "mcp-events",
-  "version": "0.2.0",
+  "version": "0.3.0",
   "types": "./types/index.d.ts",
   "description": "Follows MCP Events on an MCP server (poll delivery, or webhook delivery through a mailbox) and starts a turn when one fires",
   "userConfig": {
