@@ -337,8 +337,12 @@ export const PoolView = Pool.extend({ cards: z.array(DraftCard).nullish(), cardT
 export const PickAnswer = PackView.extend({
   picked: z.looseObject({ name: str, packNumber: num, pickNumber: num }).nullish(),
   pool: PoolView.nullish(),
-  /** The pick named a pack that is no longer the one waiting, and was not sent. */
+  /** The pick named a pack that is no longer the one waiting, or named none, and was not sent. */
   stale: bool,
+  /** Why a pick that named no pack was not sent. */
+  problem: str,
+  /** With `waiting`: the bridge revision, for a client that waits with forge_wait. */
+  revision: num,
   /** The bridge does not check `at` itself, so the server compared it just before sending the pick. */
   weakCheck: bool,
 });

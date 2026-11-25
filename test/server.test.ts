@@ -51,6 +51,7 @@ describe("forge-mcp-server", () => {
   it("routes forge_status and forge_draft_pick to the bridge", async () => {
     const { bridge, calls } = fakeBridge({
       "GET /status": status,
+      "GET /draft/pack": { pickPending: true, packNumber: 1, pickNumber: 1, at: "1:1", pack: [{ name: "Lightning Bolt" }], picks: [] },
       "POST /draft/pick": { picked: { name: "Lightning Bolt" }, packNumber: 1, pickNumber: 1 },
     });
     const client = await connect(bridge);
@@ -59,9 +60,9 @@ describe("forge-mcp-server", () => {
     expect(st.isError).toBeFalsy();
     expect((st.structuredContent as typeof status).revision).toBe(3);
 
-    const pick = await client.callTool({ name: "forge_draft_pick", arguments: { card: "Lightning Bolt" } });
+    const pick = await client.callTool({ name: "forge_draft_pick", arguments: { card: "Lightning Bolt", at: "1:1" } });
     expect(pick.isError).toBeFalsy();
-    expect(calls.find((c) => c.path === "/draft/pick")?.body).toEqual({ card: "Lightning Bolt" });
+    expect(calls.find((c) => c.path === "/draft/pick")?.body).toEqual({ card: "Lightning Bolt", at: "1:1" });
     await client.close();
   });
 

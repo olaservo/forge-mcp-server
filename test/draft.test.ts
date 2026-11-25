@@ -95,6 +95,55 @@ describe("the pack view", () => {
     expect(read.pack({ ...pack, pickNumber: 2, pack: packCards.slice(1) }, { commit: true }).cardText).toBeUndefined();
   });
 
+  it("starts again for a draft after a sealed event, and for a draft after one that ended without pools", () => {
+    const sealed = new DraftMemory();
+    const inBoth = withText(packCards).filter((name) => (pool.cards as Json[]).some((c) => c.name === name));
+    expect(inBoth.length).toBeGreaterThan(0);
+    sealed.pool(pool, { commit: true });
+    // A sealed event has no picks, so the first pack of the draft after it shrinks no pick list.
+    const first = sealed.pack({ ...pack, packNumber: 1, pickNumber: 1, picks: [] }, { commit: true });
+    expect(Object.keys(first.cardText as Json)).toHaveLength(PACK_TEXTS);
+    // The next pack of that draft is not another start.
+    expect(sealed.pack({ ...pack, packNumber: 1, pickNumber: 2, pack: packCards.slice(1), picks: ["Spined Wurm"] }, { commit: true }).cardText).toBeUndefined();
+
+    const ended = new DraftMemory();
+    const picks = pack.picks as string[];
+    ended.pack(pack, { commit: true });
+    expect(ended.pack({ ...pack, pickNumber: 2, pack: packCards.slice(1) }, { commit: true }).cardText).toBeUndefined();
+    // An older bridge keeps the old pick list, so only the pack number says a new draft has begun.
+    const again = ended.pack({ ...pack, packNumber: 1, pickNumber: 1, picks }, { commit: true });
+    expect(Object.keys(again.cardText as Json)).toHaveLength(PACK_TEXTS);
+    // The cards seen before still count: a card's colour and type are the same in any event.
+    expect(new DraftMemory().pack({ ...pack, picks: ["Serra Angel"] }, { commit: true }).drafted).toMatchObject({ count: 1, creatures: 1 });
+    expect(ended.pack({ ...pack, packNumber: 1, pickNumber: 2, pack: packCards.slice(1), picks: ["Serra Angel"] }, { commit: true }).drafted).toMatchObject({ count: 1, creatures: 1, colors: { W: 1 } });
+  });
+
+  it("gives a card with two faces the text of both, in the pack, the pool and the deck", async () => {
+    // As Snapshots.describe gives the card from forge-agent-bridge 0.1.11 on: Forge's own text has the front alone.
+    const giant = {
+      name: "Bonecrusher Giant",
+      set: "CLB",
+      collectorNumber: "781",
+      rarity: "Rare",
+      manaCost: "{2}{R}",
+      type: "Creature - Giant",
+      colors: "R",
+      power: "4",
+      toughness: "3",
+      oracle: "Whenever Bonecrusher Giant becomes the target of a spell, Bonecrusher Giant deals 2 damage to that spell's controller.\nStomp {1}{R}: Damage can't be prevented this turn. Stomp deals 2 damage to any target.",
+    };
+    const both = "Whenever Bonecrusher Giant becomes the target of a spell, Bonecrusher Giant deals 2 damage to that spell's controller.\nStomp {1}{R}: Damage can't be prevented this turn. Stomp deals 2 damage to any target.";
+    const drafts = new DraftMemory();
+    expect((drafts.pack({ ...named, pack: [giant], picks: [] }, { commit: false }).cardText as Json)["Bonecrusher Giant"]).toBe(both);
+    const giantPool = { ...pool, eventId: "two-faces", size: 1, cards: [{ ...giant, section: "Sideboard" }] };
+    expect((new DraftMemory().pool(giantPool, { commit: true }).cardText as Json)["Bonecrusher Giant"]).toBe(both);
+    const { bridge } = fakeBridge({ "POST /draft/deck": fixture("draft-POST_draft_deck.json"), "GET /draft/pool": giantPool, "GET /status": { revision: 9 } });
+    const client = await connect(bridge);
+    const deck = (await client.callTool({ name: "forge_draft_deck", arguments: { main: ["Bonecrusher Giant"], lands: {} } })).structuredContent as { cards: Card[] };
+    expect(deck.cards[0]).toMatchObject({ name: "Bonecrusher Giant", text: both });
+    await client.close();
+  });
+
   it("starts again when the pick list does", () => {
     const drafts = new DraftMemory();
     drafts.pack(pack, { commit: true });
@@ -164,7 +213,7 @@ describe("forge_draft_pick", () => {
     const client = await connect(bridge);
     const shown = (await client.callTool({ name: "forge_draft_pack", arguments: {} })).structuredContent as Json;
     expect(Object.keys(shown.cardText as Json)).toHaveLength(PACK_TEXTS);
-    const res = await client.callTool({ name: "forge_draft_pick", arguments: { card: "Spined Wurm" } });
+    const res = await client.callTool({ name: "forge_draft_pick", arguments: { card: "Spined Wurm", at: "3:1" } });
     expect(res.isError).toBeFalsy();
     const answer = res.structuredContent as Json;
     expect(answer.picked).toEqual({ name: "Spined Wurm", packNumber: 3, pickNumber: 1 });
@@ -180,8 +229,15 @@ describe("forge_draft_pick", () => {
     // No view of the pack went through this server, so it cannot count the card.
     const { bridge } = draftingBridge({ ...pack, pickPending: false, secondsLeft: undefined, pack: undefined, picks: ["Spined Wurm"] });
     const client = await connect(bridge);
-    const answer = (await client.callTool({ name: "forge_draft_pick", arguments: { card: "0" } })).structuredContent as Json;
-    expect(answer).toEqual({ picked: { name: "Spined Wurm", packNumber: 3, pickNumber: 1 }, waiting: true, drafted: { count: 1, colors: {}, creatures: 0, other: 0, unknown: 1, curve: {} } });
+    const answer = (await client.callTool({ name: "forge_draft_pick", arguments: { card: "0", at: "3:1" } })).structuredContent as Json;
+    // The recording is of a bridge that does not check `at`. `revision` is what a client with no events waits from.
+    expect(answer).toEqual({
+      picked: { name: "Spined Wurm", packNumber: 3, pickNumber: 1 },
+      weakCheck: true,
+      waiting: true,
+      revision: 8,
+      drafted: { count: 1, colors: {}, creatures: 0, other: 0, unknown: 1, curve: {} },
+    });
     await client.close();
   });
 
@@ -189,24 +245,25 @@ describe("forge_draft_pick", () => {
     const over = { ...pack, pickPending: false, poolReceived: true, pack: undefined, picks: [] };
     const { bridge } = draftingBridge(over, { "GET /draft/pool": pool });
     const client = await connect(bridge);
-    const answer = (await client.callTool({ name: "forge_draft_pick", arguments: { card: "0" } })).structuredContent as Json;
+    const answer = (await client.callTool({ name: "forge_draft_pick", arguments: { card: "0", at: "3:1" } })).structuredContent as Json;
     expect(answer).toMatchObject({ picked: { name: "Spined Wurm" }, poolReceived: true, pool: { size: 45, counts: { count: 45 } } });
+    expect(answer.revision).toBeUndefined();
     expect(answer.pack).toBeUndefined();
     await client.close();
   });
 
   it("still confirms the pick when what comes next cannot be read", async () => {
-    const { bridge } = fakeBridge({ "POST /draft/pick": { picked: { name: "Lightning Bolt" }, packNumber: 1, pickNumber: 1 } });
+    const { bridge } = fakeBridge({ "GET /draft/pack": named, "POST /draft/pick": { picked: { name: "Lightning Bolt" }, packNumber: 3, pickNumber: 1 } });
     const client = await connect(bridge);
-    const res = await client.callTool({ name: "forge_draft_pick", arguments: { card: "Lightning Bolt" } });
-    expect(res.structuredContent).toEqual({ picked: { name: "Lightning Bolt", packNumber: 1, pickNumber: 1 } });
+    const res = await client.callTool({ name: "forge_draft_pick", arguments: { card: "Lightning Bolt", at: "3:1" } });
+    expect(res.structuredContent).toEqual({ picked: { name: "Lightning Bolt", packNumber: 3, pickNumber: 1 } });
     await client.close();
   });
 
   it("stops holding when the bridge's own wait runs out", async () => {
     const idle = { revision: 5, draft: { pickPending: false, poolReceived: false } };
     const { bridge, calls } = fakeBridge({ "GET /wait": idle });
-    expect(await afterPick(bridge, 60_000)).toEqual(idle.draft);
+    expect(await afterPick(bridge, 60_000)).toEqual({ draft: idle.draft, revision: 5 });
     expect(calls).toHaveLength(2);
   });
 });
@@ -244,22 +301,29 @@ describe("forge_draft_pick with at", () => {
     await client.close();
   });
 
-  it("names the pack it last showed when at is left out, and none once an event has reported a later pack", async () => {
+  it("sends no pick that names no pack, and answers with the pack waiting now", async () => {
     const { bridge, calls } = fakeBridge({ "GET /draft/pack": named, "POST /draft/pick": made, "GET /wait": idle });
     const client = await connect(bridge);
-    // Nothing shown yet: the pick is made from whatever pack is waiting.
-    await client.callTool({ name: "forge_draft_pick", arguments: { card: "0" } });
+    const refused = (await client.callTool({ name: "forge_draft_pick", arguments: { card: "0" } })).structuredContent as Json;
+    expect(refused).toMatchObject({ stale: true, at: "3:1", problem: expect.stringContaining("named no pack") });
+    expect(refused.pack).toHaveLength(15);
+    expect(refused.picked).toBeUndefined();
+    // Also straight after a tool result showed the pack: the pick may be one sent again after a lost answer.
     await client.callTool({ name: "forge_draft_pack", arguments: {} });
-    await client.callTool({ name: "forge_draft_pick", arguments: { card: "0" } });
-    expect(posted(calls)).toEqual([{ card: "0" }, { card: "0", at: "3:1" }]);
-    // The answer showed no pack, and the event for the next one may or may not have been read.
-    const drafts = draftFor(bridge);
-    drafts.pack({ ...named, at: "3:2", pickNumber: 2 }, { commit: false });
-    expect(drafts.lastTold()).toBe("3:2");
-    drafts.pack({ ...named, at: "3:3", pickNumber: 3 }, { commit: false });
-    expect(drafts.lastTold()).toBeUndefined();
-    await client.callTool({ name: "forge_draft_pick", arguments: { card: "0" } });
-    expect(posted(calls).at(-1)).toEqual({ card: "0" });
+    await client.callTool({ name: "forge_draft_pick", arguments: { card: "Spined Wurm" } });
+    expect(posted(calls)).toEqual([]);
+    expect(calls.some((c) => c.path === "/wait")).toBe(false);
+    await client.callTool({ name: "forge_draft_pick", arguments: { card: "0", at: refused.at } });
+    expect(posted(calls)).toEqual([{ card: "0", at: "3:1" }]);
+    await client.close();
+  });
+
+  it("answers a pick that names no pack with waiting when no pack is there", async () => {
+    const { bridge, calls } = fakeBridge({ "GET /draft/pack": { ...named, at: null, pickPending: false, pack: undefined, picks: [] }, "POST /draft/pick": made });
+    const client = await connect(bridge);
+    const refused = (await client.callTool({ name: "forge_draft_pick", arguments: { card: "0" } })).structuredContent as Json;
+    expect(refused).toEqual({ stale: true, waiting: true, problem: expect.stringContaining("named no pack") });
+    expect(posted(calls)).toEqual([]);
     await client.close();
   });
 
