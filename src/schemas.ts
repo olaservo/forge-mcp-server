@@ -163,9 +163,22 @@ const Chosen = z.looseObject({ type: str, id: num, name: str });
 
 /**
  * Where the match stands. `game` counts from 1, `wins` is games won by player name, and `over` says whether the
- * game that just ended decided the match. Bridge 0.1.11.
+ * game that just ended decided the match. `sideboarding` is true after a game that did not, for a seat with
+ * cards it may move between its main deck and sideboard. Bridge 0.1.11.
  */
-const Match = z.looseObject({ gamesPerMatch: num, game: num, wins: z.record(z.string(), z.number()).nullish(), over: bool });
+const Match = z.looseObject({ gamesPerMatch: num, game: num, wins: z.record(z.string(), z.number()).nullish(), over: bool, sideboarding: bool });
+
+/** A card name in a deck list, with how many copies. The sideboard's entries say what the card is. */
+const Counted = z.looseObject({ count: num, name: str, manaCost: str, type: str, power: z.union([z.string(), z.number()]).nullish(), toughness: z.union([z.string(), z.number()]).nullish(), text: str });
+
+/** `GET /game/sideboard`: the seat's decks as they stand in the match, and the limits a change has to keep. Bridge 0.1.11. */
+export const Sideboard = z.looseObject({
+  open: bool,
+  minMain: num,
+  maxSideboard: num,
+  main: z.array(z.looseObject({ count: num, name: str })).nullish(),
+  sideboard: z.array(Counted).nullish(),
+});
 
 export const Game = z.looseObject({
   inGame: bool,
@@ -282,6 +295,9 @@ export const View = z.looseObject({
   winner: str,
   /** With `gameOver`: where the match stands. */
   match: Game.shape.match,
+  /** After a game that did not end the match: the seat may change its deck with its `continue`, and the cards in its sideboard. */
+  sideboarding: bool,
+  sideboard: z.array(Counted).nullish(),
   life: z.record(z.string(), z.number().nullable()).nullish(),
   hand: z.array(BoardCard).nullish(),
   /** The top card of the seat's library, at a priority prompt while an effect lets the player look at it. */

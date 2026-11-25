@@ -65,5 +65,9 @@
   "rematch GET /game#secondMatch": "rematch-GET_game_secondMatch.json",
   "rematch GET /game/log#secondMatch": "rematch-GET_game_log_secondMatch.json",
   "draft GET /draft/pack#at": "draft-GET_draft_pack_at.json",
-  "draft POST /draft/pick#stale": "draft-POST_draft_pick_stale.json"
+  "draft POST /draft/pick#stale": "draft-POST_draft_pick_stale.json",
+  "sideboard GET /game/sideboard#open": "sideboard-GET_game_sideboard_open.json",
+  "sideboard GET /status#sideboarding": "sideboard-GET_status_sideboarding.json",
+  "sideboard GET /game#sideboarding": "sideboard-GET_game_sideboarding.json",
+  "sideboard POST /game/act#swap": "sideboard-POST_game_act_swap.json"
 }

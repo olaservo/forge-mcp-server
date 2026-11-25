@@ -1,0 +1,41 @@
+{
+  "inGame": false,
+  "finished": true,
+  "prompt": "Game over. Winner: SecondBot",
+  "promptCount": 0,
+  "waiting": false,
+  "priorityPrompt": false,
+  "promptCard": null,
+  "buttons": {
+    "ok": "OK",
+    "okEnabled": false,
+    "cancel": "Cancel",
+    "cancelEnabled": false
+  },
+  "incorrectActions": 0,
+  "messages": [],
+  "messageCount": 0,
+  "logCount": 6,
+  "logStart": 0,
+  "gamesOpened": 1,
+  "turn": 0,
+  "phase": null,
+  "activePlayer": null,
+  "gameOver": true,
+  "winner": "SecondBot",
+  "match": {
+    "gamesPerMatch": 3,
+    "game": 1,
+    "wins": {
+      "FirstBot": 0,
+      "SecondBot": 1
+    },
+    "over": false,
+    "sideboarding": true
+  },
+  "me": "FirstBot",
+  "hasPriority": false,
+  "autoPass": "opponent-turns",
+  "autoPassNow": false,
+  "stops": "default"
+}

@@ -20,6 +20,7 @@ const schemaForRoute: Record<string, z.ZodType> = {
   "POST /lobby/deck": out.DeckResult,
   "POST /chat": out.OkResult,
   "GET /game/stops": out.Stops,
+  "GET /game/sideboard": out.Sideboard,
   "POST /game/stops": out.Stops,
   "GET /draft/pack": out.Draft,
   "POST /draft/pick": out.PickResult,

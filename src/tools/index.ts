@@ -447,6 +447,9 @@ export function registerTools(
         "`alphaStrike` attacks with everything, `undo` takes back the last action, `concede` ends the game. " +
         "Once `gameOver` is true, `match.over` says whether the match is decided. While it is not, `continue` plays the next game, which starts when every player has continued. " +
         "When it is, send `quit` once: it leaves the match and returns everyone to the lobby. `newMatch` restarts the match. " +
+        "The three are refused while a game is running, and a second `continue` after the same game is refused too: to leave a running game, `concede` first or use forge_disconnect. " +
+        "With `sideboarding: true` you may change your deck for the next game as you continue: `in` names cards from `sideboard` to bring into your main deck and `out` names main deck cards to take out, one entry per copy. " +
+        "A change that names a card you do not have, or leaves the deck outside its size limits, is an error and nothing is sent. `continue` without them keeps the deck. " +
         "`at` is the `promptCount` you are answering: if the prompt has changed, nothing is sent and the answer has `stale: true`. Pass it when you act on an event. " +
         "`unchanged: true` after `selectCard`, `selectPlayer` or `selectStack` means the click changed nothing in the game: Forge ignores a click it cannot use and does not say so. Do not send the same click again. " +
         "Returns what you are asked next, after the host has reacted: `prompt`, the enabled `buttons`, `life`, your `hand` when you have priority, the `stack` from the top down, floating `mana`, `selection` and `actionable` when the prompt offers cards, players or stack entries, " +
@@ -460,18 +463,27 @@ export function registerTools(
         once: z.boolean().optional().describe("With ok: pass priority one time only"),
         endTurn: z.boolean().optional().describe("With ok or a cast: also pass until the end of the turn"),
         at: z.number().int().optional().describe("The promptCount this action answers"),
+        in: z.array(z.string()).optional().describe("With continue: sideboard cards to bring into the main deck, by name, one entry per copy"),
+        out: z.array(z.string()).optional().describe("With continue: main deck cards to move to the sideboard, by name, one entry per copy"),
       }),
       outputSchema: out.View,
       annotations: acting,
     },
-    async ({ action, id, color, pay, pass, once, endTurn, at }) =>
+    async ({ action, id, color, pay, pass, once, endTurn, at, in: cardsIn, out: cardsOut }) =>
       run(async () => {
         const memory = memoryFor(bridge);
         memory.saw(at);
         const extras = { ...(pay && { pay }), ...(pass && { pass }), ...(once && { once }), ...(endTurn && { endTurn }), ...(at !== undefined && { at }) };
+        const swap = { ...(cardsIn?.length && { in: cardsIn }), ...(cardsOut?.length && { out: cardsOut }) };
+        if (Object.keys(swap).length > 0) {
+          if (action !== "continue") throw new Error("in and out go with continue.");
+          // An older bridge ignores them and would continue with the deck unchanged.
+          const { match } = await bridge.get<{ match?: { sideboarding?: boolean } | null }>("/game");
+          if (match?.sideboarding === undefined) throw new Error("in and out need forge-agent-bridge 0.1.11 or later. Nothing was sent.");
+        }
         let answer: Record<string, unknown>;
         try {
-          answer = await bridge.post<Record<string, unknown>>("/game/act", { action, id, color, ...extras });
+          answer = await bridge.post<Record<string, unknown>>("/game/act", { action, id, color, ...extras, ...swap });
         } catch (e) {
           if (action === "selectStack" && e instanceof Error && e.message.startsWith("unknown action")) {
             throw new Error("selectStack needs forge-agent-bridge 0.1.10 or later. With an older bridge a spell on the stack cannot be chosen as a target.", { cause: e });

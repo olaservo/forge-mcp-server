@@ -215,6 +215,12 @@ export class SeatMemory {
     if (list(game.combat).length) view.combat = game.combat;
     const selection = game.selection as Json | null | undefined;
     if (asked && selection) view.selection = { ...selection, cards: show(list(selection.cards)) };
+    if (over && (game.match as Json | null | undefined)?.sideboarding === true) {
+      // Bridge 0.1.11. The seat may move cards between its main deck and sideboard with its `continue`.
+      const decks = await bridge.get<{ sideboard?: Json[] }>("/game/sideboard");
+      view.sideboarding = true;
+      view.sideboard = show(list(decks.sideboard));
+    }
     if (asked && list(game.actionable).length) view.actionable = game.actionable;
     if (game.pendingDecision) view.pendingDecision = game.pendingDecision;
 
