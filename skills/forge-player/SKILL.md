@@ -31,7 +31,7 @@ A field is left out when it has nothing to say.
 
 - `prompt` is the text Forge shows above the buttons, for example "Declare attackers" or a `Priority:` prompt with the turn, the phase and the stack size. It tells you what the current input wants. `promptCount` goes up with each prompt.
 - `buttons` has the labels of the enabled buttons: `ok` (OK, Done, Yes, Auto) and `cancel` (Cancel, No, End Turn, Undo). A button that is not there is disabled.
-- `waiting: true`: nothing is asked of you, whatever the buttons read. Do not send an action: it would land on a prompt you have not seen. End your turn, and the next event brings what you are asked.
+- `waiting: true`: nothing is asked of you, whatever the buttons read. Do not send an action: it is refused with an error and not sent. End your turn, and the next event brings what you are asked.
 - `refused: true`: Forge rejected a player you chose to attack. A card Forge rejects leaves the prompt unchanged and adds no field. `stale: true`: the action named an old prompt with `at` and was not sent.
 - `life` has each player's life total.
 - `hand`, when you have priority: your cards with `id`, `name`, cost and type. Actions use the `id`.

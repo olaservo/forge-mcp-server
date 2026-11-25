@@ -361,7 +361,7 @@ export function registerTools(
         "Once `gameOver` is true: `quit` leaves the match and returns everyone to the lobby, `continue` plays the next game of the match, `newMatch` restarts it. " +
         "`at` is the `promptCount` you are answering: if the prompt has changed, nothing is sent and the answer has `stale: true`. Pass it when you act on an event. " +
         "Returns what you are asked next, after the host has reacted: `prompt`, the enabled `buttons`, `life`, your `hand` when you have priority, the `stack` from the top down, floating `mana`, `selection` and `actionable` when the prompt offers cards, players or stack entries, " +
-        "`board` the first time it returns your main phase in a turn, `cardText` for card names not sent before, and `since` with what happened since your last result. `waiting: true` means nothing is asked of you: send no action until you are asked. Send one action at a time.",
+        "`board` the first time it returns your main phase in a turn, `cardText` for card names not sent before, and `since` with what happened since your last result. `waiting: true` means nothing is asked of you: send no action until you are asked. An `ok`, `endTurn`, `alphaStrike`, `useMana` or select sent then is refused with an error and not sent. So is `cancel`, unless the prompt says you are yielding, where it ends the yield. Send one action at a time.",
       inputSchema: z.object({
         action: z.enum(["ok", "cancel", "selectCard", "selectPlayer", "selectStack", "useMana", "alphaStrike", "endTurn", "undo", "concede", "quit", "continue", "newMatch"]),
         id: z.number().int().optional().describe("Card, player or stack entry id for selectCard / selectPlayer / selectStack"),
