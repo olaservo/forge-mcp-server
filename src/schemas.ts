@@ -346,6 +346,8 @@ export const Host = z.looseObject({
   seats: z.number().optional(),
   limited: z.boolean().optional(),
   games: z.number().optional(),
+  ai: z.number().optional(),
+  aiSeats: z.array(z.looseObject({ slot: z.number(), name: z.string(), deck: z.string() })).optional(),
   addresses: z.array(z.string()),
 });
 

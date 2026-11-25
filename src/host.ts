@@ -8,10 +8,22 @@ export interface HostSettings {
   limited: boolean;
   /** Games per match: 1, 3 or 5. More than 1 needs forge-agent-bridge 0.1.11. */
   games: number;
+  /** Seats played by Forge's AI. Needs forge-agent-bridge 0.1.11. */
+  ai?: number;
+  /** A deck file for each AI seat in slot order. An AI seat with none gets a precon the host picks. */
+  aiDecks?: string[];
 }
 
-export interface HostState extends Partial<HostSettings> {
+/** A seat Forge's AI plays, as the host names it when it starts. */
+export interface AiSeat {
+  slot: number;
+  name: string;
+  deck: string;
+}
+
+export interface HostState extends Partial<Omit<HostSettings, "aiDecks">> {
   running: boolean;
+  aiSeats?: AiSeat[];
   /** This machine's IPv4 addresses, for a player on another device to connect to. */
   addresses: string[];
 }
@@ -28,6 +40,7 @@ export interface LobbyHostOptions {
 }
 
 const READY = "MATCH_HOST_READY";
+const AI_SEAT = /^MATCH_HOST_AI slot=(\d+) name=(.*?) deck=(.*?)\r?$/gm;
 
 function lanAddresses(): string[] {
   return Object.values(networkInterfaces())
@@ -43,13 +56,16 @@ function lanAddresses(): string[] {
 export class LobbyHost {
   private child?: ChildProcess;
   private settings?: HostSettings;
+  private aiSeats?: AiSeat[];
   private starting?: Promise<HostState>;
 
   constructor(private readonly opts: LobbyHostOptions = {}) {}
 
   state(): HostState {
     const addresses = (this.opts.addresses ?? lanAddresses)();
-    return this.child && this.settings ? { running: true, ...this.settings, addresses } : { running: false, addresses };
+    if (!this.child || !this.settings) return { running: false, addresses };
+    const { aiDecks: _files, ...settings } = this.settings;
+    return { running: true, ...settings, ...(this.aiSeats && { aiSeats: this.aiSeats }), addresses };
   }
 
   /** Starts the host and resolves once it listens. With a host already running, answers its state when the settings match. */
@@ -59,12 +75,19 @@ export class LobbyHost {
         this.settings.port === settings.port &&
         this.settings.seats === settings.seats &&
         this.settings.limited === settings.limited &&
-        this.settings.games === settings.games;
+        this.settings.games === settings.games &&
+        (this.settings.ai ?? 0) === (settings.ai ?? 0) &&
+        (this.settings.aiDecks ?? []).join("\n") === (settings.aiDecks ?? []).join("\n");
       if (!same) {
         return Promise.reject(new Error(`Already hosting on port ${this.settings.port} with other settings. Stop it with forge_host_stop first.`));
       }
       return this.starting ?? Promise.resolve(this.state());
     }
+    const ai = settings.ai ?? 0;
+    const aiDecks = settings.aiDecks ?? [];
+    if (ai >= settings.seats) return Promise.reject(new Error(`forge_host with ${settings.seats} seats takes at most ${settings.seats - 1} AI seats, so that one is left for a player.`));
+    if (ai > 0 && settings.limited) return Promise.reject(new Error("forge_host has no AI seats in a Limited lobby."));
+    if (aiDecks.length > ai) return Promise.reject(new Error(`forge_host was given ${aiDecks.length} AI decks for ${ai} AI seats.`));
     this.settings = settings;
     this.starting = this.launch(settings, timeoutMs).finally(() => (this.starting = undefined));
     return this.starting;
@@ -90,6 +113,7 @@ export class LobbyHost {
       "--seats",
       String(settings.seats),
       ...(settings.games !== 1 ? ["--games", String(settings.games)] : []),
+      ...(settings.ai ? ["--ai", String(settings.ai), ...(settings.aiDecks ?? []).flatMap((file) => ["--ai-deck", file])] : []),
       ...(settings.limited ? ["--limited"] : []),
       "--exit-with-parent",
     ];
@@ -118,6 +142,13 @@ export class LobbyHost {
         if (settings.games !== 1 && !line.includes(` games=${settings.games}`)) {
           return fail(`forge_host with games ${settings.games} needs forge-agent-bridge 0.1.11 or later. The host was stopped.`);
         }
+        // A MatchHost before 0.1.11 ignores --ai too, and every slot of its lobby is open.
+        if (settings.ai && !new RegExp(` ai=${settings.ai}\\b`).test(line)) {
+          return fail(`forge_host with ai ${settings.ai} needs forge-agent-bridge 0.1.11 or later. The host was stopped.`);
+        }
+        if (settings.ai) {
+          this.aiSeats = [...output.matchAll(AI_SEAT)].map((m) => ({ slot: Number(m[1]), name: m[2], deck: m[3] }));
+        }
         clearTimeout(timer);
         resolve(this.state());
       });
@@ -130,7 +161,9 @@ export class LobbyHost {
         if (this.child !== child) return;
         const missing = errors.includes("ClassNotFoundException") ? " The bridge jar has no MatchHost; it needs forge-agent-bridge 0.1.7 or later." : "";
         const inUse = errors.includes("BindException") ? ` Port ${settings.port} is in use.` : "";
-        fail(`The Forge host exited with code ${code}.${missing}${inUse}`);
+        // The host says why it refuses its arguments, an AI deck it cannot find among them.
+        const said = code === 2 ? (/\[match-host\] (.*?)\s*$/.exec(errors)?.[1] ?? "") : "";
+        fail(`The Forge host exited with code ${code}.${missing}${inUse}${said && ` ${said}`}`);
       });
     });
   }
@@ -139,6 +172,7 @@ export class LobbyHost {
     const child = this.child;
     this.child = undefined;
     this.settings = undefined;
+    this.aiSeats = undefined;
     child?.kill();
     return this.state();
   }
