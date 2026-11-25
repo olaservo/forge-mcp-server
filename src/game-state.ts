@@ -46,6 +46,7 @@ export function compactGame(game: Record<string, unknown>): Record<string, unkno
         battlefield: list(p.battlefield, "Battlefield", p.name),
         graveyard: list(p.graveyard, "Graveyard", p.name),
         ...(p.hand === undefined ? {} : { hand: list(p.hand, "Hand", p.name) }),
+        ...(p.libraryTop ? { libraryTop: compact(p.libraryTop as Card, "Library", p.name) } : {}),
       }))
     : game.players;
   const selection = game.selection as Record<string, unknown> | null | undefined;

@@ -44,5 +44,6 @@
   "stops GET /game/stops": "stops-GET_game_stops.json",
   "stops POST /game/stops": "stops-POST_game_stops.json",
   "counter GET /game#stack-targets": "counter-GET_game_stack_targets.json",
-  "facedown GET /game#face-down": "facedown-GET_game_face_down.json"
+  "facedown GET /game#face-down": "facedown-GET_game_face_down.json",
+  "librarytop GET /game#library-top": "librarytop-GET_game_library_top.json"
 }

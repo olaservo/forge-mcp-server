@@ -4,7 +4,7 @@ What the game tools return and how they keep a game short in calls and in contex
 
 ## What an action returns
 
-`forge_game_act` and `forge_game_decide` read the whole game from the bridge after the host has reacted and return a view of it (`src/view.ts`): the prompt, the enabled buttons, life totals, the seat's hand when it has priority, the stack with who put each item there and its targets, floating mana, combat, the selection the prompt offers, and a pending decision. A field with nothing to say is left out. `forge.your_move` carries the same view for a priority prompt or a choice in a game.
+`forge_game_act` and `forge_game_decide` read the whole game from the bridge after the host has reacted and return a view of it (`src/view.ts`): the prompt, the enabled buttons, life totals, the seat's hand when it has priority, the top card of its library while an effect lets the player look at it, the stack with who put each item there and its targets, floating mana, combat, the selection the prompt offers, and a pending decision. A field with nothing to say is left out. `forge.your_move` carries the same view for a priority prompt or a choice in a game.
 
 The server remembers what it has told the seat in the current game, so nothing is sent twice:
 

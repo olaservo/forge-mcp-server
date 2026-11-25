@@ -152,6 +152,8 @@ export const Player = z.looseObject({
   battlefield: z.array(BoardCard).nullish(),
   graveyard: z.array(BoardCard).nullish(),
   hand: z.array(BoardCard).nullish(),
+  /** The top card of the seat's own library, while an effect lets the player look at it. Needs a bridge newer than 0.1.10. */
+  libraryTop: BoardCard.nullish(),
 });
 
 /** A card, player or stack entry in a selection: `type` is `card`, `player` or `stack`. */
@@ -262,6 +264,8 @@ export const View = z.looseObject({
   winner: str,
   life: z.record(z.string(), z.number().nullable()).nullish(),
   hand: z.array(BoardCard).nullish(),
+  /** The top card of the seat's library, at a priority prompt while an effect lets the player look at it. */
+  libraryTop: BoardCard.nullish(),
   /** From the top down. `id` is what `selectStack` takes. */
   stack: z.array(z.looseObject({ id: num, source: str, by: str, text: str, targets: strings })).nullish(),
   mana: z.record(z.string(), z.number()).nullish(),

@@ -35,6 +35,7 @@ A field is left out when it has nothing to say.
 - `refused: true`: Forge rejected the action. `stale: true`: the action named an old prompt with `at` and was not sent.
 - `life` has each player's life total.
 - `hand`, when you have priority: your cards with `id`, `name`, cost and type. Actions use the `id`.
+- `libraryTop`, when you have priority and an effect lets you look at the top card of your library: that card, with the `id` to play it by if the effect lets you.
 - `stack`, when it is not empty, from the top down, so the first item resolves first: each item's `id`, who put it there (`by`), its `source`, its `text` and its `targets`. If the stack is not empty and you have priority, Forge is asking whether you respond.
 - `mana`: mana floating in your pool, by colour letter.
 - `combat` lists attackers, defenders and blockers while combat is being declared or resolved. `blocked` says whether the attacker is blocked, and a blocker you have chosen shows here before you press OK.

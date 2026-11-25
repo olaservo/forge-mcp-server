@@ -118,6 +118,20 @@ describe("the view an action returns", () => {
     expect(view.cardText).toEqual({ Bolt: "Bolt text" });
   });
 
+  it("carries the top of the seat's library only when the bridge sends it", async () => {
+    expect(await new SeatMemory().view(bridgeWith(), game(), { commit: true })).not.toHaveProperty("libraryTop");
+    const g = game();
+    const players = g.players as Record<string, unknown>[];
+    players[0].libraryTop = card(30, "Frenzy", { zone: "Library" });
+    // The bridge never sends an opponent's. One that came anyway is not passed on.
+    players[1].libraryTop = card(31, "Hidden", { zone: "Library", controller: "Them" });
+    const view = await new SeatMemory().view(bridgeWith(), g, { commit: true });
+    expect(View.safeParse(view).success).toBe(true);
+    expect(view.libraryTop).toEqual({ id: 30, name: "Frenzy", type: "Instant", manaCost: "{R}" });
+    expect((view.cardText as Record<string, string>).Frenzy).toBe("Frenzy text");
+    expect(JSON.stringify(view)).not.toContain("Hidden");
+  });
+
   it("leaves out the hand and offers nothing while the seat waits", async () => {
     const view = await new SeatMemory().view(bridgeWith(), game({ waiting: true, priorityPrompt: false, prompt: "Waiting for Them...", buttons: { ok: "OK", okEnabled: false, cancel: "Cancel", cancelEnabled: false } }), { commit: true });
     expect(view.waiting).toBe(true);
