@@ -151,7 +151,8 @@ describe("bridge fixtures", () => {
       else expect(called, tool.name).toEqual([]);
     }
     await client.close();
-  });
+    // Every tool in one test: under load it has run past the default 5 s.
+  }, 20_000);
 
   it("sends a damage split as amounts", async () => {
     const assign = fixture(index["combat GET /game#assign"]) as { pendingDecision: { id: number; kind: string; amount: number } };
