@@ -231,7 +231,7 @@ export function registerTools(
 
   registerDeckTools(tool, decks, deckSearch);
   registerNameTools(tool, names);
-  registerHostTools(tool, host);
+  registerHostTools(tool, host, decks);
 
   tool(
     "forge_chat",

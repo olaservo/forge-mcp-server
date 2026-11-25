@@ -57,4 +57,15 @@ describe("a match of more than one game", () => {
     expect(bad.isError).toBe(true);
     await client.close();
   });
+
+  it("forge_host refuses an AI seat on a bridge jar that ignores it, and a deck id it does not know", async () => {
+    const client = await connect(fakeBridge({}).bridge);
+    const res = await client.callTool({ name: "forge_host", arguments: { port: 36750, ai: 1 } });
+    expect(res.isError).toBe(true);
+    expect(JSON.stringify(res.content)).toContain("forge_host with ai 1 needs forge-agent-bridge 0.1.11");
+    const unknown = await client.callTool({ name: "forge_host", arguments: { port: 36750, ai: 1, aiDecks: ["precons/No Such Deck"] } });
+    expect(unknown.isError).toBe(true);
+    expect(JSON.stringify(unknown.content)).toContain("No deck 'precons/No Such Deck'");
+    await client.close();
+  });
 });
