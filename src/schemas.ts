@@ -260,7 +260,8 @@ export const View = z.looseObject({
   winner: str,
   life: z.record(z.string(), z.number().nullable()).nullish(),
   hand: z.array(BoardCard).nullish(),
-  stack: z.array(z.looseObject({ source: str, by: str, text: str, targets: strings })).nullish(),
+  /** From the top down. `id` is what `selectStack` takes. */
+  stack: z.array(z.looseObject({ id: num, source: str, by: str, text: str, targets: strings })).nullish(),
   mana: z.record(z.string(), z.number()).nullish(),
   combat: Game.shape.combat,
   selection: Game.shape.selection,

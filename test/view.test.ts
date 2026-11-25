@@ -112,7 +112,8 @@ describe("the view an action returns", () => {
     const view = await memory.view(bridgeWith([]), g, { commit: true });
     expect(view.since).toEqual({ newInHand: ["Bolt"] });
     expect(view.refused).toBe(true);
-    expect(view.stack).toEqual([{ by: "Them", source: "Shock", text: "Shock (9) deals 2 damage to Bear (10).", targets: ["Bear#10"] }]);
+    expect(View.safeParse(view).success).toBe(true);
+    expect(view.stack).toEqual([{ id: 3, by: "Them", source: "Shock", text: "Shock (9) deals 2 damage to Bear (10).", targets: ["Bear#10"] }]);
     expect(view.mana).toEqual({ R: 2 });
     expect(view.cardText).toEqual({ Bolt: "Bolt text" });
   });

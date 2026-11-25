@@ -178,6 +178,7 @@ export class SeatMemory {
     if ((priority || opening) && me && list(me.hand).length) view.hand = show(list(me.hand), "Hand", me.name);
     if (stack.length) {
       view.stack = stack.map((s) => ({
+        id: s.id,
         by: s.by,
         source: s.source,
         text: plainText(String(s.text ?? "")),
