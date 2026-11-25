@@ -105,10 +105,11 @@ export async function connect(
   events?: EventLog,
   webhooks?: { hub: WebhookHub; principal?: string },
   decks: DeckLibrary = new DeckLibrary(forgeHome()),
+  host: LobbyHost = fakeHost().host,
 ) {
   const skills = await skillCatalog();
   const factory = (ctx: { authInfo?: { clientId: string } }) =>
-    createServer({ bridge, skills, events, webhooks: webhooks?.hub, principal: ctx.authInfo?.clientId, decks, names: generatedNames, deckSearch: noDecksFound, host: fakeHost().host });
+    createServer({ bridge, skills, events, webhooks: webhooks?.hub, principal: ctx.authInfo?.clientId, decks, names: generatedNames, deckSearch: noDecksFound, host });
   const handler = createMcpHandler(factory, bus ? { bus } : {});
   const authInfo = webhooks?.principal ? { token: "test", clientId: webhooks.principal, scopes: [] } : undefined;
   const transport = new StreamableHTTPClientTransport(new URL("http://test.local/mcp"), {

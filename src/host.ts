@@ -1,4 +1,6 @@
 import { spawn, type ChildProcess } from "node:child_process";
+import { randomBytes } from "node:crypto";
+import { createServer } from "node:net";
 import { networkInterfaces } from "node:os";
 import { delimiter } from "node:path";
 
@@ -12,6 +14,15 @@ export interface HostSettings {
   ai?: number;
   /** A deck file for each AI seat in slot order. An AI seat with none gets a precon the host picks. */
   aiDecks?: string[];
+  /** The lobby name of a seat the host watches for an advising agent. Needs forge-agent-bridge 0.1.11. */
+  copilot?: string;
+}
+
+/** Where the host serves the watched seat's view, and the token it asks for. */
+export interface CopilotAccess {
+  seat: string;
+  url: string;
+  token: string;
 }
 
 /** A seat Forge's AI plays, as the host names it when it starts. */
@@ -36,11 +47,24 @@ export interface LobbyHostOptions {
   /** Working directory, the folder that holds `res/`. Default: FORGE_HOME. */
   cwd?: string;
   spawn?: typeof spawn;
+  /** A free loopback port for the copilot view. */
+  freePort?: () => Promise<number>;
   addresses?: () => string[];
 }
 
 const READY = "MATCH_HOST_READY";
 const AI_SEAT = /^MATCH_HOST_AI slot=(\d+) name=(.*?) deck=(.*?)\r?$/gm;
+
+function freeLoopbackPort(): Promise<number> {
+  return new Promise((resolve, reject) => {
+    const server = createServer();
+    server.once("error", reject);
+    server.listen(0, "127.0.0.1", () => {
+      const address = server.address();
+      server.close(() => (address && typeof address === "object" ? resolve(address.port) : reject(new Error("no free port"))));
+    });
+  });
+}
 
 function lanAddresses(): string[] {
   return Object.values(networkInterfaces())
@@ -58,6 +82,7 @@ export class LobbyHost {
   private settings?: HostSettings;
   private aiSeats?: AiSeat[];
   private starting?: Promise<HostState>;
+  private access?: CopilotAccess;
 
   constructor(private readonly opts: LobbyHostOptions = {}) {}
 
@@ -66,6 +91,11 @@ export class LobbyHost {
     if (!this.child || !this.settings) return { running: false, addresses };
     const { aiDecks: _files, ...settings } = this.settings;
     return { running: true, ...settings, ...(this.aiSeats && { aiSeats: this.aiSeats }), addresses };
+  }
+
+  /** How to read the watched seat, when the host was started with one. The token is never part of the state. */
+  copilot(): CopilotAccess | undefined {
+    return this.child ? this.access : undefined;
   }
 
   /** Starts the host and resolves once it listens. With a host already running, answers its state when the settings match. */
@@ -77,7 +107,8 @@ export class LobbyHost {
         this.settings.limited === settings.limited &&
         this.settings.games === settings.games &&
         (this.settings.ai ?? 0) === (settings.ai ?? 0) &&
-        (this.settings.aiDecks ?? []).join("\n") === (settings.aiDecks ?? []).join("\n");
+        (this.settings.aiDecks ?? []).join("\n") === (settings.aiDecks ?? []).join("\n") &&
+        this.settings.copilot === settings.copilot;
       if (!same) {
         return Promise.reject(new Error(`Already hosting on port ${this.settings.port} with other settings. Stop it with forge_host_stop first.`));
       }
@@ -93,12 +124,23 @@ export class LobbyHost {
     return this.starting;
   }
 
-  private launch(settings: HostSettings, timeoutMs: number): Promise<HostState> {
+  private async launch(settings: HostSettings, timeoutMs: number): Promise<HostState> {
     const jar = this.opts.jar ?? process.env.FORGE_JAR;
     const bridgeJar = this.opts.bridgeJar ?? process.env.FORGE_BRIDGE_JAR;
     if (!jar || !bridgeJar) {
       this.settings = undefined;
-      return Promise.reject(new Error("Set FORGE_JAR, FORGE_BRIDGE_JAR and FORGE_HOME so this server can start a host."));
+      throw new Error("Set FORGE_JAR, FORGE_BRIDGE_JAR and FORGE_HOME so this server can start a host.");
+    }
+    let access: CopilotAccess | undefined;
+    let copilotPort = 0;
+    if (settings.copilot !== undefined) {
+      try {
+        copilotPort = await (this.opts.freePort ?? freeLoopbackPort)();
+      } catch (e) {
+        this.settings = undefined;
+        throw e;
+      }
+      access = { seat: settings.copilot, url: `http://127.0.0.1:${copilotPort}/copilot`, token: randomBytes(32).toString("hex") };
     }
     const args = [
       "-Djava.awt.headless=true",
@@ -115,11 +157,15 @@ export class LobbyHost {
       ...(settings.games !== 1 ? ["--games", String(settings.games)] : []),
       ...(settings.ai ? ["--ai", String(settings.ai), ...(settings.aiDecks ?? []).flatMap((file) => ["--ai-deck", file])] : []),
       ...(settings.limited ? ["--limited"] : []),
+      ...(access ? ["--copilot", access.seat, "--copilot-port", String(copilotPort)] : []),
       "--exit-with-parent",
     ];
     const cwd = this.opts.cwd ?? process.env.FORGE_HOME ?? process.cwd();
-    const child = (this.opts.spawn ?? spawn)("java", args, { cwd, stdio: ["ignore", "pipe", "pipe"] });
+    // The token goes by environment, so it is not in the process list.
+    const env = access ? { ...process.env, FORGE_COPILOT_TOKEN: access.token } : process.env;
+    const child = (this.opts.spawn ?? spawn)("java", args, { cwd, env, stdio: ["ignore", "pipe", "pipe"] });
     this.child = child;
+    this.access = access;
     return new Promise<HostState>((resolve, reject) => {
       let errors = "";
       let output = "";
@@ -145,6 +191,10 @@ export class LobbyHost {
         // A MatchHost before 0.1.11 ignores --ai too, and every slot of its lobby is open.
         if (settings.ai && !new RegExp(` ai=${settings.ai}\\b`).test(line)) {
           return fail(`forge_host with ai ${settings.ai} needs forge-agent-bridge 0.1.11 or later. The host was stopped.`);
+        }
+        // A MatchHost before 0.1.11 ignores --copilot and names no copilot port in this line.
+        if (access && !line.includes(` copilotPort=${copilotPort}`)) {
+          return fail("forge_host with copilot needs forge-agent-bridge 0.1.11 or later. The host was stopped.");
         }
         if (settings.ai) {
           this.aiSeats = [...output.matchAll(AI_SEAT)].map((m) => ({ slot: Number(m[1]), name: m[2], deck: m[3] }));
@@ -173,6 +223,7 @@ export class LobbyHost {
     this.child = undefined;
     this.settings = undefined;
     this.aiSeats = undefined;
+    this.access = undefined;
     child?.kill();
     return this.state();
   }

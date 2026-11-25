@@ -407,7 +407,24 @@ export const Host = z.looseObject({
   games: z.number().optional(),
   ai: z.number().optional(),
   aiSeats: z.array(z.looseObject({ slot: z.number(), name: z.string(), deck: z.string() })).optional(),
+  copilot: z.string().optional(),
   addresses: z.array(z.string()),
+});
+
+/** What forge_copilot_view returns: the watched seat's view in the shape of `View`, and what only a watched seat has. */
+export const CopilotView = View.extend({
+  seat: str,
+  /** False while the watched seat is in no game. */
+  watching: bool,
+  /** Goes up each time what the seat is shown changes. */
+  revision: num,
+  /** With `since`: nothing changed before the timeout. */
+  unchanged: bool,
+  /** The dialog the game is waiting on, with the options the seat is shown. */
+  dialog: z.looseObject({ kind: str, prompt: str, options: z.array(z.unknown()).nullish(), min: num, max: num }).nullish(),
+  lastAnswer: z.looseObject({ kind: str, prompt: str }).nullish(),
+  lastReveal: z.looseObject({ cards: z.array(z.unknown()).nullish(), revision: num }).nullish(),
+  message: str,
 });
 
 export const Names = z.looseObject({ type: z.string(), names: z.array(z.string()), source: z.string() });
