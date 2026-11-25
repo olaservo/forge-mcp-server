@@ -1,4 +1,5 @@
 // Plays one seat against Forge's AI on a host this script starts with forge_host, with a fixed policy and no model.
+// The games are not fixed: what the AI draws decides how much of this a run shows.
 // It runs what the tests fake: forge_host with ai against the real bridge jar, the AI's turns, and a best of three
 // where the seat alone continues.
 //   node scripts/smoke-ai-seat.mjs [turns]
@@ -89,6 +90,8 @@ const events = async () => (await poll()).events;
 let stale = 0;
 /** Prompts whose event had no buttons and no `selection`, where forge_game_state had one. */
 const withoutSelection = [];
+/** Prompts with no button whose event had its `selection`. */
+const withSelection = [];
 const told = [];
 /** The AI's name in the game being played, and its spells and abilities the seat was asked about, as `turn:source`. */
 let ai;
@@ -121,6 +124,9 @@ async function act(s, given) {
     return out;
   };
   const prompt = String(v.prompt ?? "");
+  if (!v.pendingDecision && !v.buttons && v.selection && !prompt.startsWith("Priority")) {
+    withSelection.push(`#${at} ${prompt.replace(/\n/g, " / ").slice(0, 60)}: players ${JSON.stringify((v.selection.players ?? []).map((p) => p.name))}, ${(v.selection.cards ?? []).length} cards`);
+  }
   if (!v.pendingDecision && !v.buttons && !v.selection && !prompt.startsWith("Priority")) {
     // A prompt answered by picking a card or a player, in an event that does not say which. The state does.
     const state = await call("forge_game_state");
@@ -257,7 +263,9 @@ try {
   let over = false;
   let seen = 0;
   const wasAsked = (cast) => [...askedAbout].some((key) => key.startsWith(`${cast.turn}:`) && cast.spell.startsWith(key.slice(key.indexOf(":") + 1)));
-  for (let step = 0; step < 900 && turn <= lastTurn && !over; step++) {
+  // An AI short of lands can go the first turns without combat, so the game runs up to 6 turns longer for it.
+  const fought = () => told.some((line) => new RegExp(`${ai} assigned .* to (attack|block)`).test(line));
+  for (let step = 0; step < 1500 && (turn <= lastTurn || (turn <= lastTurn + 6 && !fought())) && !over; step++) {
     const g = (await call("forge_status")).game;
     over = g?.gameOver === true;
     if (!g?.inGame || over) {
@@ -301,7 +309,8 @@ try {
   check(stale === 0, `no action answered stale: ${stale}`);
   const missed = unasked.filter((u) => u.instants.length > 0);
   check(missed.length === 0, `the seat was asked about each AI spell it had an instant and the lands for: ${missed.length} missed`);
-  console.log(`events for a prompt that picks a target, without \`selection\`: ${JSON.stringify(withoutSelection)}`);
+  console.log(`events for a prompt with no button, with \`selection\`: ${JSON.stringify(withSelection)}`);
+  check(withoutSelection.length === 0, `no event for a prompt with no button lacked a \`selection\` the state had: ${JSON.stringify(withoutSelection)}`);
   if (askedAbout.size === 0) console.log("note: the seat was never asked with an AI spell on the stack in this game");
 
   if (!over) await concede("concede");
