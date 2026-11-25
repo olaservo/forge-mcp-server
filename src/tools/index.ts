@@ -356,15 +356,15 @@ export function registerTools(
         "With `ok` on the attack, `endTurn: true` attacks and skips your prompts after blockers are declared and in your second main phase, so leave it out when you hold a combat trick or a spell for after combat. " +
         "None of these skips a response to an opponent: when an opponent adds to the stack or attacks you, the passing ends and you are asked before anything resolves. After `endTurn` that is when you have something you could play. " +
         "The Cancel button can read \"Undo\", which takes back your last spell or land, so do not press `cancel` to end a turn. " +
-        "`selectPlayer` targets a player by `id`. `useMana` pays with a floating mana color (color: 1=W 2=U 4=B 8=R 16=G 32=C). " +
+        "`selectPlayer` targets a player by `id`. `selectStack` targets a spell or ability on the stack, as a counterspell does, by the `id` that `selection.stack` gives it: a card id does not answer that prompt. `useMana` pays with a floating mana color (color: 1=W 2=U 4=B 8=R 16=G 32=C). " +
         "`alphaStrike` attacks with everything, `undo` takes back the last action, `concede` ends the game. " +
         "Once `gameOver` is true: `quit` leaves the match and returns everyone to the lobby, `continue` plays the next game of the match, `newMatch` restarts it. " +
         "`at` is the `promptCount` you are answering: if the prompt has changed, nothing is sent and the answer has `stale: true`. Pass it when you act on an event. " +
-        "Returns what you are asked next, after the host has reacted: `prompt`, the enabled `buttons`, `life`, your `hand` when you have priority, the `stack` from the top down, floating `mana`, `selection` and `actionable` when the prompt offers cards, " +
+        "Returns what you are asked next, after the host has reacted: `prompt`, the enabled `buttons`, `life`, your `hand` when you have priority, the `stack` from the top down, floating `mana`, `selection` and `actionable` when the prompt offers cards, players or stack entries, " +
         "`board` the first time it returns your main phase in a turn, `cardText` for card names not sent before, and `since` with what happened since your last result. `waiting: true` means nothing is asked of you: send no action until you are asked. Send one action at a time.",
       inputSchema: z.object({
-        action: z.enum(["ok", "cancel", "selectCard", "selectPlayer", "useMana", "alphaStrike", "endTurn", "undo", "concede", "quit", "continue", "newMatch"]),
-        id: z.number().int().optional().describe("Card or player id for selectCard / selectPlayer"),
+        action: z.enum(["ok", "cancel", "selectCard", "selectPlayer", "selectStack", "useMana", "alphaStrike", "endTurn", "undo", "concede", "quit", "continue", "newMatch"]),
+        id: z.number().int().optional().describe("Card, player or stack entry id for selectCard / selectPlayer / selectStack"),
         color: z.number().int().optional().describe("Mana color bits for useMana"),
         pay: z.enum(["auto"]).optional().describe("Press Auto if the action leads to the prompt that pays a cost"),
         pass: z.boolean().optional().describe("Afterwards, pass priority if your own spell or ability is on top of the stack"),
@@ -380,7 +380,15 @@ export function registerTools(
         const memory = memoryFor(bridge);
         memory.saw(at);
         const extras = { ...(pay && { pay }), ...(pass && { pass }), ...(once && { once }), ...(endTurn && { endTurn }), ...(at !== undefined && { at }) };
-        const answer = await bridge.post<Record<string, unknown>>("/game/act", { action, id, color, ...extras });
+        let answer: Record<string, unknown>;
+        try {
+          answer = await bridge.post<Record<string, unknown>>("/game/act", { action, id, color, ...extras });
+        } catch (e) {
+          if (action === "selectStack" && e instanceof Error && e.message.startsWith("unknown action")) {
+            throw new Error("selectStack needs forge-agent-bridge 0.1.10 or later. With an older bridge a spell on the stack cannot be chosen as a target.", { cause: e });
+          }
+          throw e;
+        }
         // A summary with no game has no `stops` on any bridge: the host may have ended the game during the action.
         if (Object.keys(extras).length > 0 && answer.inGame === true && answer.stops === undefined) {
           throw new Error("pay, pass, once, endTurn and at need forge-agent-bridge 0.1.10 or later. The action was sent without them.");

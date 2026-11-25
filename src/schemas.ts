@@ -152,7 +152,7 @@ export const Player = z.looseObject({
   hand: z.array(BoardCard).nullish(),
 });
 
-/** A card or player in a selection: `type` is `card` or `player`. */
+/** A card, player or stack entry in a selection: `type` is `card`, `player` or `stack`. */
 const Chosen = z.looseObject({ type: str, id: num, name: str });
 
 export const Game = z.looseObject({
@@ -189,7 +189,15 @@ export const Game = z.looseObject({
     .array(z.looseObject({ attacker: str, attackerId: num, defender: str, blockers: strings, blocked: bool }))
     .nullish(),
   selection: z
-    .looseObject({ min: num, max: num, cards: z.array(BoardCard).nullish(), players: z.array(Chosen).nullish(), chosen: z.array(Chosen).nullish() })
+    .looseObject({
+      min: num,
+      max: num,
+      cards: z.array(BoardCard).nullish(),
+      players: z.array(Chosen).nullish(),
+      /** Spells and abilities on the stack that the prompt takes as a target, answered with `selectStack`. Bridge 0.1.10. */
+      stack: z.array(z.looseObject({ id: num, source: str, by: str, text: str })).nullish(),
+      chosen: z.array(Chosen).nullish(),
+    })
     .nullish(),
   actionable: z.array(z.looseObject({ id: num, name: str })).nullish(),
 });

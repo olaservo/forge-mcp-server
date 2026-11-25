@@ -1,4 +1,5 @@
 import { describe, expect, it } from "vitest";
+import { Bridge } from "../src/bridge.js";
 import { EventLog } from "../src/event-log.js";
 import { MoveTracker, type SeatStatus } from "../src/seat-events.js";
 import { withoutIdleDraft } from "../src/tools/index.js";
@@ -65,6 +66,36 @@ describe("forge_game_act", () => {
     const client = await connect(fakeBridge({ "POST /game/act": { ...summary, stale: true }, "GET /game": game }).bridge);
     const res = await client.callTool({ name: "forge_game_act", arguments: { action: "ok", at: 3 } });
     expect(res.structuredContent).toMatchObject({ stale: true, promptCount: 12 });
+    await client.close();
+  });
+
+  it("offers a spell on the stack as a target and sends selectStack for it", async () => {
+    const entry = { id: 43, source: "Llanowar Elves", by: "Them", text: "Llanowar Elves - Creature 1 / 1" };
+    const targeting = {
+      ...game,
+      prompt: "Select target card",
+      priorityPrompt: false,
+      buttons: { ok: "OK", okEnabled: false, cancel: "Cancel", cancelEnabled: true },
+      activePlayer: "Them",
+      stack: [{ ...entry, targets: [] }],
+      selection: { min: 0, max: 0, cards: [], players: [], stack: [entry], chosen: [] },
+    };
+    const { bridge, calls } = fakeBridge({ "POST /game/act": summary, "GET /game": targeting });
+    const client = await connect(bridge);
+    const cast = await client.callTool({ name: "forge_game_act", arguments: { action: "selectCard", id: 6 } });
+    expect(cast.structuredContent).toMatchObject({ prompt: "Select target card", selection: { stack: [entry] } });
+    const res = await client.callTool({ name: "forge_game_act", arguments: { action: "selectStack", id: 43, pay: "auto", pass: true } });
+    expect(res.isError, JSON.stringify(res.content)).toBeFalsy();
+    expect(calls.filter((c) => c.path === "/game/act").at(-1)?.body).toEqual({ action: "selectStack", id: 43, pay: "auto", pass: true });
+    await client.close();
+  });
+
+  it("says so when the bridge is too old to target the stack", async () => {
+    const refuses: typeof fetch = async () => new Response(JSON.stringify({ error: "unknown action selectStack" }), { status: 400 });
+    const client = await connect(new Bridge({ baseUrl: "http://bridge.test", fetch: refuses }));
+    const res = await client.callTool({ name: "forge_game_act", arguments: { action: "selectStack", id: 43 } });
+    expect(res.isError).toBe(true);
+    expect(JSON.stringify(res.content)).toContain("selectStack needs forge-agent-bridge 0.1.10");
     await client.close();
   });
 

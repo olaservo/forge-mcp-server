@@ -14,6 +14,8 @@ The server remembers what it has told the seat in the current game, so nothing i
 
 An event may never reach the model: a client can drop one that a later event replaced. So what an event carried counts as told only when an action names that event's prompt with `at`. Without `at`, the next tool result repeats it.
 
+A prompt that takes a spell or ability on the stack as a target, as a counterspell's does, lists the entries it accepts in `selection.stack`, and `forge_game_act` answers it with `selectStack` and the entry's `id`. Forge 2.0.16 has a network player pick these in the stack view, so a card id does not answer the prompt, and the bridge refuses a `selectCard` there. Before 2026-11-25 the bridge had no such action and a seat could not counter a spell.
+
 Card text is made plain on the way: Forge's blank Windows lines become one line break, and text Forge shows in gray because it does not apply now is marked `[inactive]`.
 
 ## Fewer prompts

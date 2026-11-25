@@ -42,5 +42,6 @@
   "yield POST /game/act#stale": "yield-POST_game_act_stale.json",
   "interrupt GET /game#response": "interrupt-GET_game_response.json",
   "stops GET /game/stops": "stops-GET_game_stops.json",
-  "stops POST /game/stops": "stops-POST_game_stops.json"
+  "stops POST /game/stops": "stops-POST_game_stops.json",
+  "counter GET /game#stack-targets": "counter-GET_game_stack_targets.json"
 }
