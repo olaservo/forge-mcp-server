@@ -1,0 +1,12 @@
+{
+  "log": [
+    "Player Control: FirstBot has restored control over themself",
+    "Player Control: SecondBot has restored control over themself",
+    "Game Outcome: Turn 0",
+    "Game Outcome: FirstBot has conceded",
+    "Game Outcome: SecondBot has won because all opponents have lost",
+    "Match Result: FirstBot: 0 SecondBot: 1 ",
+    "Mulligan: FirstBot has kept a hand of 7 cards",
+    "Mulligan: SecondBot has kept a hand of 7 cards"
+  ]
+}

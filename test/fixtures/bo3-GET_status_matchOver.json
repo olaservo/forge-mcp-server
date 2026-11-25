@@ -1,9 +1,9 @@
 {
-  "revision": 24,
+  "revision": 31,
   "connection": {
     "connected": true,
     "host": "127.0.0.1",
-    "port": 65167,
+    "port": 58604,
     "name": "FirstBot",
     "reconnectState": "CONNECTED",
     "closeReason": null
@@ -59,7 +59,7 @@
     "inGame": false,
     "finished": true,
     "prompt": "Game over. Winner: SecondBot",
-    "promptCount": 1,
+    "promptCount": 4,
     "waiting": false,
     "priorityPrompt": false,
     "promptCard": null,
@@ -72,7 +72,8 @@
     "incorrectActions": 0,
     "messages": [],
     "messageCount": 0,
-    "logCount": 18,
+    "logCount": 24,
+    "logStart": 16,
     "turn": 0,
     "phase": null,
     "activePlayer": null,

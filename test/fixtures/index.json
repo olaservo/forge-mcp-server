@@ -44,9 +44,14 @@
   "stops GET /game/stops": "stops-GET_game_stops.json",
   "stops POST /game/stops": "stops-POST_game_stops.json",
   "counter GET /game#stack-targets": "counter-GET_game_stack_targets.json",
+  "bo3 GET /game#firstGame": "bo3-GET_game_firstGame.json",
+  "bo3 GET /status#firstGame": "bo3-GET_status_firstGame.json",
   "bo3 GET /status#gameOver": "bo3-GET_status_gameOver.json",
-  "bo3 GET /status#matchOver": "bo3-GET_status_matchOver.json",
+  "bo3 GET /game#gameOver": "bo3-GET_game_gameOver.json",
+  "bo3 POST /game/act#continue": "bo3-POST_game_act_continue.json",
   "bo3 GET /game#secondGame": "bo3-GET_game_secondGame.json",
-  "bo3 GET /game#matchOver": "bo3-GET_game_matchOver.json",
-  "bo3 POST /game/act#continue": "bo3-POST_game_act_continue.json"
+  "bo3 GET /status#secondGame": "bo3-GET_status_secondGame.json",
+  "bo3 GET /game/log#secondGame": "bo3-GET_game_log_secondGame.json",
+  "bo3 GET /status#matchOver": "bo3-GET_status_matchOver.json",
+  "bo3 GET /game#matchOver": "bo3-GET_game_matchOver.json"
 }

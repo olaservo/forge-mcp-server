@@ -176,6 +176,8 @@ export const Game = z.looseObject({
   /** Counts of the game's messages and game log lines. Bridge 0.1.10. */
   messageCount: num,
   logCount: num,
+  /** The log lines there were when this game opened: the lines of earlier games of the match. Bridge 0.1.11. */
+  logStart: num,
   turn: num,
   phase: str,
   activePlayer: str,
