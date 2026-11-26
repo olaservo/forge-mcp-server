@@ -43,7 +43,7 @@ A client whose callback is a relay it does not trust with the events can ask for
 - The 256 KiB limit is held against the body as sent, which is about a third larger than `data`.
 - The public key is kept with the subscription, in `FORGE_MCP_SUBSCRIPTIONS` when that is set.
 
-Tested in `test/webhooks.test.ts`, and from mcp-mailbox with its reader against this server in one process. Three games on 2026-11-25 ran with the reader as the client through a deployed mailbox: 70, 74 and 111 events, each decrypted once, and in the third the session was woken only by those events. The mod's `mailboxEncrypt` is tested against this server's sealing in `test/webhooks.test.ts` and `test/mod-crypto.test.ts`, and has not run in a game.
+Tested in `test/webhooks.test.ts`, and from mcp-mailbox with its reader against this server in one process. Three games on 2026-11-25 ran with the reader as the client through a deployed mailbox: 70, 74 and 111 events, each decrypted once, and in the third the session was woken only by those events. The mod's `mailboxEncrypt` is tested against this server's sealing in `test/webhooks.test.ts` and `test/mod-crypto.test.ts`. One game on 2026-11-26 ran with the mod as the client through the same mailbox: 66 events, each delivered once to the mod's subscriptions, and the session was woken by them. The mod's count of skipped deliveries was not read. Turning the option off in a running session has not been tried outside the mod's tests.
 
 ## Settings
 
