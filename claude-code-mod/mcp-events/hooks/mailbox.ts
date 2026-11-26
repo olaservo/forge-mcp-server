@@ -1,12 +1,14 @@
 import { atom, read, update } from 'claude-code'
 import type { EngineInterface } from 'claude-code'
 import type { MailboxState, Own } from '../types'
+import { concat, hmacSha256, open as openSealed, publicKey } from './crypto'
 import { rpc, type Occurrence } from './rpc'
 
 /**
  * Webhook delivery through a mailbox (github.com/olaservo/mcp-mailbox): the session's own server is subscribed
  * with a mailbox hook as the callback, and the deliveries are fetched from the mailbox, verified and ordered here.
- * The mailbox never has the signing secret.
+ * The mailbox never has the signing secret. With `encrypt` the server seals each event's data to the session's key,
+ * so the mailbox holds ciphertext.
  */
 
 /** A delivery as the mailbox's `GET /deliveries` returns it. `body` is base64. */
@@ -19,6 +21,8 @@ export type MailboxOptions = {
   serverToken?: string
   /** Event names to subscribe to. Empty: every event the server lists with webhook delivery. */
   wanted: readonly string[]
+  /** Ask the server to seal event data to the session's key. The server has to list the scheme in `events/list`. */
+  encrypt: boolean
   /** Event names that report a state, whose pending one is asked for when the module loads. */
   latestOnly: readonly string[]
   own: () => Own | undefined
@@ -39,6 +43,8 @@ const SETTLE_MS = 500
 const WAIT_SECONDS = 25
 /** A mailbox with hook limits removes a hook that is not fetched for this long, for a session that ended without removing its own. */
 const HOOK_IDLE_SECONDS = 24 * 60 * 60
+/** The one scheme the server's `delivery.encryption` takes. SEP-3415 does not define it: forge-mcp-server issue 9. */
+const SCHEME = 'hpke-x25519-sha256-aes128gcm'
 
 const saved = atom({ plugin: 'mcp-events', key: 'mailbox' } as const, null)
 const encoder = new TextEncoder()
@@ -51,22 +57,8 @@ function toBase64(bytes: Uint8Array): string {
   return btoa(binary)
 }
 
-function concat(a: Uint8Array, b: Uint8Array): Uint8Array {
-  const out = new Uint8Array(a.length + b.length)
-  out.set(a)
-  out.set(b, a.length)
-  return out
-}
-
-const sha256 = async (data: Uint8Array) => new Uint8Array(await crypto.subtle.digest('SHA-256', data))
-
-/** HMAC-SHA256 (RFC 2104). A hooks module has `crypto.subtle.digest` and no `sign`. */
-export async function hmacSha256(key: Uint8Array, message: Uint8Array): Promise<Uint8Array> {
-  const block = new Uint8Array(64)
-  block.set(key.length > 64 ? await sha256(key) : key)
-  const inner = await sha256(concat(block.map(b => b ^ 0x36), message))
-  return sha256(concat(block.map(b => b ^ 0x5c), inner))
-}
+const toBase64Url = (bytes: Uint8Array) => toBase64(bytes).replace(/\+/g, '-').replace(/\//g, '_').replace(/=+$/, '')
+const fromBase64Url = (text: string) => fromBase64(text.replace(/-/g, '+').replace(/_/g, '/') + '='.repeat((4 - (text.length % 4)) % 4))
 
 /** Standard Webhooks `v1`: HMAC-SHA256 over `<id>.<timestamp>.<body>`, with the body as received. */
 export async function signatureOk(secret: string, delivery: Fetched): Promise<boolean> {
@@ -117,7 +109,8 @@ function inOrder(a: { event: Occurrence; seq: number }, b: { event: Occurrence; 
   return Date.parse(a.event.timestamp) - Date.parse(b.event.timestamp) || a.seq - b.seq
 }
 
-type SubscribeResult = { id: string; cursor?: string | null; truncated?: boolean }
+type SubscribeResult = { id: string; cursor?: string | null; truncated?: boolean; delivery?: { encryption?: { scheme?: string } } }
+type Listed = { name: string; delivery: string[]; encryption?: string[] }
 
 let opts: MailboxOptions
 let base = ''
@@ -133,6 +126,8 @@ let isFetching = false
 let fetchAt = 0
 let failures = 0
 let skipped = 0
+/** Why the last skipped delivery was skipped. */
+let lastSkip: string | undefined
 /** `<subscription id> <webhook-id>` of deliveries handed on. */
 const handled = new Set<string>()
 
@@ -170,6 +165,14 @@ async function ensureHook($: EngineInterface, current: MailboxState, label: stri
   return current.hook
 }
 
+/** Unsubscribes what the session holds on the server. Stops at the first that fails, and the rest stay held. */
+async function drop($: EngineInterface, url: string, hookUrl: string, current: MailboxState): Promise<void> {
+  for (const name of Object.keys(current.subscriptions)) {
+    await rpc($, url, 'events/unsubscribe', { name, arguments: {}, delivery: { mode: 'webhook', url: hookUrl } }, token)
+    delete current.subscriptions[name]
+  }
+}
+
 /** Subscribes or refreshes when due. Does nothing until the session's server has said where it serves events. */
 export async function step($: EngineInterface): Promise<void> {
   const own = opts.own()
@@ -182,7 +185,7 @@ export async function step($: EngineInterface): Promise<void> {
   }
   if (state.source !== own.source) {
     // The server restarted: its subscriptions and cursors went with the old process.
-    state = { ...state, source: own.source, subscriptions: {}, cursors: {} }
+    state = { ...state, source: own.source, subscriptions: {}, cursors: {}, encrypted: false }
     isSubscribed = false
     hasAsked = false
     dueAt = 0
@@ -193,11 +196,32 @@ export async function step($: EngineInterface): Promise<void> {
   try {
     token = opts.serverToken || (await registryToken($, own))
     if (!token) throw new Error(`no token for ${own.url}: its registry file has none and serverToken is not set`)
-    if (opts.wanted.length) names = [...opts.wanted]
-    else names = (await rpc<{ events: { name: string; delivery: string[] }[] }>($, own.url, 'events/list', {}, token)).events.filter(e => e.delivery.includes('webhook')).map(e => e.name)
+    const listed = opts.wanted.length && !opts.encrypt ? [] : (await rpc<{ events: Listed[] }>($, own.url, 'events/list', {}, token)).events
+    names = opts.wanted.length ? [...opts.wanted] : listed.filter(e => e.delivery.includes('webhook')).map(e => e.name)
     const hook = await ensureHook($, current, `mcp-events ${own.source}`)
+    if (opts.encrypt) {
+      const without = names.filter(name => !listed.find(e => e.name === name)?.encryption?.includes(SCHEME))
+      if (without.length) {
+        // A server without the field would take the subscription and deliver in the clear.
+        await drop($, own.url, hook.url, current).catch(() => undefined)
+        throw new Error(`events/list does not list ${SCHEME} for ${without.join(', ')}`)
+      }
+      current.key ??= toBase64Url(crypto.getRandomValues(new Uint8Array(32)))
+    } else if (current.encrypted) {
+      // The server refuses a refresh that would turn encryption off.
+      await drop($, own.url, hook.url, current)
+    }
+    current.encrypted = opts.encrypt
+    const encryption = opts.encrypt && current.key !== undefined ? { scheme: SCHEME, publicKey: toBase64Url(publicKey(fromBase64Url(current.key))) } : undefined
     for (const name of names) {
-      const result = await rpc<SubscribeResult>($, own.url, 'events/subscribe', { name, arguments: {}, delivery: { mode: 'webhook', url: hook.url, secret: current.secret }, ttlMs: TTL_MS, cursor: current.cursors[name] ?? null }, token)
+      const delivery = { mode: 'webhook', url: hook.url, secret: current.secret, ...(encryption && { encryption }) }
+      const result = await rpc<SubscribeResult>($, own.url, 'events/subscribe', { name, arguments: {}, delivery, ttlMs: TTL_MS, cursor: current.cursors[name] ?? null }, token)
+      if (encryption && result.delivery?.encryption?.scheme !== SCHEME) {
+        // The server took the subscription as one in the clear.
+        await rpc($, own.url, 'events/unsubscribe', { name, arguments: {}, delivery: { mode: 'webhook', url: hook.url } }, token).catch(() => undefined)
+        delete current.subscriptions[name]
+        throw new Error(`events/subscribe for ${name} did not answer with ${SCHEME}`)
+      }
       current.subscriptions[name] = result.id
       if (typeof result.cursor === 'string') current.cursors[name] = result.cursor
       if (result.truncated) opts.missed(name)
@@ -225,7 +249,7 @@ async function open(current: MailboxState, delivery: Fetched, now: number): Prom
   if (why) return why
   const name = Object.entries(current.subscriptions).find(([, id]) => id === delivery.headers['x-mcp-subscription-id'])?.[0]
   if (name === undefined) return 'unknown subscription'
-  let body: (Partial<Occurrence> & { type?: unknown }) | null
+  let body: (Partial<Occurrence> & { type?: unknown; encrypted?: { enc?: unknown; ct?: unknown } }) | null
   try {
     body = JSON.parse(new TextDecoder().decode(fromBase64(delivery.body))) as typeof body
   } catch {
@@ -236,7 +260,18 @@ async function open(current: MailboxState, delivery: Fetched, now: number): Prom
   // The subscription id header is not signed and the event name is.
   if (body.name !== name) return `event ${String(body.name)} on a subscription for ${name}`
   if (typeof body.eventId !== 'string' || typeof body.timestamp !== 'string') return 'not an event'
-  return { eventId: body.eventId, name, timestamp: body.timestamp, data: body.data }
+  const sealed = body.encrypted
+  if (!opts.encrypt) return sealed === undefined ? { eventId: body.eventId, name, timestamp: body.timestamp, data: body.data } : 'encrypted, and encryption is off'
+  if (typeof sealed?.enc !== 'string' || typeof sealed.ct !== 'string') return 'not encrypted'
+  try {
+    // The server binds the seal to the subscription and to the fields that stay in the clear.
+    const info = encoder.encode(`mcp-events v1 ${delivery.headers['x-mcp-subscription-id']}`)
+    const aad = encoder.encode(`${body.eventId}\n${name}\n${body.timestamp}`)
+    const plain = await openSealed(fromBase64Url(current.key ?? ''), fromBase64Url(sealed.enc), info, aad, fromBase64Url(sealed.ct))
+    return { eventId: body.eventId, name, timestamp: body.timestamp, data: JSON.parse(new TextDecoder().decode(plain)) as unknown }
+  } catch {
+    return 'does not decrypt'
+  }
 }
 
 /** One fetch from the mailbox, always for this session's hook. Hands on what verifies, in order, then acknowledges. */
@@ -267,6 +302,7 @@ export async function fetchOnce($: EngineInterface, waitSeconds: number, settleM
     const opened = await open(current, delivery, now)
     if (typeof opened === 'string' || handled.has(key)) {
       skipped++
+      lastSkip = typeof opened === 'string' ? opened : 'repeat'
       continue
     }
     handled.add(key)
@@ -306,8 +342,12 @@ export const following = (): readonly string[] => (isSubscribed ? names : [])
 
 export const describe = (): string[] => [
   ...names.map(name => `  ${name}  subscription ${state?.subscriptions[name] ?? 'none'}`),
-  `  mailbox position ${state?.after ?? 0}, ${skipped} deliveries skipped`,
+  `  mailbox position ${state?.after ?? 0}, ${skipped} deliveries skipped${lastSkip ? ` (the last: ${lastSkip})` : ''}`,
+  ...(opts.encrypt ? [`  event data encrypted to this session's key (${SCHEME})`] : []),
 ]
+
+/** How the status line names the delivery. */
+export const mode = (): string => (opts.encrypt ? 'mailbox, encrypted' : 'mailbox')
 
 /** Unsubscribes and removes the hook with what it still holds. Each step is tried once. */
 export async function end($: EngineInterface): Promise<void> {

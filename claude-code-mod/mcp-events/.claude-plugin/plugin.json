@@ -71,6 +71,12 @@
       "sensitive": true,
       "default": ""
     },
+    "mailboxEncrypt": {
+      "type": "boolean",
+      "title": "Encrypt through the mailbox",
+      "description": "With mailbox delivery, ask the server to encrypt each event's data to a key this session makes, so the mailbox holds ciphertext. Needs a server that lists hpke-x25519-sha256-aes128gcm in events/list (forge-mcp-server 0.4.0 or later); a server that does not is not subscribed",
+      "default": false
+    },
     "serverToken": {
       "type": "string",
       "title": "Server token",

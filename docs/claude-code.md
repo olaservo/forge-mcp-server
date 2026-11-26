@@ -26,6 +26,15 @@ The mod polls one URL and sends no token, so on its own it reaches only the serv
 
 With `mailboxUrl` and `mailboxKey` set, the mod does the reader's work itself and nothing else has to run. Once `forge_status` has been called, the mod reads the server's token from the registry file named in `events.registry`, creates a hook in the mailbox, and subscribes the session's own server by webhook with that hook as the callback. It refreshes the subscription every minute. It keeps one waiting request open to the mailbox, checks each delivery's Standard Webhooks signature and age, drops repeats, orders what arrived together, and starts a turn as for a polled event. The signing secret is made in the session and the mailbox never has it. `url` and `relay` are not used.
 
+With `mailboxEncrypt` on as well, the mailbox holds ciphertext. The mod makes an X25519 key pair in the session, sends the public key as `delivery.encryption` at every subscribe, and opens each delivery after it has checked the signature. This is the client side of [payload encryption](events.md#payload-encryption), which SEP-3415 does not define.
+
+- The mod calls `events/list` first and subscribes only when every event it wants lists `hpke-x25519-sha256-aes128gcm`. A server without the field would take the subscription and deliver in the clear, so against one the session is not subscribed and `/mcp-events` says why. That needs forge-mcp-server 0.4.0 or later.
+- When the subscribe result does not name the scheme, the mod unsubscribes.
+- A delivery in the clear is skipped while the option is on, and a sealed one while it is off. `/mcp-events` gives the count and the reason for the last one.
+- Turned off again, the mod unsubscribes before it subscribes in the clear, since the server refuses a refresh that drops the key.
+- A hooks module has `crypto.subtle.digest` and no other WebCrypto, so `hooks/crypto.ts` does X25519, HKDF and AES-128-GCM in plain JavaScript. It is checked against the CFRG test vector and against `src/hpke.ts`, in `test/mod-crypto.test.ts` and in the mod's own tests. It does not run in constant time.
+- The private key is kept in the session's state beside the signing secret.
+
 When the session ends the mod unsubscribes and removes its hook. A session that is killed leaves the hook, and a mailbox with hook limits removes it after a day without a fetch.
 
 After a `/mcp` reconnect the server is a new process. The session is woken again once `forge_status` has been called.
@@ -42,6 +51,7 @@ After a `/mcp` reconnect the server is a new process. The session is woken again
 - `statusTool`: the tool whose result has `events.source`, `events.http` and `events.url`. Default `forge_status`.
 - `relay`: the endpoint is a reader that relays every server's events, so the session is woken whatever `events.url` its server reports. Default off.
 - `mailboxUrl`, `mailboxKey`: the base URL and bearer key of an [mcp-mailbox](https://github.com/olaservo/mcp-mailbox). With both set the mod takes webhook delivery through the mailbox, as above. The key is kept in secure storage. Default: not set.
+- `mailboxEncrypt`: with mailbox delivery, have the server encrypt each event's data to a key the session makes, as above. Default off.
 - `serverToken`: the server's bearer token, for mailbox delivery from a server whose `forge_status` names no registry file. Default: not set.
 
 ## Installing the mod
