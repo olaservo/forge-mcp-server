@@ -41,6 +41,8 @@ After a `/mcp` reconnect the server is a new process. The session is woken again
 
 ## Options
 
+Claude Code reads a mod's options from user settings, a `--settings` file or managed settings. An option set in a project's `.claude/settings.json` does not reach the mod. Seen on Claude Code 2.1.332.
+
 - `url`: the endpoint to poll. Default `http://127.0.0.1:3080/mcp`.
 - `server`: the server's name in `/mcp`. Default `forge`.
 - `events`: event names to follow, separated by commas. Default: every event the server lists with poll delivery.
