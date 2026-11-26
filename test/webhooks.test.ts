@@ -7,6 +7,7 @@ import { join } from "node:path";
 import { Webhook } from "standardwebhooks";
 import { describe, expect, it, vi } from "vitest";
 import { z } from "zod";
+import { open as modOpen, publicKey as modPublicKey } from "../claude-code-mod/mcp-events/hooks/crypto.js";
 import { EventLog } from "../src/event-log.js";
 import { openSeq, setupR } from "../src/hpke.js";
 import { CHAT, MoveTracker, YOUR_MOVE } from "../src/seat-events.js";
@@ -645,6 +646,24 @@ describe("webhook payload encryption", () => {
     await hub.idle();
     expect(JSON.parse(events()[2]!.body)).toMatchObject({ data: chat.data });
     await client.close();
+  });
+
+  it("seals to a key the mod's code made, and the mod's code opens the delivery", async () => {
+    const log = new EventLog();
+    const { post, events } = receiver();
+    const hub = new WebhookHub(log, { post });
+    const privateKey = new Uint8Array(randomBytes(32));
+    const encryption = { scheme: ENCRYPTION_SCHEME, publicKey: Buffer.from(modPublicKey(privateKey)).toString("base64url") };
+    const sub = await hub.subscribe("ola", sealedParams(newSecret(), encryption));
+    const emitted = log.emit(YOUR_MOVE, { kind: "priority", prompt: "Priority: Agent" });
+    await hub.idle();
+
+    // As `claude-code-mod/mcp-events/hooks/mailbox.ts` opens a delivery.
+    const sent = JSON.parse(events()[0]!.body) as { eventId: string; name: string; timestamp: string; encrypted: { enc: string; ct: string } };
+    const info = Buffer.from(`mcp-events v1 ${sub.id}`);
+    const aad = Buffer.from(`${sent.eventId}\n${sent.name}\n${sent.timestamp}`);
+    const plain = await modOpen(privateKey, Buffer.from(sent.encrypted.enc, "base64url"), info, aad, Buffer.from(sent.encrypted.ct, "base64url"));
+    expect(JSON.parse(Buffer.from(plain).toString("utf8"))).toEqual(emitted.data);
   });
 
   it("refuses an unknown scheme, a key it cannot seal to and a refresh that drops the key", async () => {

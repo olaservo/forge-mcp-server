@@ -1,7 +1,7 @@
 import { atom, read, update } from 'claude-code'
 import type { EngineInterface, Register } from 'claude-code'
 import type { Own } from '../types'
-import { configure, describe, end, fetchOnce, following as followingMailbox, pump, step } from './mailbox'
+import { configure, describe, end, fetchOnce, following as followingMailbox, mode, pump, step } from './mailbox'
 import { rpc, type Occurrence } from './rpc'
 
 /**
@@ -210,7 +210,7 @@ async function tick($: EngineInterface, url: string, wanted: readonly string[], 
   }
   // A session that is not woken shows nothing.
   const names = following(url, ownOnly)
-  $.ui.status(names.length ? `events: ${names.join(', ')}${box ? ' (mailbox)' : ''}` : undefined)
+  $.ui.status(names.length ? `events: ${names.join(', ')}${box ? ` (${mode()})` : ''}` : undefined)
 }
 
 /** The events that start a turn in this session now. */
@@ -248,6 +248,7 @@ export const register: Register = (on, options) => {
       url: mailboxUrl,
       key: mailboxKey,
       serverToken: String(options.serverToken ?? '') || undefined,
+      encrypt: String(options.mailboxEncrypt ?? false) === 'true',
       wanted,
       latestOnly: superseded,
       own: () => own,

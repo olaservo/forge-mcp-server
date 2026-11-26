@@ -33,7 +33,7 @@ Webhook subscriptions need an authenticated caller, so they are offered only to 
 
 ### Payload encryption
 
-A client whose callback is a relay it does not trust with the events can ask for `data` to be encrypted to its own key. SEP-3415 does not define this. It is the experiment in [issue 9](https://github.com/olaservo/forge-mcp-server/issues/9), and the reader in [mcp-mailbox](https://github.com/olaservo/mcp-mailbox) is the client for it.
+A client whose callback is a relay it does not trust with the events can ask for `data` to be encrypted to its own key. SEP-3415 does not define this. It is the experiment in [issue 9](https://github.com/olaservo/forge-mcp-server/issues/9), and its clients are the reader in [mcp-mailbox](https://github.com/olaservo/mcp-mailbox) and the `mcp-events` mod's [mailbox mode](claude-code.md#through-a-mailbox-with-no-reader) with `mailboxEncrypt`.
 
 - `events/list` names the scheme for each event, as `"encryption": ["hpke-x25519-sha256-aes128gcm"]`, when webhooks are offered. That is RFC 9180 base mode with DHKEM(X25519, HKDF-SHA256), HKDF-SHA256 and AES-128-GCM, done in `src/hpke.ts` with Node's `crypto`.
 - `events/subscribe` takes `delivery.encryption: {"scheme", "publicKey"}`, with the 32-byte X25519 public key in base64url. The result carries `delivery.encryption.scheme` when deliveries will be encrypted. Another scheme gets `Unsupported` with `{feature: "encryption", value}`, and a key that is not 32 bytes or cannot be used gets `-32602`.
@@ -43,7 +43,7 @@ A client whose callback is a relay it does not trust with the events can ask for
 - The 256 KiB limit is held against the body as sent, which is about a third larger than `data`.
 - The public key is kept with the subscription, in `FORGE_MCP_SUBSCRIPTIONS` when that is set.
 
-Tested in `test/webhooks.test.ts`, and from mcp-mailbox with its reader against this server in one process. Not run in a game.
+Tested in `test/webhooks.test.ts`, and from mcp-mailbox with its reader against this server in one process. Three games on 2026-11-25 ran with the reader as the client through a deployed mailbox: 70, 74 and 111 events, each decrypted once, and in the third the session was woken only by those events. The mod's `mailboxEncrypt` is tested against this server's sealing in `test/webhooks.test.ts` and `test/mod-crypto.test.ts`. One game on 2026-11-26 ran with the mod as the client through the same mailbox: 66 events, each delivered once to the mod's subscriptions, and the session was woken by them. The mod's count of skipped deliveries was not read. Turning the option off in a running session has not been tried outside the mod's tests.
 
 ## Settings
 

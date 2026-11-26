@@ -16,6 +16,10 @@ export type MailboxState = {
   subscriptions: Record<string, string>
   /** Event name to the cursor the server last returned from `events/subscribe`. */
   cursors: Record<string, string>
+  /** The session's X25519 private key in base64url, made when encryption is first asked for. */
+  key?: string
+  /** Whether the subscriptions held were made with encryption. */
+  encrypted?: boolean
 }
 
 declare module 'claude-code' {
