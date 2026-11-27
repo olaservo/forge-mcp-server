@@ -107,6 +107,19 @@ describe("events", () => {
     expect(new MoveTracker(new EventLog()).observe(drafting)).toBeUndefined();
   });
 
+  it("emits no lobby ask when the host goes away after the seat quit a finished game", () => {
+    // The sequence the bridge showed on 2026-11-27 when forge_host_stop ran after quit
+    const moves = new MoveTracker(new EventLog());
+    const live = { connected: true, reconnectState: "CONNECTED" };
+    const lobby = { mySlot: 0, slots: [{ index: 0, name: "Agent", ready: false }, { index: 1, name: "Albert", ready: true }] };
+    const over = { inGame: false, finished: true, gameOver: true, winner: "Albert", turn: 0 };
+    expect(moves.observe({ revision: 16, connection: live, game: over, lobby })?.data).toMatchObject({ kind: "game_over" });
+    const retrying = { connected: true, reconnectState: "RECONNECTING" };
+    expect(moves.observe({ revision: 17, connection: retrying, game: { inGame: false, finished: false }, lobby })).toBeUndefined();
+    const failed = { connected: false, reconnectState: "FAILED", closeReason: "the host could not be reached again" };
+    expect(moves.observe({ revision: 18, connection: failed, game: { inGame: false, finished: false }, lobby: { mySlot: -1 } })).toBeUndefined();
+  });
+
   it("asks for a deck once the pool arrives, and for a ready flag before the event starts", () => {
     const moves = new MoveTracker(new EventLog());
     const seat = (ready: boolean, phase: string, more = {}) => ({
