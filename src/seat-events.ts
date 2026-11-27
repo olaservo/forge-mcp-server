@@ -58,6 +58,9 @@ export function pendingMove(status: SeatStatus, awaited?: number): Move | undefi
   // The host can return the seat to the lobby as the game ends, so the result arrives with inGame false.
   // It stays in the status afterwards. The key does not change, so it fires once.
   if (game?.gameOver || game?.finished) return gameOver(game, revision);
+  // While Forge's client retries a lost host it clears the game and keeps the lobby it last saw, which is not a lobby to set up.
+  const connection = status.connection;
+  if (connection && (connection.connected === false || (connection.reconnectState != null && connection.reconnectState !== "CONNECTED"))) return undefined;
   // A seat that sits unready has its name, portrait and deck still to set, for example after auto-join without a deck.
   const mySlot = status.lobby?.mySlot ?? -1;
   const seat = status.lobby?.slots?.find((s, i) => (s.index ?? i) === mySlot);
