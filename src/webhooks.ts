@@ -162,6 +162,9 @@ function receiversIn(body: string): string[] {
 /** A prefix covers the paths under it, whole segments only. */
 const covers = (prefix: string, path: string) => path === prefix || path.startsWith(prefix.endsWith("/") ? prefix : `${prefix}/`);
 
+/** A callback path for the log, with each segment of 16 characters or more cut to its first 4, since a mailbox hook token is a path segment. */
+export const loggedPath = (path: string) => path.split("/").map((segment) => (segment.length >= 16 ? `${segment.slice(0, 4)}…` : segment)).join("/");
+
 function maxAgeMs(cacheControl: string | undefined): number | undefined {
   if (cacheControl === undefined) return undefined;
   if (/(^|,)\s*no-(store|cache)\s*(,|$)/i.test(cacheControl)) return 0;
@@ -467,7 +470,7 @@ export class WebhookHub {
       this.receivers.set(origin, known);
     }
     const covered = known.prefixes.some((prefix) => covers(prefix, pathname));
-    if (covered) this.log(`webhook receiver document at ${origin} covers ${pathname}`);
+    if (covered) this.log(`webhook receiver document at ${origin} covers ${loggedPath(pathname)}`);
     return covered;
   }
 

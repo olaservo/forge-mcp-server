@@ -13,7 +13,7 @@ import { openSeq, setupR } from "../src/hpke.js";
 import { CHAT, MoveTracker, YOUR_MOVE } from "../src/seat-events.js";
 import { skillCatalog } from "../src/server.js";
 import { listenHttp } from "../src/transports/http.js";
-import { DeliveryError, ENCRYPTION_SCHEME, type SubscribeResult, type WebhookGet, WebhookHub, type WebhookPost, isPublicAddress, isSigningSecret, retryDelays, subscriptionId, webhookPost } from "../src/webhooks.js";
+import { DeliveryError, ENCRYPTION_SCHEME, type SubscribeResult, type WebhookGet, WebhookHub, type WebhookPost, isPublicAddress, isSigningSecret, loggedPath, retryDelays, subscriptionId, webhookPost } from "../src/webhooks.js";
 import { connect, fakeBridge } from "./helpers.js";
 
 const newSecret = () => `whsec_${randomBytes(32).toString("base64")}`;
@@ -133,6 +133,18 @@ describe("webhook delivery", () => {
     await hub.subscribe("cat", subscribeParams(newSecret()));
     expect(gets).toHaveLength(2);
     expect(posts.filter((p) => isVerification(p.body))).toHaveLength(1);
+  });
+
+  it("logs a covered callback path with its hook token cut short", async () => {
+    const lines: string[] = [];
+    const { post } = receiver();
+    const get: WebhookGet = async () => ({ status: 200, body: JSON.stringify({ receivers: ["/hooks/"] }) });
+    const hub = new WebhookHub(new EventLog(), { post, get, log: (line) => lines.push(line) });
+    const token = "Qx7vN2pL9sKd4RtYb8WmZc3HfJ6aEu1GiOoPq5XyVnA";
+    await hub.subscribe("ola", subscribeParams(newSecret(), { delivery: { mode: "webhook", url: `https://receiver.example.com/hooks/${token}`, secret: newSecret() } }));
+    expect(lines.join("\n")).not.toContain(token);
+    expect(lines).toContain("webhook receiver document at https://receiver.example.com covers /hooks/Qx7v…");
+    expect(loggedPath("/mcp-events/a/b")).toBe("/mcp-events/a/b");
   });
 
   it("falls back to the challenge when the origin has no receiver document", async () => {
