@@ -1,0 +1,20 @@
+{
+  "name": "forge-seat",
+  "version": "0.1.0",
+  "description": "Draft and play Magic: The Gathering in a Forge (Card-Forge) online lobby, with Scryfall card and rules lookup.",
+  "author": {
+    "name": "Carbon-Based Content LLC",
+    "url": "https://www.carbonbasedcontent.com"
+  },
+  "homepage": "https://github.com/olaservo/forge-mcp-server/tree/main/plugin",
+  "repository": "https://github.com/olaservo/forge-mcp-server",
+  "license": "MIT",
+  "keywords": ["mcp", "magic-the-gathering", "forge", "scryfall", "draft"],
+  "userConfig": {
+    "forge_home": {
+      "type": "directory",
+      "title": "Forge folder",
+      "description": "The folder you installed Forge in: the one that holds res/ and forge-gui-desktop-<version>-jar-with-dependencies.jar"
+    }
+  }
+}

@@ -9,8 +9,14 @@
   },
   "files": [
     "dist",
-    "skills"
+    "skills",
+    "bridge"
   ],
+  "forgeAgentBridge": {
+    "version": "0.1.11",
+    "forge": "2.0.16",
+    "sha256": "d4f2e4eaea9313f9779f258c75662d3d0179c59638cdcc303b2552b58cc62fdd"
+  },
   "keywords": [
     "mcp",
     "model-context-protocol",
@@ -33,7 +39,8 @@
   },
   "scripts": {
     "build": "tsc",
-    "prepack": "npm run build",
+    "prepack": "npm run fetch-bridge && npm run build",
+    "fetch-bridge": "node scripts/fetch-bridge.mjs",
     "typecheck": "tsc --noEmit && tsc -p test",
     "lint": "eslint .",
     "test": "vitest run --dir test",

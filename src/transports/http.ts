@@ -13,7 +13,8 @@ import { WebhookHub, retryDelays } from "../webhooks.js";
 
 export interface HttpOptions {
   bridge: Bridge;
-  skills: SkillCatalog;
+  /** Undefined with `FORGE_SKILLS=0`. */
+  skills: SkillCatalog | undefined;
   events: EventLog;
   port: number;
   /** Bearer token every request must carry. Defaults to `FORGE_MCP_TOKEN`. Webhook delivery is offered only with one. */

@@ -1,0 +1,14 @@
+{
+  "$schema": "https://agent-plugins.org/schemas/1.0.0/plugin.schema.json",
+  "name": "forge-seat",
+  "version": "0.1.0",
+  "description": "Draft and play Magic: The Gathering in a Forge (Card-Forge) online lobby, with Scryfall card and rules lookup.",
+  "author": {
+    "name": "Carbon-Based Content LLC",
+    "url": "https://www.carbonbasedcontent.com"
+  },
+  "homepage": "https://github.com/olaservo/forge-mcp-server/tree/main/plugin",
+  "repository": "https://github.com/olaservo/forge-mcp-server",
+  "license": "MIT",
+  "keywords": ["mcp", "magic-the-gathering", "forge", "scryfall", "draft"]
+}

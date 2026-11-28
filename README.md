@@ -8,17 +8,19 @@ This project is independent. It is not affiliated with, endorsed by or sponsored
 
 This repo is one of three parts. Cloning it alone is not enough to play.
 
-- **Forge and the agent bridge.** The server talks to a headless Forge client, the agent bridge, which is not part of Forge. It is a small jar from [forge-agent-bridge](https://github.com/olaservo/forge-agent-bridge) (GPL-3.0) that runs beside a Forge desktop jar, built against the Forge version you run. Its [releases](https://github.com/olaservo/forge-agent-bridge/releases) have a jar for the Forge 2.0.16 desktop release. Set `FORGE_JAR`, `FORGE_HOME` and `FORGE_BRIDGE_JAR` and the server starts it.
+- **Forge and the agent bridge.** The server talks to a headless Forge client, the agent bridge, which is not part of Forge. It is a small jar from [forge-agent-bridge](https://github.com/olaservo/forge-agent-bridge) (GPL-3.0) that runs beside a Forge desktop jar, built against the Forge version you run. The npm package bundles the bridge release it was tested with. Install Forge as its own instructions describe, set `FORGE_HOME` to its folder, and the server starts the bridge.
 - **A Forge host.** Someone hosts an online lobby in a Forge desktop client and the agent joins it as an ordinary remote player. The host runs the same Forge version as the bridge. Played against a host on the official Forge 2.0.16 desktop release, with the bridge jar built against it. Without a desktop host, `forge_host` starts one with no window on the server's machine; see [Hosting](#hosting).
-- **Node 24 or newer** for this server, and an MCP client that speaks protocol revision 2026-07-28. The skills are served through the MCP skills extension, so a client without it will not load them by itself.
+- **Node 24 or newer** for this server, Java 17 or newer for Forge, and an MCP client that speaks protocol revision 2026-07-28. The skills are served through the MCP skills extension, so a client without it will not load them by itself. `FORGE_SKILLS=0` stops the server serving them, for a client that has them as local files.
+
+The [forge-seat plugin](plugin/README.md) starts this server and the Scryfall server in Claude Code and other hosts that read Agent Plugins.
 
 ## Run
 
-Download the [Forge 2.0.16 desktop release](https://github.com/Card-Forge/forge/releases/tag/forge-2.0.16) and `forge-agent-bridge-0.1.11-forge-2.0.16.jar` from the [forge-agent-bridge releases](https://github.com/olaservo/forge-agent-bridge/releases). The events need bridge 0.1.3 or later. From 0.1.4 the bridge marks the priority prompt, and before it the server matches the prompt's English text. From 0.1.5 a chat line names its sender, and before it the server splits the line on the seat names. `forge_draft_deck`, the pick clock's `secondsLeft` and the end of the `deck` ask once a deck is built need 0.1.6. With an older bridge the `deck` ask stays pending after a deck is set. `forge_game_stops`, `selectStack` and the `pay`, `pass`, `once`, `endTurn` and `at` arguments of `forge_game_act` need 0.1.10, and with an older bridge each says so. `unchanged`, `blocksFinal`, `faceUpName`, `libraryTop`, a match of more than one game, sideboarding, AI seats, the copilot and the draft pick's `at` need 0.1.11. For another Forge version, build the bridge jar against that version's jar, as the forge-agent-bridge README describes. Then set three variables and the server starts the bridge on first use:
+Download the [Forge 2.0.16 desktop release](https://github.com/Card-Forge/forge/releases/tag/forge-2.0.16) and extract it into a new folder. The npm package carries `forge-agent-bridge-0.1.11-forge-2.0.16.jar` in `bridge/`, with its license. The release and its sha256 are in `forgeAgentBridge` in `package.json`, and `npm run fetch-bridge` puts the jar there in a clone. The server refuses to start a bridge whose jar name says it is built for a different Forge version than the desktop jar's, and names both. To use another bridge, set `FORGE_BRIDGE_JAR`. The events need bridge 0.1.3 or later. From 0.1.4 the bridge marks the priority prompt, and before it the server matches the prompt's English text. From 0.1.5 a chat line names its sender, and before it the server splits the line on the seat names. `forge_draft_deck`, the pick clock's `secondsLeft` and the end of the `deck` ask once a deck is built need 0.1.6. With an older bridge the `deck` ask stays pending after a deck is set. `forge_game_stops`, `selectStack` and the `pay`, `pass`, `once`, `endTurn` and `at` arguments of `forge_game_act` need 0.1.10, and with an older bridge each says so. `unchanged`, `blocksFinal`, `faceUpName`, `libraryTop`, a match of more than one game, sideboarding, AI seats, the copilot and the draft pick's `at` need 0.1.11. For another Forge version, build the bridge jar against that version's jar, as the forge-agent-bridge README describes. The server starts the bridge on first use from these variables:
 
-- `FORGE_JAR`: the Forge `forge-gui-desktop-<version>-jar-with-dependencies.jar`.
-- `FORGE_BRIDGE_JAR`: the bridge jar.
 - `FORGE_HOME`: the folder that holds Forge's `res/`. That is the unpacked folder for a release download and `forge-gui` in a checkout.
+- `FORGE_JAR`: the Forge `forge-gui-desktop-<version>-jar-with-dependencies.jar`. Default: the one in `FORGE_HOME`, where a release download has it.
+- `FORGE_BRIDGE_JAR`: the bridge jar. Default: the bundled one.
 
 Loading cards takes about 40 s. Each server process starts a bridge of its own on a free loopback port and stops it on exit, so two agent sessions on one machine hold two seats. It starts the bridge with `--exit-with-parent`, and a bridge that has the flag also exits when the server process ends without stopping it. An older bridge ignores the flag. `forge_status` shows the URL as `bridge.url`.
 
@@ -37,7 +39,7 @@ npm run start:http        # Streamable HTTP on http://127.0.0.1:3080/mcp (FORGE_
 
 `node scripts/call.mjs <tool> '<json arguments>'` calls one tool on a server running over HTTP and prints the result, and `node scripts/call.mjs --poll forge.your_move [cursor]` polls an event. `FORGE_MCP_URL` names the endpoint.
 
-The server is also on npm as `@olaservo/forge-mcp-server`, so a client can start it with `npx -y @olaservo/forge-mcp-server` and the same variables, with no clone. The Forge release and the bridge jar are still needed. For example, in a `.mcp.json`:
+The server is also on npm as `@olaservo/forge-mcp-server`, so a client can start it with `npx -y @olaservo/forge-mcp-server` and the same variables, with no clone. Forge is still needed. For example, in a `.mcp.json`:
 
 ```json
 {
@@ -45,17 +47,13 @@ The server is also on npm as `@olaservo/forge-mcp-server`, so a client can start
     "forge": {
       "command": "npx",
       "args": ["-y", "@olaservo/forge-mcp-server"],
-      "env": {
-        "FORGE_JAR": "C:/tools/forge-2.0.16/forge-gui-desktop-2.0.16-jar-with-dependencies.jar",
-        "FORGE_HOME": "C:/tools/forge-2.0.16",
-        "FORGE_BRIDGE_JAR": "C:/tools/forge-agent-bridge/forge-agent-bridge-0.1.11-forge-2.0.16.jar"
-      }
+      "env": { "FORGE_HOME": "C:/tools/forge-2.0.16" }
     }
   }
 }
 ```
 
-On Windows, Claude Code needs `"command": "cmd"` and `"args": ["/c", "npx", "-y", "@olaservo/forge-mcp-server"]`.
+Claude Code 2.1.332 on Windows starts `"command": "npx"` as it is. An older version may need `"command": "cmd"` and `"args": ["/c", "npx", "-y", "@olaservo/forge-mcp-server"]`.
 
 Claude Code from a clone: `claude mcp add forge -- node <path>/dist/index.js`. To have the agent woken on its turn, also install the `mcp-events` mod, as [Claude Code](docs/claude-code.md) describes. Without the mod the agent waits with `forge_wait`.
 

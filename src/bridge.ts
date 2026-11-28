@@ -1,6 +1,7 @@
 import { spawn, type ChildProcess } from "node:child_process";
 import { createServer, type AddressInfo } from "node:net";
 import { delimiter } from "node:path";
+import { SETUP_HINT, bridgeJar as defaultBridgeJar, forgeJar, versionMismatch } from "./forge-paths.js";
 
 /**
  * HTTP client for the Forge agent bridge (forge-agent-bridge), a headless Forge network client
@@ -9,9 +10,9 @@ import { delimiter } from "node:path";
 export interface BridgeOptions {
   /** Base URL of a bridge other processes may use too. Default: FORGE_BRIDGE_URL. With neither, this process spawns a bridge of its own on a free loopback port. */
   baseUrl?: string;
-  /** Path to the Forge desktop jar-with-dependencies. Default: FORGE_JAR. */
+  /** Path to the Forge desktop jar-with-dependencies. Default: FORGE_JAR, or the one in FORGE_HOME. */
   jar?: string;
-  /** Path to the forge-agent-bridge jar. Default: FORGE_BRIDGE_JAR. With both jars set, the bridge is spawned when it is down. */
+  /** Path to the forge-agent-bridge jar. Default: FORGE_BRIDGE_JAR, or the one bundled with this package. With both jars found, the bridge is spawned when it is down. */
   bridgeJar?: string;
   /** Working directory for the spawned bridge. It must contain `res/` (normally the `forge-gui` folder). Default: FORGE_HOME. */
   cwd?: string;
@@ -62,6 +63,8 @@ export class Bridge {
   private readonly fetchImpl: typeof fetch;
   private child?: ChildProcess;
   private starting?: Promise<"already-running" | "started" | "not-configured">;
+  /** Why the last start failed, until one succeeds. */
+  private startError?: string;
 
   constructor(private readonly opts: BridgeOptions = {}) {
     this.baseUrl = (opts.baseUrl ?? process.env.FORGE_BRIDGE_URL)?.replace(/\/$/, "");
@@ -80,10 +83,10 @@ export class Bridge {
   }
 
   private notReachable(why: string): BridgeError {
+    if (this.startError) return new BridgeError(`Forge bridge could not be started: ${this.startError}`);
     return new BridgeError(
       `Forge bridge not reachable at ${this.place} (${why}). ` +
-        `Set FORGE_JAR, FORGE_BRIDGE_JAR and FORGE_HOME so this server can start it, ` +
-        `or start it yourself as the forge-agent-bridge README describes and set FORGE_BRIDGE_URL.`,
+        `${SETUP_HINT} Or start it yourself as the forge-agent-bridge README describes and set FORGE_BRIDGE_URL.`,
     );
   }
 
@@ -141,15 +144,25 @@ export class Bridge {
    */
   ensureStarted(timeoutMs = 180_000): Promise<"already-running" | "started" | "not-configured"> {
     // The bridge answers only after its card load, so a second caller in that time waits for the first start
-    this.starting ??= this.start(timeoutMs).finally(() => (this.starting = undefined));
+    this.starting ??= this.start(timeoutMs)
+      .then(
+        (result) => ((this.startError = undefined), result),
+        (e: Error) => {
+          this.startError = e.message;
+          throw e;
+        },
+      )
+      .finally(() => (this.starting = undefined));
     return this.starting;
   }
 
   private async start(timeoutMs: number): Promise<"already-running" | "started" | "not-configured"> {
     if (await this.isUp()) return "already-running";
-    const jar = this.opts.jar ?? process.env.FORGE_JAR;
-    const bridgeJar = this.opts.bridgeJar ?? process.env.FORGE_BRIDGE_JAR;
+    const jar = this.opts.jar ?? forgeJar();
+    const bridgeJar = this.opts.bridgeJar ?? defaultBridgeJar();
     if (!jar || !bridgeJar) return "not-configured";
+    const mismatch = versionMismatch(jar, bridgeJar);
+    if (mismatch) throw new BridgeError(mismatch);
     const cwd = this.opts.cwd ?? process.env.FORGE_HOME ?? process.cwd();
     if (this.own) {
       this.stop();

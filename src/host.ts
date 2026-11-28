@@ -3,6 +3,7 @@ import { randomBytes } from "node:crypto";
 import { createServer } from "node:net";
 import { networkInterfaces } from "node:os";
 import { delimiter } from "node:path";
+import { SETUP_HINT, bridgeJar as defaultBridgeJar, forgeJar, versionMismatch } from "./forge-paths.js";
 
 export interface HostSettings {
   port: number;
@@ -40,9 +41,9 @@ export interface HostState extends Partial<Omit<HostSettings, "aiDecks">> {
 }
 
 export interface LobbyHostOptions {
-  /** Path to the Forge desktop jar-with-dependencies. Default: FORGE_JAR. */
+  /** Path to the Forge desktop jar-with-dependencies. Default: FORGE_JAR, or the one in FORGE_HOME. */
   jar?: string;
-  /** Path to the forge-agent-bridge jar, 0.1.7 or later. Default: FORGE_BRIDGE_JAR. */
+  /** Path to the forge-agent-bridge jar, 0.1.7 or later. Default: FORGE_BRIDGE_JAR, or the one bundled with this package. */
   bridgeJar?: string;
   /** Working directory, the folder that holds `res/`. Default: FORGE_HOME. */
   cwd?: string;
@@ -125,11 +126,12 @@ export class LobbyHost {
   }
 
   private async launch(settings: HostSettings, timeoutMs: number): Promise<HostState> {
-    const jar = this.opts.jar ?? process.env.FORGE_JAR;
-    const bridgeJar = this.opts.bridgeJar ?? process.env.FORGE_BRIDGE_JAR;
-    if (!jar || !bridgeJar) {
+    const jar = this.opts.jar ?? forgeJar();
+    const bridgeJar = this.opts.bridgeJar ?? defaultBridgeJar();
+    const problem = !jar || !bridgeJar ? `This server cannot start a host. ${SETUP_HINT}` : versionMismatch(jar, bridgeJar);
+    if (problem || !jar || !bridgeJar) {
       this.settings = undefined;
-      throw new Error("Set FORGE_JAR, FORGE_BRIDGE_JAR and FORGE_HOME so this server can start a host.");
+      throw new Error(problem);
     }
     let access: CopilotAccess | undefined;
     let copilotPort = 0;

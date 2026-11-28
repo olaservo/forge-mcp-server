@@ -25,8 +25,12 @@ export const STATUS_URI = "forge://status";
 
 let skillsPromise: Promise<SkillCatalog> | undefined;
 
-/** Loads `skills/` next to `dist/` (or `src/`) once; every server instance shares the catalog. */
-export function skillCatalog(): Promise<SkillCatalog> {
+/**
+ * Loads `skills/` next to `dist/` (or `src/`) once; every server instance shares the catalog.
+ * Undefined with `FORGE_SKILLS=0`, for a host that has the skills as local files.
+ */
+export function skillCatalog(env: NodeJS.ProcessEnv = process.env): Promise<SkillCatalog | undefined> {
+  if (env.FORGE_SKILLS === "0") return Promise.resolve(undefined);
   skillsPromise ??= loadSkills(fileURLToPath(new URL("../skills", import.meta.url)), { prefix: "forge" });
   return skillsPromise;
 }
@@ -73,7 +77,8 @@ export function createServer(opts: CreateServerOptions = {}): McpServer {
     instructions:
       "Forge (Card-Forge) seat for an agent. Tools drive one headless Forge client that joins a host's online lobby, " +
       "drafts and plays. Start with forge_status, then forge_connect. With no host to join, forge_host starts one on this machine. Before playing, read the forge-player skill, " +
-      "which is the MCP resource skill://forge/forge-player/SKILL.md on this server, and forge-drafter before drafting. forge_decks lists the decks the seat can bring to a lobby; load forge-deck " +
+      (opts.skills ? "which is the MCP resource skill://forge/forge-player/SKILL.md on this server, " : "") +
+      "and forge-drafter before drafting. forge_decks lists the decks the seat can bring to a lobby; load forge-deck " +
       "before choosing one or importing a new one. While the seat has nothing to do, wait in one of two ways. " +
       "If your client starts a turn for you when forge.your_move fires (an MCP Events client, or Claude Code with the " +
       "mcp-events mod), end your turn after acting. forge_wait is refused for such a client, and the refusal says so. " +

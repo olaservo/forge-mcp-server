@@ -95,11 +95,26 @@ describe("a bridge of its own", () => {
     vi.stubEnv("FORGE_BRIDGE_URL", undefined);
     vi.stubEnv("FORGE_JAR", undefined);
     vi.stubEnv("FORGE_BRIDGE_JAR", undefined);
+    vi.stubEnv("FORGE_HOME", undefined);
     const { spawned, spawnImpl } = fakeSpawn();
     const bridge = new Bridge({ freePort: async () => 40123, spawn: spawnImpl });
     expect(await bridge.ensureStarted()).toBe("not-configured");
     expect(spawned).toEqual([]);
     expect(bridge.url).toBeUndefined();
+  });
+
+  it("is not spawned for a Forge version it is not built for, and says so on the next call", async () => {
+    vi.stubEnv("FORGE_BRIDGE_URL", undefined);
+    const { spawned, spawnImpl } = fakeSpawn();
+    const bridge = new Bridge({
+      jar: "/forge/forge-gui-desktop-2.0.17-jar-with-dependencies.jar",
+      bridgeJar: "/b/forge-agent-bridge-0.1.11-forge-2.0.16.jar",
+      freePort: async () => 40123,
+      spawn: spawnImpl,
+    });
+    await expect(bridge.ensureStarted()).rejects.toThrow("built for Forge 2.0.16");
+    expect(spawned).toEqual([]);
+    await expect(bridge.get("/status")).rejects.toThrow("could not be started: The Forge jar is version 2.0.17");
   });
 });
 

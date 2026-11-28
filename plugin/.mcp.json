@@ -1,0 +1,15 @@
+{
+  "mcpServers": {
+    "forge": {
+      "type": "stdio",
+      "command": "npx",
+      "args": ["-y", "@olaservo/forge-mcp-server"],
+      "env": { "FORGE_HOME": "${user_config.forge_home}", "FORGE_MCP_PORT": "3080" }
+    },
+    "scryfall": {
+      "type": "stdio",
+      "command": "npx",
+      "args": ["-y", "@olaservo/scryfall-mcp-server"]
+    }
+  }
+}
